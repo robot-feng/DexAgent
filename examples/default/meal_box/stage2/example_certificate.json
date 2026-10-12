@@ -1,0 +1,28 @@
+{
+ "schema": "dexagent.example_certificate.v1",
+ "task": "meal_box",
+ "source_video_sha256": "4dd5c39d83fb38730d79ff77bce7c55b070585f1379eb3190c137aeb3e29f283",
+ "frame0": {
+  "path": "frame0.jpg",
+  "sha256": "247a6ed53d4c51577a94c5eddab9dca93be989c2043f2f6a52e3f271d291fe4c"
+ },
+ "masks": [
+  {
+   "path": "masks/container.png",
+   "role": "object",
+   "object": "container",
+   "sha256": "9149785fffd3abd46e40f71a19f79188c9292a1212c7eac46523a9e4f57206a9"
+  },
+  {
+   "path": "masks/lid.png",
+   "role": "object",
+   "object": "lid",
+   "sha256": "bcd6eccac7d16b5736fb2d830828f6398c737107b2a0dd7fb86c1eab18c433a1"
+  },
+  {
+   "path": "masks/hands.png",
+   "role": "hands",
+   "sha256": "45e945d98ded38001430be13601895981708846604f9db9184b3b6af1dd62402"
+  }
+ ]
+}

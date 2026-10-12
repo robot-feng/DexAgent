@@ -1,0 +1,52 @@
+{
+ "schema": "dexagent.example_certificate.v1",
+ "task": "biology_experiment",
+ "source_video_sha256": "a92269a2e01f5228724753beee73df331d2fa8d2ad099a3754d8f4cd149dcb62",
+ "frame0": {
+  "path": "frame0.jpg",
+  "sha256": "ece4f3d03865d7eb6500f78e5d8246acbbd077379fcd09549766cbdfbca663ef"
+ },
+ "masks": [
+  {
+   "path": "masks/tube_rack.png",
+   "role": "object",
+   "object": "tube_rack",
+   "sha256": "81b9d1505e31a8d7f05f8f5669215f6566da4f0e8f439c819102606f09e24d02"
+  },
+  {
+   "path": "masks/tube.png",
+   "role": "object",
+   "object": "tube",
+   "sha256": "0332520de2da46b5cdd38de523e9edb5baa8b4d6c84508bfbc83a506533a903e"
+  },
+  {
+   "path": "masks/rack_tube.png",
+   "role": "object",
+   "object": "rack_tube",
+   "sha256": "29df7aa152029bd4f2fda89297a59da74bd0576f3be0fcbb3b3379323c9d8e1f"
+  },
+  {
+   "path": "masks/pipette.png",
+   "role": "object",
+   "object": "pipette",
+   "sha256": "c2cbd3e1e65592f26d7c34772803e952255802ace30f020d1a5e05aca5d2cfc8"
+  },
+  {
+   "path": "masks/tip_box.png",
+   "role": "object",
+   "object": "tip_box",
+   "sha256": "ca582ba9b1af5f6daa274245f61f8edcebc70019dd844e0e3b3ee9cdd2facaeb"
+  },
+  {
+   "path": "masks/tip.png",
+   "role": "object",
+   "object": "tip",
+   "sha256": "d65be173030e56ad3b001778d6b598d742d5338199f0754416855265fc49fc3f"
+  },
+  {
+   "path": "masks/hands.png",
+   "role": "hands",
+   "sha256": "45e945d98ded38001430be13601895981708846604f9db9184b3b6af1dd62402"
+  }
+ ]
+}

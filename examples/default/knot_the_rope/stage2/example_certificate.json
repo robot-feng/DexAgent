@@ -1,0 +1,17 @@
+{
+ "schema": "dexagent.example_certificate.v1",
+ "task": "knot_the_rope",
+ "source_video_sha256": "81356c4f4b3e9e70db1e586cb65e41a63cfbc74327e0a83159406f8e2ade8ed8",
+ "frame0": {
+  "path": "frame0.jpg",
+  "sha256": "c873b604aaa0b6d9af79053add69c314ade17b5311ed1c113e9cd1a53d70b095"
+ },
+ "masks": [
+  {
+   "path": "masks/rope.png",
+   "role": "object",
+   "object": "rope",
+   "sha256": "b5e34920e89ee0da38b25fae82573e86ba534349d18cf485a505e7c3225b03d9"
+  }
+ ]
+}

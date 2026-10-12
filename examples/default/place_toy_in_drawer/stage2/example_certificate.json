@@ -1,0 +1,28 @@
+{
+ "schema": "dexagent.example_certificate.v1",
+ "task": "place_toy_in_drawer",
+ "source_video_sha256": "06be22f4b40459816b48e64535e0ee5f3740b46c1c03ca6ca8524c34c2fb73e0",
+ "frame0": {
+  "path": "frame0.jpg",
+  "sha256": "9df08fa5e404b8c0accf054a5b5c6ad79465033ce359e513bb2b1696539d5441"
+ },
+ "masks": [
+  {
+   "path": "masks/drawer_unit.png",
+   "role": "object",
+   "object": "drawer_unit",
+   "sha256": "ac38d3273779d173aba4d1dce196b5e53fc7a93b4783a9079543fc605056c519"
+  },
+  {
+   "path": "masks/toy.png",
+   "role": "object",
+   "object": "toy",
+   "sha256": "fa0e9498fd38a9a65d79c92e9a1cb7a65bbc9e588618b1af83831ced709c7827"
+  },
+  {
+   "path": "masks/hands.png",
+   "role": "hands",
+   "sha256": "a957eec2398e25c24e0afa63a9f1e68a4b42ce615438ffa1890513d6a5ed25ed"
+  }
+ ]
+}

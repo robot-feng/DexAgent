@@ -1,0 +1,40 @@
+{
+ "schema": "dexagent.example_certificate.v1",
+ "task": "computer_installation",
+ "source_video_sha256": "1632f256ae56d54e4b6eb8f1d349c6e3f44df5590106fadc74a03028452ea89b",
+ "frame0": {
+  "path": "frame0.jpg",
+  "sha256": "d455de07c74debbec408549e4bbc2f19c112bfd014193fd11fc32f2d787709ef"
+ },
+ "masks": [
+  {
+   "path": "masks/pc_case.png",
+   "role": "object",
+   "object": "pc_case",
+   "sha256": "1ef469fe63a9761e372c320c02f4eb8bc0c8386930e93bf359ce55a454b08895"
+  },
+  {
+   "path": "masks/disk_1.png",
+   "role": "object",
+   "object": "disk_1",
+   "sha256": "d2f45f561bfc3a7b32d00aad9f68f1438d0277b41ad03526b756899e954add56"
+  },
+  {
+   "path": "masks/disk_2.png",
+   "role": "object",
+   "object": "disk_2",
+   "sha256": "5d0fcfa7cb1b28adb64a153b373db5e0a2b995ba84dfd0592b2b59cada690e2d"
+  },
+  {
+   "path": "masks/disk_3.png",
+   "role": "object",
+   "object": "disk_3",
+   "sha256": "f4573350543ff862e240645801789bf6b2122fbe724e9b7d0db1493b24a92297"
+  },
+  {
+   "path": "masks/hands.png",
+   "role": "hands",
+   "sha256": "e080abea7df0849c3668574fb8e7538f5153f6c2ab12e873bce7be80dc6020a9"
+  }
+ ]
+}

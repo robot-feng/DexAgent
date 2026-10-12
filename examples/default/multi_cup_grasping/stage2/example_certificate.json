@@ -1,0 +1,40 @@
+{
+ "schema": "dexagent.example_certificate.v1",
+ "task": "multi_cup_grasping",
+ "source_video_sha256": "69b2359ed4f1dc8387c81aa2c2ee643c5d643066331ad0b96cc7156970d30bcf",
+ "frame0": {
+  "path": "frame0.jpg",
+  "sha256": "e461738c265f3977e29867f6bcff5d0690b9d30acefef089eacb9de0c8ce617b"
+ },
+ "masks": [
+  {
+   "path": "masks/cup_teal.png",
+   "role": "object",
+   "object": "cup_teal",
+   "sha256": "a47846825baa703ff7c834a5cda70cfa6355165249121fad905263aac24dddd6"
+  },
+  {
+   "path": "masks/cup_green.png",
+   "role": "object",
+   "object": "cup_green",
+   "sha256": "b1bacbd3770b7cdb139e0edbf7b1be8cf68e9ff72fe457dc3226a601bccb86aa"
+  },
+  {
+   "path": "masks/cup_orange_near.png",
+   "role": "object",
+   "object": "cup_orange_near",
+   "sha256": "13b93d83046b132e6ecab1317f614299c91d095e2d829690c7c3db21b7feeb78"
+  },
+  {
+   "path": "masks/cup_orange_far.png",
+   "role": "object",
+   "object": "cup_orange_far",
+   "sha256": "96ef92d8c78eeeaff511b19e3050826eb7f770d3b5fa768aaa5312527e20fbde"
+  },
+  {
+   "path": "masks/hands.png",
+   "role": "hands",
+   "sha256": "45e945d98ded38001430be13601895981708846604f9db9184b3b6af1dd62402"
+  }
+ ]
+}
