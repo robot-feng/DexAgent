@@ -18,7 +18,7 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 sys.path.insert(0, str(REPO))
 
-from agent.config import load_config, run_dir, semantics_file  # noqa: E402
+from agent.config import apply_profile, load_config, run_dir, semantics_file  # noqa: E402
 
 EXAMPLES = ["place_toy_in_drawer", "knot_the_rope", "computer_installation"]
 STAGE_VERIFIERS = ["scene_semantic_schema_check", "scene_semantic_consistency_check", "goal_language_coverage_check"]
@@ -87,9 +87,10 @@ def main(argv=None):
     ap.add_argument("config", nargs="?", default=os.environ.get("DEXAGENT_CONFIG", str(REPO / "dexagent.yaml")))
     ap.add_argument("--video"), ap.add_argument("--prompt"), ap.add_argument("--name")
     ap.add_argument("--max-rounds", type=int)
+    ap.add_argument("--profile", choices=("smoke", "pipeline_eval", "dataset_release"))
     ap.add_argument("--llm", default="config", help="config (the YAML's agent block) or mock:<turns.json>")
     a = ap.parse_args(argv)
-    cfg = load_config(a.config)
+    cfg = apply_profile(load_config(a.config), a.profile)
     if a.video:
         cfg["inputs"]["video"] = str(Path(a.video).resolve())
     if a.prompt is not None:

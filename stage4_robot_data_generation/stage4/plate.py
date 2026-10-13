@@ -1,15 +1,15 @@
 """Step 2: remove the demonstrator and the manipulated objects from the human video.
 
-    human video --SAM 3--> erase masks --VOID--> clean background plate(s)
+    human video --SAM3-LiteText--> erase masks --VOID or LaMa--> clean background plate(s)
 
-SAM 3 segments everything named in inpaint.erase_prompts (the hands and arms,
-plus the objects the simulation re-creates). VOID then deletes those regions
-and the shadows they cast. The result is the background the rendered robot is
-composited onto.
+SAM3-LiteText segments everything named in inpaint.erase_prompts (the hands and arms,
+plus the objects the simulation re-creates). VOID removes those regions and their
+shadows across time. The optional LaMa backend fills the static plate's pixels that
+are rarely or never uncovered by the video.
 
 The ego camera is static, so the background is one plate: a pixel that is
 ever seen uncovered keeps its real color (the median over the uncovered
-frames), and only pixels that stay covered for the whole clip come from VOID.
+frames), and only pixels that stay covered for the whole clip come from inpainting.
 """
 from __future__ import annotations
 
@@ -121,6 +121,39 @@ def run_void(work, frames, masks, fps, ip, log):
     return gen[:n]                                            # the tail is window padding
 
 
+def run_lama(frames, masks, model_path, log):
+    """LaMa image inpainting on each frame; returns RGB images at the input size."""
+    import torch
+
+    model_path = Path(model_path or os.environ.get("DEXAGENT_LAMA_MODEL", ""))
+    assert model_path.is_file(), f"LaMa checkpoint not found: {model_path}"
+    if torch.cuda.is_available():
+        gpu = max(range(torch.cuda.device_count()), key=lambda i: torch.cuda.mem_get_info(i)[0])
+        device = torch.device(f"cuda:{gpu}")
+    else:
+        device = torch.device("cpu")
+    model = torch.jit.load(str(model_path), map_location=device).eval().to(device)
+    log(f"[plate] LaMa on {device}: {model_path}")
+    generated = []
+    with torch.inference_mode():
+        for i, (frame, mask) in enumerate(zip(frames, masks)):
+            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            h, w = rgb.shape[:2]
+            image = np.ascontiguousarray(rgb.transpose(2, 0, 1), dtype=np.float32) / 255.0
+            erase = np.ascontiguousarray((mask > 0).astype(np.float32)[None])
+            pad_h, pad_w = (-h) % 8, (-w) % 8
+            if pad_h or pad_w:
+                image = np.pad(image, ((0, 0), (0, pad_h), (0, pad_w)), mode="symmetric")
+                erase = np.pad(erase, ((0, 0), (0, pad_h), (0, pad_w)), mode="symmetric")
+            image_t = torch.from_numpy(image).unsqueeze(0).to(device)
+            erase_t = torch.from_numpy(erase).unsqueeze(0).to(device)
+            out = model(image_t, erase_t)[0, :, :h, :w].permute(1, 2, 0).cpu().numpy()
+            generated.append(np.clip(out * 255.0, 0, 255).astype(np.uint8))
+            if i % 20 == 0 or i == len(frames) - 1:
+                log(f"[plate] LaMa {i + 1}/{len(frames)}")
+    return generated
+
+
 def paste(frames, masks, gen, ip):
     """Adopt VOID's pixels inside the erase mask always, and in the interaction
     ring only where VOID changed them (its shadow removal)."""
@@ -139,7 +172,7 @@ def paste(frames, masks, gen, ip):
 
 def static_plate(frames, masks, clean, ip, log=print):
     """One plate for a camera that does not move: real pixels wherever the
-    background is ever uncovered, VOID only where it never is."""
+    background is ever uncovered, inpainting only where it never is."""
     ring_k = np.ones((ip["interaction_px"],) * 2, np.uint8)
     raw = np.stack([cv2.cvtColor(f, cv2.COLOR_BGR2RGB) for f in frames]).astype(np.float32)
     free = np.stack([cv2.dilate(m, ring_k) == 0 for m in masks])          # (n, H, W)
@@ -166,6 +199,37 @@ def static_plate(frames, masks, clean, ip, log=print):
     w = np.clip((count.astype(np.float32) - 1) / 4.0, 0.0, 1.0)           # need a few real samples
     w = cv2.GaussianBlur(w, (21, 21), 0)[..., None]
     plate = np.where(np.isnan(seen), filled, seen) * w + filled * (1 - w)
+    return np.clip(plate, 0, 255).astype(np.uint8), float((count == 0).mean())
+
+
+def static_plate_lama(frames, masks, ip, model_path, log=print):
+    """Build one static plate from all visible pixels and LaMa-fill sparse areas."""
+    ring_k = np.ones((ip["interaction_px"],) * 2, np.uint8)
+    raw = np.stack([cv2.cvtColor(f, cv2.COLOR_BGR2RGB) for f in frames]).astype(np.float32)
+    free = np.stack([cv2.dilate(m, ring_k) == 0 for m in masks])
+    always = free.all(0)
+    if always.sum() > 1000:
+        means = np.array([f[always].mean(0) for f in raw])
+        drift = np.abs(means - np.median(means, 0)).max(1)
+        keep = drift <= float(ip["color_drift_tol"])
+        if keep.sum() >= 3 and not keep.all():
+            log(f"[plate] {int((~keep).sum())} frames dropped for color drift "
+                f"(up to {drift.max():.0f} levels): white balance still settling")
+            raw, free = raw[keep], free[keep]
+    count = free.sum(0)
+    raw[~free] = np.nan
+    with np.errstate(all="ignore"):
+        import warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            seen = np.nanmedian(raw, axis=0)
+    sparse = count < 5
+    seed = np.where(np.isnan(seen), 0, seen).clip(0, 255).astype(np.uint8)
+    seed_bgr = cv2.cvtColor(seed, cv2.COLOR_RGB2BGR)
+    fill = run_lama([seed_bgr], [sparse.astype(np.uint8) * 255], model_path, log)[0]
+    weight = np.clip((count.astype(np.float32) - 1) / 4.0, 0.0, 1.0)
+    weight = cv2.GaussianBlur(weight, (21, 21), 0)[..., None]
+    plate = np.where(np.isnan(seen), fill, seen) * weight + fill * (1 - weight)
     return np.clip(plate, 0, 255).astype(np.uint8), float((count == 0).mean())
 
 
@@ -215,9 +279,10 @@ def run(cfg, log=print):
         shutil.rmtree(mdir, ignore_errors=True)
         t0 = time.time()
         subprocess.run([sys.executable, "-m", "stage4.masks", str(fdir), str(mdir),
-                        ",".join(ip["erase_prompts"]), str(ip["min_score"])],
+                        ",".join(ip["erase_prompts"]), str(ip["min_score"]),
+                        str(ip.get("segmentation_backend", "sam3-litetext-s0"))],
                        cwd=PKG_ROOT, check=True)
-        log(f"[plate] SAM 3 masks in {time.time() - t0:.0f}s")
+        log(f"[plate] SAM3-LiteText masks in {time.time() - t0:.0f}s")
     dil = np.ones((ip["mask_dilate_px"],) * 2, np.uint8)
     masks = []
     for k in range(len(sel)):
@@ -227,21 +292,38 @@ def run(cfg, log=print):
             m = cv2.resize(m, sel[k].shape[1::-1], interpolation=cv2.INTER_NEAREST)
         masks.append(enlarge(cv2.dilate((m > 0).astype(np.uint8) * 255, dil), ip["mask_scale"]))
 
-    gen = run_void(work, sel, masks, max(1.0, sel_fps), ip, log)
-    clean = paste(sel, masks, gen, ip)
+    backend = str(ip.get("backend", "void")).lower()
+    if backend == "void":
+        gen = run_void(work, sel, masks, max(1.0, sel_fps), ip, log)
+        clean = paste(sel, masks, gen, ip)
+        plate, never = static_plate(sel, masks, clean, ip, log)
+    elif backend == "lama":
+        model_value = ip.get("lama_model") or os.environ.get("DEXAGENT_LAMA_MODEL")
+        model_path = cfg.path_of(model_value)
+        assert model_path, "set inpaint.lama_model or DEXAGENT_LAMA_MODEL to a LaMa TorchScript checkpoint"
+        plate, never = static_plate_lama(sel, masks, ip, model_path, log)
+        clean = [plate] * len(sel)
+    else:
+        raise ValueError(f"unknown inpaint.backend {backend!r}; choose 'void' or 'lama'")
 
     meta = {"n_source_frames": len(frames), "source_fps": fps,
             "indices": [int(i) for i in idx],
-            "erase_coverage": round(float(np.mean([(m > 0).mean() for m in masks])), 4)}
+            "erase_coverage": round(float(np.mean([(m > 0).mean() for m in masks])), 4),
+            "segmentation_backend": str(ip.get("segmentation_backend", "sam3-litetext-s0")) if not ip.get("masks_dir") else "user_masks",
+            "segmentation_model_identity": (json.loads((Path(mdir) / "meta.json").read_text()).get("model_identity")
+                                             if (Path(mdir) / "meta.json").is_file() else None),
+            "masks_dir": str(mdir),
+            "inpaint_backend": backend,
+            "inpaint_model": str(cfg.path_of(ip.get("lama_model") or os.environ.get("DEXAGENT_LAMA_MODEL")))
+            if backend == "lama" else None}
     cdir = work / "clean"
     shutil.rmtree(cdir, ignore_errors=True)
     cdir.mkdir()
-    plate, never = static_plate(sel, masks, clean, ip, log)
     meta["never_uncovered"] = round(never, 4)
     cv2.imwrite(str(work / "plate.png"),
                 cv2.resize(cv2.cvtColor(plate, cv2.COLOR_RGB2BGR), (W, H)))
     log(f"[plate] clean plate -> {work / 'plate.png'} "
-        f"({never:.0%} of the frame is never uncovered and comes from VOID)")
+        f"({never:.1%} of the frame is never uncovered and comes from {backend})")
     for k, c in enumerate(clean):
         cv2.imwrite(str(cdir / f"frame{k:05d}.png"),
                     cv2.resize(cv2.cvtColor(c, cv2.COLOR_RGB2BGR), (W, H)))
@@ -255,4 +337,4 @@ def run(cfg, log=print):
         vw.append_data(np.concatenate([ov, c], axis=1))
     vw.close()
     meta_f.write_text(json.dumps(meta, indent=1))
-    log(f"[plate] per-frame VOID results -> {cdir}; preview {work / 'preview.mp4'}")
+    log(f"[plate] per-frame {backend} results -> {cdir}; preview {work / 'preview.mp4'}")

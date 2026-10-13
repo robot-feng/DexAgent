@@ -19,10 +19,10 @@ DexAgent keeps every skill and verifier it develops in a self-evolving tool libr
 
 ### 0. ⚠️ Cost and run time
 
-Each agent stage is a long loop of model calls. What a run costs, and how long it takes, is not known in advance.
+Each agent stage is a long loop of model turns. Runtime depends on the video and the available tools. This checkout uses Codex through the external file transport and makes no model API calls; API-backed providers are optional alternatives.
 
-- **API key:** before the first run, set `max_rounds` for every stage and `agent.budget_usd` (the run's spending cap) in `dexagent.yaml`; DexAgent stops a stage when either is spent.
-- **Subscription:** to avoid API charges, you can ask your coding agent (e.g., Claude Code or Codex) to fork a subagent on the model you choose and run the pipeline through the tool-call CLI ([running a stage by hand](agent/README.md#running-a-stage-by-hand)). Give that subagent a turn limit as well, so it cannot use up your token allowance.
+- **API-backed providers:** set an API key, `max_rounds`, and `agent.budget_usd` (the run's spending cap) in `dexagent.yaml`; DexAgent stops a stage when either is spent.
+- **Codex session:** this checkout uses `agent.provider: external`, so DexAgent does not call a model API. While a run waits, Codex reads the JSON request under `agent.transport_dir` and submits a tool-use or text response with `python -m agent.external respond <request.json> <response.json>`. See [the external transport guide](agent/README.md#codex-file-transport).
 - **Run time** depends on the video length, the model, and how much of the task the tool library already covers: when it lacks the tools a task needs, the agent writes and tests new ones, which takes longer.
 - **Model:** we recommend Claude Opus 5 or GPT-5.6, but the best choice depends on the task.
 
@@ -47,21 +47,25 @@ A tool whose package is missing says so when it is called; the agent then uses a
 
 ### 2. Setup
 
-Copy [`dexagent.yaml`](dexagent.yaml) and fill in your model API key and model name, your video, the camera that filmed it, and your robot setup. **Anything left empty falls back to the default: our bench in [`setup/`](setup/), its calibrated ego camera, and the weights in the Hugging Face cache.** To use your own robot or bench, copy `setup/` and edit it as its README describes.
+Edit [`dexagent.yaml`](dexagent.yaml) with your video, camera calibration, and robot setup. This checkout uses `agent.provider: external`: the pipeline exchanges request/response files with the Codex session and makes no model API calls. The configured Python environments and model cache live under `/data`. To use your own robot or bench, copy `setup/` and edit it as its README describes.
 
 ### 3. Run
 
 One command runs the four stages in order and prints a closing table; each stage also runs on its own (its README says what it reads, what it writes and which GPU it needs).
 
 ```bash
-python run_dexagent.py dexagent.yaml                                  # video + prompt -> randomized robot videos, stages 1 -> 4
-python run_dexagent.py dexagent.yaml --from stage3                    # resume from a stage; --to stage2 stops after one
+python run_dexagent.py dexagent.yaml                                  # fresh Stage 1–4 evaluation; uses the configured conda Python
+python run_dexagent.py dexagent.yaml --profile smoke                  # smaller end-to-end run; verified examples may be reused
+python run_dexagent.py dexagent.yaml --profile dataset_release        # fresh run with dataset timing and visual-review reporting
+python run_dexagent.py dexagent.yaml --from stage3 --confirm-stages   # resume from a stage and pause between stages
 
 python stage1_semantic_understanding/run_stage1.py dexagent.yaml      # video + prompt -> scene_semantics.json
 python stage2_scene_reconstruction/run_stage2.py dexagent.yaml        # + video -> scene.xml with the verified, placed objects (Isaac Sim for deformables)
 python stage3_trajectory_generation/run_stage3.py dexagent.yaml       # + subgoals -> one robot episode verified in physics, packaged for Stage 4
 python stage4_robot_data_generation/run_stage4.py runs/<name>/stage3/stage4_task/stage4.json   # -> randomized, retextured robot videos in stage4_task/outputs/
 ```
+
+Every full run writes `runs/<name>/reports/preflight.json`, a `stage_report.json` per stage, and `run_summary.json`. Stage 4 also writes one JSON report for each of its five steps under `stage4_task/outputs/reports/`; a required failure stops the remaining steps. `pipeline_eval` is the default and disables example reuse. `smoke` enables reuse and reduces Stage 4 work. `dataset_release` checks video-to-trajectory frame mapping and marks visual previews as pending human review; it does not claim that the human comparison video is time synchronized.
 
 ## Code
 

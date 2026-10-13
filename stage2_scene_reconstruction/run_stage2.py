@@ -19,7 +19,7 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 sys.path.insert(0, str(REPO))
 
-from agent.config import egodex_video, load_config, run_dir, semantics_file  # noqa: E402
+from agent.config import apply_profile, egodex_video, load_config, run_dir, semantics_file  # noqa: E402
 
 TOOL_CATEGORIES = ["Perception & Grounding", "Measurements", "Object Reconstruction", "Scene Runtime & Rendering",
                    "Reconstruction Mechanism Tests", "Scene Assertions", "Scene Compile Checks"]
@@ -131,9 +131,10 @@ def main(argv=None):
     ap.add_argument("config", nargs="?", default=os.environ.get("DEXAGENT_CONFIG", str(REPO / "dexagent.yaml")))
     ap.add_argument("--video"), ap.add_argument("--semantic"), ap.add_argument("--name"), ap.add_argument("--egodex")
     ap.add_argument("--max-rounds", type=int)
+    ap.add_argument("--profile", choices=("smoke", "pipeline_eval", "dataset_release"))
     ap.add_argument("--llm", default="config", help="config (the YAML's agent block) or mock:<turns.json>")
     a = ap.parse_args(argv)
-    cfg = load_config(a.config)
+    cfg = apply_profile(load_config(a.config), a.profile)
     if a.video:
         cfg["inputs"]["video"] = str(Path(a.video).resolve())
     if a.name:

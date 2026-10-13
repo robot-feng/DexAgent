@@ -1,4 +1,4 @@
-"""Per-frame binary masks of everything matching a list of text prompts (SAM 3)."""
+"""Per-frame binary masks of everything matching text prompts (SAM3-LiteText)."""
 from __future__ import annotations
 
 TOOL = {
@@ -6,9 +6,9 @@ TOOL = {
     "title": "Segment with text prompts",
     "type": "skill",
     "category": "Perception & Grounding",
-    "summary": "SAM 3 on every frame: the union of all instances of the given prompts as one binary mask per frame, and optionally one mask per instance.",
+    "summary": "SAM3-LiteText on every frame: the union of all instances of the given prompts as one binary mask per frame, and optionally one mask per instance.",
     "description": (
-        "For each frame, each prompt is segmented with SAM 3 and all instances above the score "
+        "For each frame, each prompt is segmented with SAM3-LiteText and all instances above the score "
         "floor are merged into a single mask (255 = matched). This is the mask a video eraser "
         "needs: name the hands and arms and every object the simulation re-creates, and the "
         "result marks exactly the pixels to remove. Frames can be downscaled for speed; masks "
@@ -25,16 +25,15 @@ TOOL = {
         {"name": "min_score", "type": "float", "description": "Instance confidence floor. Default 0.3."},
         {"name": "downscale", "type": "float", "description": "Detect at this fraction of the resolution. Default 1.0."},
         {"name": "instances", "type": "bool", "description": "Also write one mask per instance (instances/<prompt slug>/frame%05d_<k>.png) and list them in meta.json. Default false (union masks only)."},
-        {"name": "version", "type": "str", "description": "Image checkpoint version: 'sam3' (default). SAM 3.1 multiplex video checkpoints are not supported by this image tool."},
+        {"name": "version", "type": "str", "description": "Registered text-segmentation backend (default: sam3-litetext-s0)."},
     ],
     "outputs": [
         {"name": "meta", "type": "dict", "description": "prompts, n_frames, mean coverage, out_dir, model_identity with actual checkpoint SHA256/runtime; with instances: instances {prompt: [[{mask, score, box [x0, y0, x1, y1] px, area_px}] per frame]}."},
     ],
     "status": "tested",
     "entrypoint": "segment_with_text_prompts",
-    "requirements": ["sam3 (pip install git+https://github.com/facebookresearch/sam3.git)", "torch",
-                     "Hugging Face access to facebook/sam3 (or its already cached checkpoint)"],
-    "tags": ["SAM 3", "segmentation", "masks", "erase"],
+    "requirements": ["transformers>=5.6,<5.14", "accelerate>=1.1", "torch", "Pillow"],
+    "tags": ["SAM3-LiteText", "segmentation", "masks", "erase"],
     "used_in": ["Giftbox Packing", "Knot the Rope", "Battery Insertion", "Drawing and Wiping", "Computer Installation", "Open the Bottle", "Scissor Cutting", "Biology Experiment"],
     "cli": "python -m tool_library.skills.segment_with_text_prompts frames/ masks/ --prompts hand arm cup",
 }
@@ -48,7 +47,7 @@ import cv2
 import numpy as np
 
 from tool_library.common.video import frame_files, write_json
-from tool_library.skills.detect_objects import load_sam3
+from tool_library.skills.detect_objects import SAM3_LITETEXT_VERSION
 
 
 def _np(x):
@@ -62,15 +61,24 @@ def _slug(p):
     return re.sub(r"[^a-z0-9]+", "_", p.lower()).strip("_") or "prompt"
 
 
+def load_sam3(min_score=0.3, version=SAM3_LITETEXT_VERSION):
+    """Backward-compatible loader hook; new backends use the same adapter contract."""
+    from tool_library.skills.segmentation_backend import load_backend
+    return load_backend(version, min_score=min_score)
+
+
 def segment_with_text_prompts(frames_dir, prompts, out_dir, min_score=0.3, downscale=1.0,
-                              processor=None, instances=False, version="sam3"):
+                              processor=None, instances=False, version=SAM3_LITETEXT_VERSION):
     from PIL import Image
     files = frame_files(frames_dir)
     assert files, f"no frames in {frames_dir}"
     prompts = [p.strip() for p in prompts if p.strip()]
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
-    proc = processor or load_sam3(min_score, version)
+    if processor is None:
+        proc = load_sam3(min_score=min_score, version=version)
+    else:
+        proc = processor
     cover = []
     inst = {p: [] for p in prompts} if instances else None
     if instances:
@@ -86,17 +94,22 @@ def segment_with_text_prompts(frames_dir, prompts, out_dir, min_score=0.3, downs
         W0, H0 = img.size
         if downscale < 1.0:
             img = img.resize((int(W0 * downscale), int(H0 * downscale)), Image.BILINEAR)
-        state = proc.set_image(img)
+        state = proc.set_image(img) if not hasattr(proc, "segment") else None
         union = np.zeros((img.height, img.width), bool)
         for p in prompts:
-            res = proc.set_text_prompt(prompt=p, state=state)
+            res = proc.segment(img, p) if hasattr(proc, "segment") else proc.set_text_prompt(prompt=p, state=state)
             m = res.get("masks")
             if instances:
                 inst[p].append([])
-            if m is None or m.shape[0] == 0:
+            if m is None:
                 continue
+            M = _np(m).astype(bool)
+            if M.size == 0:
+                continue
+            if M.ndim == 2:
+                M = M[None]
+            M = M.reshape(M.shape[0], -1, *M.shape[-2:]).any(axis=1)
             if instances:                               # every instance as its own mask, best score first
-                M = _np(m).astype(bool).reshape(m.shape[0], -1, *m.shape[-2:]).any(axis=1)
                 sc = _np(res["scores"]).astype(float).reshape(-1) if res.get("scores") is not None else np.ones(len(M))
                 order = np.argsort(-sc)
                 for k, i in enumerate(order):
@@ -108,8 +121,7 @@ def segment_with_text_prompts(frames_dir, prompts, out_dir, min_score=0.3, downs
                     cv2.imwrite(str(path), mi.astype(np.uint8) * 255)
                     inst[p][-1].append({"mask": str(path), "score": round(float(sc[i]), 4), "area_px": int(mi.sum()),
                                         "box": [int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max())] if len(xs) else None})
-            m = m.any(dim=0).squeeze().detach().cpu().numpy().astype(bool) if hasattr(m, "any") and hasattr(m, "detach") \
-                else _np(m).astype(bool).any(axis=0).squeeze()
+            m = M.any(axis=0).squeeze()
             if m.shape != union.shape:
                 m = cv2.resize(m.astype(np.uint8), union.shape[::-1], interpolation=cv2.INTER_NEAREST) > 0
             union |= m
@@ -136,7 +148,7 @@ def main(argv=None):
     ap.add_argument("--min-score", type=float, default=0.3)
     ap.add_argument("--downscale", type=float, default=1.0)
     ap.add_argument("--instances", action="store_true")
-    ap.add_argument("--version", default="sam3", choices=["sam3"])
+    ap.add_argument("--version", default=SAM3_LITETEXT_VERSION)
     a = ap.parse_args(argv)
     print(json.dumps(segment_with_text_prompts(a.frames_dir, a.prompts, a.out_dir, a.min_score, a.downscale, instances=a.instances, version=a.version), indent=1))
 

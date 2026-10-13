@@ -22,7 +22,32 @@ agent/
 
 ## The model
 
-`dexagent.yaml` names the provider, model and API key under `agent:`. Any Anthropic model works through the Messages API; any OpenAI-compatible endpoint through `provider: openai` and `base_url`. The model must accept images, because the agent sees the video only through contact sheets and frames returned by `look`.
+`dexagent.yaml` names the provider under `agent:`. API-backed Anthropic and OpenAI-compatible providers remain available. For this checkout, `provider: external` writes a request to `agent.transport_dir` and waits for a matching response JSON. There is no API call or automatic Codex subprocess: the Codex session reads the request, chooses a response, and submits it through the local CLI. DexAgent still runs tools and verifiers locally. The request includes image files when a stage needs visual evidence.
+
+### Codex file transport
+
+Start the pipeline in a terminal. It blocks when it needs the next agent turn:
+
+```bash
+python run_dexagent.py dexagent.yaml --yes
+```
+
+In the Codex session, wait for a request and inspect it (requests include image paths under the transport directory):
+
+```bash
+python -m agent.external wait /data/tzq/DexAgent/runs/external
+python -m agent.external inspect /data/tzq/DexAgent/runs/external/requests/<session-turn>.json
+```
+
+Write the response as a JSON array of content blocks. A tool call looks like
+`{"type":"tool_use","id":"call-1","name":"finish","input":{}}`; plain text looks like
+`{"type":"text","text":"..."}`. Submit it using:
+
+```bash
+python -m agent.external respond /data/tzq/DexAgent/runs/external/requests/<session-turn>.json /path/to/response.json
+```
+
+The response must use a tool listed in that request, and tool arguments must match its schema. The run writes another request after tool results return; continue until `status.json` says `finished`.
 
 ## Tools
 
@@ -41,6 +66,10 @@ tool_environments:
 ## New tools
 
 `library_create` is the only way the agent adds to the library, and it enforces `prompts/building_tools.md`: existing tools are never modified (fork under a new name); the file carries a complete `TOOL` literal with `status: tested`; the test the agent supplies must pass on at least three distinct variations; no machine paths, no dates, no imports from outside the library. A tool that fails is removed again. Created tools are listed in the workspace's `new_tools.json` and in the stage's result.
+
+## Run reports and attempts
+
+Each `stage_report.json` snapshots one invocation and records its `attempt_id` and `config_sha256`, the SHA256 of the effective configuration after defaults, profile settings, and configuration overrides. `run_summary.json` keeps the sequence of stage attempts; a repaired stage can appear more than once, and the final run status uses the last attempt for each stage. For later Stage 4 visual reviews, read the current `runs/<name>/stage3/stage4_task/outputs/run_report.json`; the top-level summary remains the snapshot from the pipeline invocation.
 
 ## Running a stage by hand
 

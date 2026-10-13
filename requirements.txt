@@ -16,5 +16,7 @@ h5py                  # EgoDex episodes
 scikit-image
 matplotlib
 sympy
-# GPU perception models (SAM 3, SAM 2, HaMeR, Video Depth Anything, GeoCalib, SAM 3D, VOID) are installed
+# GPU perception models (SAM3-LiteText, SAM 2, HaMeR, Video Depth Anything, GeoCalib, SAM 3D, VOID) are installed
 # in their own environments; see tool_library/README.md and stage4_robot_data_generation/README.md
+transformers>=5.6.0,<5.14.0
+accelerate>=1.1.0

@@ -3,14 +3,14 @@
 #   python stage1_semantic_understanding/run_stage1.py my_run.yaml
 # Paths are relative to this file unless absolute. Leave a key at its default when you have nothing to put there.
 
-agent:                                 # the language model that runs the agent (required)
-  provider: anthropic                  # anthropic | openai (base_url for compatible endpoints) | external (file transport)
-  model: claude-opus-5-5               # model name, e.g. claude-opus-5-5, claude-sonnet-5-5, claude-fable-5-1
-  api_key: ""                          # your API key; empty = read ANTHROPIC_API_KEY (or OPENAI_API_KEY) from the environment
+agent:                                 # Codex supplies model responses through the local file transport; no model API is called
+  provider: external                   # anthropic | openai (base_url for compatible endpoints) | external (file transport)
+  model: codex-session
+  api_key: ""                          # used only for an API-backed provider; external does not read API keys
   base_url: null                       # only for a self-hosted or OpenAI-compatible endpoint
-  budget_usd: null                     # REQUIRED for anthropic / openai: the run's spending cap in USD, across all its stages
+  transport_dir: /data/tzq/DexAgent/runs/external
+  budget_usd: null                     # API spending cap (unused by the external provider)
                                        # (runs/<name>/budget.json; a stage stops when it is spent, the agent is told at 90%).
-                                       # The external transport (a coding agent forked as a subagent) is capped by max_rounds
   price_usd_per_mtok: {input: null, output: null}   # USD per million tokens; null = the list price of claude-opus-5 /
                                        # claude-opus-5-5; any other model needs both (check your provider's pricing page)
   tool_discovery: search              # search exposes requested schemas; all sends every tool in the stage categories
@@ -21,11 +21,19 @@ run:
 
 examples:                              # verified examples (asset reuse)
   dir: examples                        # holds default/ (our verified samples) and asset_reuse/ (runs you saved)
-  reuse: true                          # the same recording as a shipped example (its certificate) reuses the example's results
+  reuse: false                         # the selected evaluation profile controls reuse; formal profiles always start fresh
                                        # without calling the model: Stages 1-2 as recorded, Stage 3's trajectory shifted by the
                                        # positional difference of the example's assets fitted to this video (arms re-solved by IK,
                                        # never re-executed); set false for an evaluation from scratch
   save_assets: false                   # true: a run whose stages all pass is saved to examples/asset_reuse/<run name> for later reuse
+
+evaluation:
+  profile: pipeline_eval               # smoke | pipeline_eval | dataset_release
+  smoke_stage4:                        # reduced Stage 4 workload for an end-to-end wiring check
+    num_samples: 1
+    views: []
+    max_frames: 16
+    render: {samples: 4, chunks: 1, parallel: 1}
 
 inputs:
   video: path/to/human_video.mp4       # the human demonstration, filmed by a camera that does not move
@@ -91,10 +99,14 @@ stage4:                                # robot data generation; see stage4_robot
   num_samples: 3                       # randomized episodes to keep
   seed: 0
   views: [wrist_left, wrist_right]     # cameras to render besides `ego` (of those Stage 3 packaged); [] = ego only
-  render: {samples: 32, chunks: 4}     # Cycles samples per pixel, render processes per GPU
+  render: {samples: 32, chunks: 4, parallel: 1}  # Cycles samples; one Blender process at a time, chunks partition frames
+  inpaint_backend: lama                # cached LaMa alternative; VOID/CogVideoX weights are not installed
 
 models:                                # checkouts and weights; a tool call that leaves the matching argument out gets these
-  hf_home: null                        # Hugging Face cache for SAM 3 / SAM 2 / GeoCalib weights; null = $HF_HOME
+  hf_home: /data/miniconda3/hf_cache  # shared Hugging Face cache on the data drive
+  segmentation_backend: sam3-litetext-s0 # baseline backend; alternative adapters can be registered via entry points
+  sam3_litetext_dir: /data/tzq/datasets/starVLA/playground/Pretrained_models/sam3-litetext-s0
+  lama_checkpoint: /data/tzq/datasets/starVLA/playground/Pretrained_models/lama-big/big-lama.pt
   void_dir: null                       # VOID checkout (Stage 4 clean plates)
   hamer_root: null                     # HaMeR checkout with _DATA/ (hand meshes)
   sam3d_repo: null                     # SAM 3D Objects checkout (object meshes)
@@ -108,7 +120,8 @@ models:                                # checkouts and weights; a tool call that
   spider_dir: null                     # SPIDER checkout (github.com/facebookresearch/spider): the optimizer of Stage 3's physics_informed_retargeting
 
 environments:                          # Python interpreters for tools whose packages live in another environment; null = this interpreter
-  sam3: null                           # e.g. /opt/envs/sam3/bin/python  (detect_objects, segment_with_text_prompts)
+  pipeline: /data/miniconda3/envs/dexagent/bin/python  # run_dexagent.py re-execs into this environment for consistent MuJoCo/tool versions
+  sam3: /data/miniconda3/envs/dexagent/bin/python  # transformers/accelerate/torch and local SAM3-LiteText weights
   sam2: null                           # track_objects
   hamer: null                          # extract_hand_meshes
   sam3d: null                          # reconstruct_object_meshes (SAM 3D Objects)
@@ -117,7 +130,7 @@ environments:                          # Python interpreters for tools whose pac
   bodex: null                          # BODex / cuRobo Python (grasp_prior_bodex)
   dexgraspnet: null                    # DexGraspNet Python (grasp_prior_dexgraspnet)
   spider: null                         # SPIDER's Python (mujoco, mujoco_warp, warp-lang, torch with CUDA, hydra-core; physics_informed_retargeting)
-  stage4: null                         # the Stage 4 environment (stage4_robot_data_generation/setup.sh); run_dexagent.py launches Stage 4 with it
+  stage4: /data/miniconda3/envs/dexagent/bin/python  # Stage 4 environment on the data disk
 
 tool_environments:                     # tool name -> environment name above; tools not listed run in this interpreter
   detect_objects: sam3

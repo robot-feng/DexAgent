@@ -63,7 +63,7 @@ class ReferenceEvidenceTests(unittest.TestCase):
 
     class SourceProcessor:
         """Deterministic source-pixel fixture, not a claim of real SAM accuracy."""
-        model_identity = {"version": "sam3", "repo_id": "facebook/sam3", "checkpoint_sha256": "a" * 64}
+        model_identity = {"version": "sam3-litetext-s0", "repo_id": "yonigozlan/sam3-litetext-s0", "checkpoint_sha256": "a" * 64}
 
         def set_image(self, image):
             self.pixels = np.asarray(image).astype(float)
@@ -95,7 +95,8 @@ class ReferenceEvidenceTests(unittest.TestCase):
             self.auth.complete(token, {"ok": True, "result": extract_frames(**args)})
             path = Path(args["out_dir"]) / "frame00000.jpg"
         seg = {"frames_dir": str(path.parent), "prompts": ["red object", "green object"] if instances else ["red object"],
-               "out_dir": str(self.ws / "sam"), "instances": instances, "min_score": .4, "downscale": .5, "version": "sam3"}
+               "out_dir": str(self.ws / "sam"), "instances": instances, "min_score": .4, "downscale": .5,
+               "version": "sam3-litetext-s0"}
         token = self.auth.prepare("segment_with_text_prompts", seg)
         with patch("tool_library.skills.segment_with_text_prompts.load_sam3", return_value=self.SourceProcessor()):
             result = segment_with_text_prompts(**seg)
@@ -399,6 +400,18 @@ class ReferenceEvidenceTests(unittest.TestCase):
                 with patch("agent.library.call_tool") as dispatch:
                     self.assertFalse(E.revalidate_source_recipes(self.ws, self.video)["ok"])
                 dispatch.assert_not_called()
+
+    def test_alternate_segmentation_backend_identity_can_be_replayed(self):
+        from tool_library.skills import segmentation_backend
+        args = {"prompts": ["red object"], "min_score": .3, "downscale": 1.,
+                "instances": False, "version": "alternate-segmenter"}
+        identity = {"version": "v2", "repo_id": "example/alternate-segmenter", "checkpoint_sha256": "b" * 64}
+        self.assertEqual(E._sam_arguments(args)["version"], "alternate-segmenter")
+        self.assertEqual(E._model_identity(identity), identity)
+        with patch.dict(segmentation_backend.BACKENDS, {"alternate-segmenter": lambda **kwargs: None}):
+            self.assertTrue(segmentation_backend.backend_available(args["version"]))
+        with self.assertRaisesRegex(ValueError, "checkpoint SHA-256"):
+            E._model_identity({"version": "v2", "repo_id": "example/model", "checkpoint_sha256": "bad"})
 
     def test_sam_checkpoint_mismatch_rejects_even_identical_mask(self):
         self.sam_fixture()

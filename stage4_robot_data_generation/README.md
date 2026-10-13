@@ -5,7 +5,7 @@ Stage 3's verified robot trajectory and the human video in; randomized, photorea
 | Step | What it does | Runs on |
 |---|---|---|
 | 1. `randomize` | Draws new initial object and robot states, adapts the trajectory to each one, and keeps only the episodes that pass the feasibility checks and the physics replay. | CPU |
-| 2. `plate` | Removes the demonstrator's hands and the manipulated objects from the human video with SAM 3 and [VOID](https://github.com/netflix/void-model), giving a clean background plate. | GPU |
+| 2. `plate` | Removes the demonstrator's hands and the manipulated objects from the human video with SAM3-LiteText and either [VOID](https://github.com/netflix/void-model) or the optional LaMa image inpainter, giving a clean background plate. | GPU |
 | 3. `export` | Writes a Blender scene for every episode and camera view: geometry, materials, per-frame poses, cameras. | CPU |
 | 4. `render` | Renders the robot and the objects with Blender Cycles, from the calibrated ego camera and from any extra views such as wrist cameras. | GPU |
 | 5. `composite` | Pastes the renders onto the clean plate and encodes one video per view. | CPU |
@@ -13,8 +13,8 @@ Stage 3's verified robot trajectory and the human video in; randomized, photorea
 ## Requirements
 
 - **OS**: Linux, with an NVIDIA GPU and a recent driver.
-- **GPU memory**: **40 GB or more** for the `plate` step. VOID loads a 5B-parameter video model and peaked at 38 GB in our runs on an RTX A6000 (48 GB). The `render` step needs about 8 GB.
-- **Disk**: about 35 GB for model weights and 9 GB for the Python environment.
+- **GPU memory**: **40 GB or more** for the default VOID `plate` backend. VOID loads a 5B-parameter video model and peaked at 38 GB in our runs on an RTX A6000 (48 GB). The optional LaMa image backend uses far less memory. The `render` step needs about 8 GB.
+- **Disk**: about 35 GB for the default VOID model weights and 9 GB for the Python environment. The LaMa checkpoint is about 206 MB.
 - **Python**: 3.11 exactly. The Blender wheel only exists for 3.11.
 - **Blender**: you do **not** need to install Blender. It comes as the `bpy` Python package and is installed by `setup.sh`.
 
@@ -27,37 +27,48 @@ cd stage4_robot_data_generation
 bash setup.sh
 ```
 
-`setup.sh` does three things:
+With the default `DEXAGENT_STAGE4_INPAINT_BACKEND=void`, `setup.sh` does three things:
 
 1. clones VOID into `third_party/void-model`,
-2. installs the Python packages (VOID's pinned requirements, SAM 3, MuJoCo, Blender),
+2. installs the Python packages (VOID's pinned requirements, Transformers, MuJoCo, Blender),
 3. downloads the model weights listed below into the Hugging Face cache.
+
+The repository-level [`dexagent.yaml`](../dexagent.yaml) selects the local LaMa checkpoint for the automated pipeline because VOID and CogVideoX weights are not present on this machine. Stage 4 preflight checks the configured LaMa file and its hash before running. Standalone Stage 4 configs keep `void` as their default and need the weights listed below.
+
+For the LaMa alternative, set `DEXAGENT_STAGE4_INPAINT_BACKEND=lama` before running setup. This skips the VOID checkout and 31 GB of VOID/CogVideoX weights, keeps the existing PyTorch installation, and downloads the 206 MB LaMa checkpoint. Set `DEXAGENT_LAMA_MODEL` to save it at a chosen path; the setup output gives the matching `stage4.json` entry. The LaMa mode expects a Python environment that already has PyTorch installed.
 
 ### Models to download in advance
 
-All three are needed by the `plate` step. `setup.sh` downloads them; the table is here so you can fetch them yourself on a machine without internet access, or check that they are in place.
+The default `inpaint.backend: "void"` uses the VOID and CogVideoX weights. To avoid those large weights, set `inpaint.backend: "lama"` and provide the LaMa checkpoint path; this uses per-frame image inpainting with the static-camera temporal plate. SAM3-LiteText is used by either backend.
 
 | Model | Hugging Face repo | File | Size | Access |
 |---|---|---|---|---|
 | VOID pass 1 | [`netflix/void-model`](https://huggingface.co/netflix/void-model) | `void_pass1.safetensors` | 11 GB | open |
 | CogVideoX-Fun (VOID's base model) | [`alibaba-pai/CogVideoX-Fun-V1.5-5b-InP`](https://huggingface.co/alibaba-pai/CogVideoX-Fun-V1.5-5b-InP) | whole repo | 20 GB | open |
-| SAM 3.1 | [`facebook/sam3.1`](https://huggingface.co/facebook/sam3.1) | `sam3.1_multiplex.pt`, `config.json` | 3.5 GB | **gated** |
-
-SAM 3.1 is gated. Request access on its model page, then log in before running `setup.sh`:
-
-```bash
-hf auth login
-```
+| SAM3-LiteText-S0 | [`yonigozlan/sam3-litetext-s0`](https://huggingface.co/yonigozlan/sam3-litetext-s0) | model snapshot | about 2.1 GB | open |
+| LaMa (alternative to VOID + CogVideoX) | [`simple-lama-inpainting`](https://github.com/enesmsahin/simple-lama-inpainting) release | `big-lama.pt` | 206 MB | open |
 
 To download by hand:
 
 ```bash
 hf download netflix/void-model void_pass1.safetensors
 hf download alibaba-pai/CogVideoX-Fun-V1.5-5b-InP
-hf download facebook/sam3.1 sam3.1_multiplex.pt config.json
+hf download yonigozlan/sam3-litetext-s0
+curl -fL https://github.com/enesmsahin/simple-lama-inpainting/releases/download/v0.1.0/big-lama.pt -o big-lama.pt
 ```
 
-The weights go to the Hugging Face cache (`$HF_HOME`, default `~/.cache/huggingface`). Set `HF_HOME` if you want them somewhere else. If VOID is cloned elsewhere, point `VOID_DIR` at it.
+Set `DEXAGENT_SAM3_LITETEXT_PATH` to a local SAM3-LiteText snapshot to reuse it instead of downloading it. VOID and CogVideoX weights go to the Hugging Face cache (`$HF_HOME`, default `~/.cache/huggingface`). If VOID is cloned elsewhere, point `VOID_DIR` at it.
+
+For LaMa, add these entries to `inpaint` in `stage4.json`; `DEXAGENT_LAMA_MODEL` can supply the checkpoint path instead:
+
+```json
+{
+  "inpaint": {
+    "backend": "lama",
+    "lama_model": "/path/to/big-lama.pt"
+  }
+}
+```
 
 ## Inputs
 
@@ -107,9 +118,13 @@ Everything is written under `output_dir` (default `outputs/` next to the config;
 ```
 outputs/
 ├── randomize.json               every layout that was tried, and why rejected ones failed
+├── run_report.json              overall verdict and links to all five step reports
+├── reports/                      current step reports, review records, and archived history
+│   ├── history/<invocation>/     prior reports saved before each invocation updates them
+│   └── reviews/                  explicit plate and render approvals
 ├── plate/
 │   ├── plate.png                the clean background
-│   └── preview.mp4              human video with the erase mask | VOID result
+│   └── preview.mp4              human video with the erase mask | inpainted result
 ├── samples/
 │   ├── original/                the un-randomized trajectory
 │   │   ├── ego.mp4, wrist_left.mp4, wrist_right.mp4
@@ -122,6 +137,21 @@ outputs/
 │   └── ...
 └── render/                      Blender scenes and raw frames (safe to delete afterwards)
 ```
+
+Each step has a report before work starts, then updates it with checks, metrics, artifacts, input hashes, and elapsed time. A required check failure stops later steps and records them as blocked. The render check decodes every output frame and validates every chunk exit code and log; the composite check validates ffprobe metadata, full video decoding, and the exact trajectory-frame stride. Render process concurrency defaults to one; `chunks` only partitions frames within a view.
+
+### Reusing reports and reviewing release artifacts
+
+`--steps` reuses a prior step only when its effective configuration, input identity, and current artifact hashes still match. Reports without artifact hashes are not trusted. The dependency graph is `randomize + plate → export → render → composite`; `composite` also depends directly on `randomize` and `plate`. Changing configuration, inputs, or a step's artifacts makes the affected steps stale. Rerunning an upstream step invalidates every downstream report, so rerun the affected steps in dependency order. Before a report is replaced, the previous report is archived under `reports/history/<invocation>/`.
+
+For `evaluation_profile: "dataset_release"`, inspect the plate and render contact sheets (`plate/contact_sheet.jpg` and `render/contact_sheet.jpg`) as well as the full outputs: `plate/plate.png`, `plate/preview.mp4`, and every rendered view under `render/<sample>/<view>/frames/`. The reports list the artifacts and their current `artifact_sha256`; use that hash to record an explicit human review:
+
+```bash
+python run_stage4.py task/stage4.json --approve-review plate --reviewer NAME --review-artifact-sha256 HASH [--review-note "review note"]
+python run_stage4.py task/stage4.json --approve-review render --reviewer NAME --review-artifact-sha256 HASH [--review-note "review note"]
+```
+
+There is no automatic approval. Each review is bound to the step attempt, configuration/input identity, and artifact hash; rerunning that step invalidates its approval. `release_ready` becomes true when all five steps pass their required checks and both reviews are explicit. Optional checks may remain as visible warnings. If Stage 4 is run later for review, check the current `runs/<name>/stage3/stage4_task/outputs/run_report.json`: the top-level `run_summary.json` is a snapshot from the earlier pipeline run and does not update after a later review.
 
 ## Runtime
 
@@ -140,4 +170,4 @@ The whole example, three randomized episodes plus the original, ran in 43 minute
 
 ## Third-party components
 
-Stage 4 builds on [VOID](https://github.com/netflix/void-model) with its [CogVideoX-Fun](https://github.com/aigc-apps/CogVideoX-Fun) base model for video object removal, [SAM 3](https://github.com/facebookresearch/sam3) for text-prompted masks, [MuJoCo](https://mujoco.org) for kinematics, and [Blender](https://www.blender.org) Cycles for rendering. Each has its own license and terms; please check them before use.
+Stage 4 uses [VOID](https://github.com/netflix/void-model) with [CogVideoX-Fun](https://github.com/aigc-apps/CogVideoX-Fun) for temporal video removal by default, or [LaMa](https://github.com/advimman/lama) for single-frame image inpainting on a static-camera plate. [SAM3-LiteText](https://huggingface.co/yonigozlan/sam3-litetext-s0) generates text-prompted masks, MuJoCo performs kinematics and physics replay, and Blender Cycles renders the output. Each component has its own license and terms; please check them before use.

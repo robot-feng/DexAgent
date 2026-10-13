@@ -432,7 +432,14 @@ def run(cfg, log=print):
         np.savez_compressed(out / "transforms.npz", T=T)
         common = {"geoms": geoms, "table": table, "width": W, "height": H, "fps": fps,
                   "n_frames": n, "samples": int(rc["samples"]), "lighting": light,
-                  "fill_pos": ego["pos"], "transforms": str(out / "transforms.npz")}
+                  "fill_pos": ego["pos"], "transforms": str(out / "transforms.npz"),
+                  "trajectory_mapping": {
+                      "source_frames": int(len(z["qpos"])), "source_fps": float(z["fps"]),
+                      "render_stride": stride, "render_frames": n, "render_fps": float(fps),
+                      "source_frame_for_render_frame": "render_index * render_stride",
+                      "first_source_frame": 0, "last_source_frame": (n - 1) * stride,
+                      "human_video_time_aligned": False,
+                  }}
         for view in views:
             vdir = out / view
             vdir.mkdir(exist_ok=True)

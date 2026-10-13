@@ -87,14 +87,17 @@ def _sam_arguments(args):
         v = args[name]
         if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v) or not low <= v <= high:
             raise ValueError(f"invalid SAM replay {name}")
-    if not isinstance(args["instances"], bool) or args["version"] != "sam3":
-        raise ValueError("unsupported SAM replay version or instances flag")
+    if (not isinstance(args["instances"], bool) or not isinstance(args["version"], str)
+            or not args["version"].strip() or len(args["version"]) > 200):
+        raise ValueError("unsupported segmentation replay backend or instances flag")
     return copy.deepcopy(args)
 
 
 def _model_identity(value):
-    if not isinstance(value, dict) or value.get("version") != "sam3" or value.get("repo_id") != "facebook/sam3" or not re.fullmatch(r"[0-9a-f]{64}", str(value.get("checkpoint_sha256", ""))):
-        raise ValueError("SAM output lacks a supported checkpoint identity")
+    if (not isinstance(value, dict) or not isinstance(value.get("version"), str) or not value["version"].strip()
+            or not isinstance(value.get("repo_id"), str) or not value["repo_id"].strip()
+            or not re.fullmatch(r"[0-9a-f]{64}", str(value.get("checkpoint_sha256", "")))):
+        raise ValueError("segmentation output lacks version, model repository, or checkpoint SHA-256 identity")
     return {k: value[k] for k in ("version", "repo_id", "checkpoint_sha256")}
 
 
@@ -230,7 +233,7 @@ class ReferenceEvidence:
             out = _path(args["out_dir"], self.ws)
             sam_args = {"prompts": args["prompts"], "min_score": args.get("min_score", .3),
                         "downscale": args.get("downscale", 1.), "instances": args.get("instances", False),
-                        "version": args.get("version", "sam3")}
+                        "version": args.get("version", "sam3-litetext-s0")}
             def mask_recipe(frame, binding, output):
                 try:
                     return {"tool": name, "frame": {"recipe": _frame_recipe(binding["recipe"]), "sha256": frame["sha256"]},
@@ -413,6 +416,9 @@ class _Replay:
         if file_digest(frame) != frame_spec["sha256"]:
             raise ValueError("independently decoded source pixels differ from the SAM input frame")
         args = _sam_arguments(recipe["args"])
+        from tool_library.skills.segmentation_backend import backend_available
+        if not backend_available(args["version"]):
+            raise ValueError(f"segmentation backend {args['version']!r} is not installed for independent replay")
         model_identity = _model_identity(recipe["model_identity"])
         output = recipe["output"]
         if not isinstance(output, dict):

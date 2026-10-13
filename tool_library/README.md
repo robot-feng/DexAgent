@@ -104,4 +104,4 @@ python -m agent.toolcall scene_semantic_schema_check @args.json
 python -m tool_library.verifiers.penetration_check scene.xml trajectory.npz --baseline reference.npz
 ```
 
-Tools that wrap a neural model (SAM 3, SAM 2, depth, HaMeR, SAM 3D, VOID) or a GPU optimizer (BODex, DexGraspNet) import it inside the function and name the package when it is missing; their requirements are listed in their metadata.
+Tools that wrap a neural model (SAM3-LiteText, SAM 2, depth, HaMeR, SAM 3D, VOID) or a GPU optimizer (BODex, DexGraspNet) import it inside the function and name the package when it is missing; their requirements are listed in their metadata.

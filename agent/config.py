@@ -12,13 +12,27 @@ DEFAULT_YAML = REPO / "dexagent.yaml"
 
 PATH_KEYS = {("inputs", "video"), ("inputs", "setup"), ("inputs", "library"), ("inputs", "egodex_hdf5"),
              ("agent", "transport_dir"), ("run", "output_dir"), ("examples", "dir"),
-             ("models", "hf_home"), ("models", "void_dir"), ("models", "hamer_root"),
+             ("models", "hf_home"), ("models", "sam3_litetext_dir"), ("models", "void_dir"), ("models", "hamer_root"),
              ("models", "sam3d_repo"), ("models", "articraft_dir"), ("models", "bodex_dir"), ("models", "dexgraspnet_dir"),
              ("models", "hand_urdf"), ("models", "video_depth_anything_dir"), ("models", "video_depth_anything_ckpt"),
-             ("models", "sam2_checkpoint"), ("models", "spider_dir"), ("camera", "extrinsics", "matrix_file")}
+             ("models", "sam2_checkpoint"), ("models", "spider_dir"), ("models", "lama_checkpoint"),
+             ("camera", "extrinsics", "matrix_file")}
 
 
 SEMANTICS = "scene_semantics.json"
+PROFILES = {"smoke", "pipeline_eval", "dataset_release"}
+
+
+def apply_profile(cfg: dict, profile: str | None = None) -> dict:
+    """Resolve evaluation profile defaults without changing the caller's config file."""
+    evaluation = cfg.setdefault("evaluation", {})
+    selected = profile or evaluation.get("profile") or "pipeline_eval"
+    if selected not in PROFILES:
+        raise ValueError(f"unknown evaluation profile {selected!r}; choose from {sorted(PROFILES)}")
+    evaluation["profile"] = selected
+    examples = cfg.setdefault("examples", {})
+    examples["reuse"] = selected == "smoke"
+    return cfg
 
 
 def semantics_file(stage1_dir) -> Path:

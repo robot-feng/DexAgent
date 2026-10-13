@@ -24,7 +24,7 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 sys.path.insert(0, str(REPO))
 
-from agent.config import load_config, run_dir, semantics_file  # noqa: E402
+from agent.config import apply_profile, load_config, run_dir, semantics_file  # noqa: E402
 
 TOOL_CATEGORIES = ["Grasp & Poses", "Grasp Stress Tests", "Trajectory & Execution", "Task & Rollout Gates", "Episode Audits",
                    "Scene Runtime & Rendering", "Measurements", "Perception & Grounding", "Scene Assertions"]
@@ -352,7 +352,9 @@ def prepare_attempt(public: Path, resume_attempt: str | Path | None = None):
             raise ValueError(f"candidate harness metadata must be a regular file: {name}")
     # Never reopen a prior finished result. These disk claims are rejection-only:
     # no value from them can authorize acceptance or restore an executor receipt.
-    for path in (ws / "run.json", public / "run.json"):
+    # The pipeline archives public run.json before starting a fresh attempt.
+    # Archived success remains rejection evidence; it can never authorize acceptance.
+    for path in (ws / "run.json", public / "run.json", *public.glob("reports/attempts/*/prior_run.json")):
         if not path.is_file():
             continue
         try:
@@ -466,10 +468,11 @@ def main(argv=None):
     ap.add_argument("config", nargs="?", default=os.environ.get("DEXAGENT_CONFIG", str(REPO / "dexagent.yaml")))
     ap.add_argument("--video"), ap.add_argument("--semantic"), ap.add_argument("--recon"), ap.add_argument("--name")
     ap.add_argument("--max-rounds", type=int)
+    ap.add_argument("--profile", choices=("smoke", "pipeline_eval", "dataset_release"))
     ap.add_argument("--resume-attempt", type=Path, help="resume an interrupted unverified direct child of this run's stage3/.candidates directory")
     ap.add_argument("--llm", default="config", help="config (the YAML's agent block) or mock:<turns.json>")
     a = ap.parse_args(argv)
-    cfg = load_config(a.config)
+    cfg = apply_profile(load_config(a.config), a.profile)
     cfg["_executor_receipts"] = {}
     if a.video:
         cfg["inputs"]["video"] = str(Path(a.video).resolve())
@@ -525,7 +528,7 @@ def main(argv=None):
     # downstream of a cross-stage repair the inputs changed: read why, never reuse an example
     from agent import repair
     note = repair.take_note(public) if repair.has_note(public) else ""
-    if not note and not recovery:
+    if not note and not recovery and (cfg.get("examples") or {}).get("reuse", True):
         # our own sample: an example's recorded twin episode is the answer first, else its trajectory (shifted by the
         # positional difference of its assets fitted to this video)
         from agent.reuse import stage3_example_trajectory, stage3_twin_episode

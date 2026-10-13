@@ -249,8 +249,17 @@ class Console:
 def summary_table(results: list[dict]):
     """The closing table of a multi-stage run: one row per stage."""
     rich = _rich()
+    def result_status(record):
+        if record.get("blocked"):
+            return "BLOCKED"
+        if record.get("skipped"):
+            return "SKIPPED"
+        status = record.get("report_status")
+        return {"passed": "PASS", "warning": "WARN", "reused": "REUSED", "failed": "FAIL", "blocked": "BLOCKED"}.get(
+            status, "PASS" if record.get("finished") else "FAIL")
+
     rows = [(STAGES.get(r["stage"], (r["stage"], r["stage"]))[0], STAGES.get(r["stage"], ("", r["stage"]))[1],
-             "PASS" if r.get("finished") else ("SKIPPED" if r.get("skipped") else "FAIL"), str(r.get("rounds", "")), str(r.get("tool_calls", "")),
+             result_status(r), str(r.get("rounds", "")), str(r.get("tool_calls", "")),
              str(len(r.get("new_tools") or [])), f"{(r.get('elapsed_s') or 0) / 60:.1f} min", str(r.get("workspace", ""))) for r in results]
     if rich:
         from rich.table import Table
@@ -258,7 +267,8 @@ def summary_table(results: list[dict]):
         for c in ("stage", "name", "result", "rounds", "tool calls", "new tools", "time", "workspace"):
             t.add_column(c, overflow="fold")
         for row in rows:
-            t.add_row(*[("[green]" + v + "[/green]" if v == "PASS" else "[red]" + v + "[/red]" if v == "FAIL" else v) for v in row])
+            color = "green" if row[2] == "PASS" else "red" if row[2] == "FAIL" else "yellow" if row[2] in {"WARN", "BLOCKED"} else "cyan"
+            t.add_row(*[v if i != 2 else f"[{color}]{v}[/{color}]" for i, v in enumerate(row)])
         rich.print(t)
     else:
         print("\nstage  name                      result   rounds  calls  new  time")

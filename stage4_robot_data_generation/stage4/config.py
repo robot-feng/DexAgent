@@ -56,9 +56,12 @@ DEFAULTS = {
     "cameras": {"width": 640, "height": 480, "views": {}},
     "table": None,
     "inpaint": {
+        "backend": "void",           # void (video) or lama (single-frame alternative)
+        "segmentation_backend": "sam3-litetext-s0",  # registered dexagent.segmentation_backends entry point is also supported
+        "lama_model": None,           # TorchScript checkpoint required when backend=lama
         "erase_prompts": ["hand", "arm"],
         "background_prompt": "An empty table surface with nothing on it, static background.",
-        "max_frames": 85,            # frames sampled across the video (one VOID window)
+        "max_frames": 85,            # frames sampled across the static-camera video
         "min_score": 0.3,
         "mask_dilate_px": 11,
         "mask_scale": 1.15,
@@ -66,8 +69,8 @@ DEFAULTS = {
         "ring_diff_threshold": 18,
         "color_drift_tol": 4.0,      # frames whose color is further off are not used
         "gpu_memory_mode": "model_full_load",
-        "masks_dir": None,           # bring your own erase masks (skips SAM 3)
-        "clean_plate": None,         # bring your own clean plate (skips SAM 3 and VOID)
+        "masks_dir": None,           # bring your own erase masks (skips SAM3-LiteText)
+        "clean_plate": None,         # bring your own clean plate (skips mask generation and VOID)
     },
     "render": {
         "stride": 1,

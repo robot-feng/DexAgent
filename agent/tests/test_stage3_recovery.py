@@ -103,6 +103,13 @@ class RecoveryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'accepted/delivery'):
             S3.prepare_attempt(self.public, self.ws)
 
+    def test_archived_pipeline_success_still_prevents_finished_candidate_recovery(self):
+        archived = self.public / 'reports/attempts/current/prior_run.json'
+        archived.parent.mkdir(parents=True)
+        archived.write_text(json.dumps({'finished': True, 'workspace': str(self.ws)}))
+        with self.assertRaisesRegex(ValueError, 'finished'):
+            S3.prepare_attempt(self.public, self.ws)
+
     def test_metadata_symlink_cannot_overwrite_external_input(self):
         target = self.root / 'protected.json'; target.write_text('unchanged')
         (self.ws / 'input_contract.json').unlink()

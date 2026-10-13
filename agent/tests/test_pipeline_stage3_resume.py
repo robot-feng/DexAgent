@@ -23,6 +23,11 @@ class PipelineResumeTest(unittest.TestCase):
                     "inputs": {"video": str(self.root / "video.mp4")}, "repair": {"max_loops_per_stage": 1},
                     "examples": {"reuse": False, "save_assets": False}}
 
+    @staticmethod
+    def passed_preflight(cfg, stages, profile):
+        return {"schema": "dexagent.step_report.v1", "run": cfg["run"]["name"], "profile": profile,
+                "stage": "preflight", "status": "passed", "checks": [], "inputs": {}}
+
     def test_forwarded_only_to_stage3_including_after_stage2_repair(self):
         seen = []
         def stage(name, config_path, extra, cfg):
@@ -30,10 +35,16 @@ class PipelineResumeTest(unittest.TestCase):
             workspace = self.out / name
             workspace.mkdir(exist_ok=True)
             if [name for name, _ in seen].count("stage3") == 1 and name == "stage3":
+                record = {"verdict": {"ok": False, "reports": {"fixture": {"ok": False}}}}
+                (workspace / "run.json").write_text(json.dumps(record))
                 return {"stage": name, "workspace": str(workspace), "finished": False,
-                        "failure": "generic changed reconstruction", "upstream": {"stage": "stage2", "evidence": "measured mismatch"}}
-            return {"stage": name, "workspace": str(workspace), "finished": True}
-        with patch.object(D, "load_config", return_value=self.cfg), patch.object(D, "run_agent_stage", side_effect=stage), \
+                        "run_record": record, "failure": "generic changed reconstruction",
+                        "upstream": {"stage": "stage2", "evidence": "measured mismatch"}}
+            record = {"verdict": {"ok": True, "reports": {"fixture": {"ok": True}}}}
+            (workspace / "run.json").write_text(json.dumps(record))
+            return {"stage": name, "workspace": str(workspace), "finished": True, "run_record": record}
+        with patch.object(D, "load_config", return_value=self.cfg), patch.object(D, "preflight", self.passed_preflight), \
+                patch.object(D, "run_agent_stage", side_effect=stage), \
                 patch("agent.reuse.save_run", return_value=None), patch.object(D, "summary_table"):
             result = D.main(["config.yaml", "--from", "stage2", "--to", "stage3", "--resume-stage3-attempt", str(self.attempt),
                              "--max-rounds", "7", "--llm", "mock:turns.json", "--video", "replacement.mp4", "--yes"])
@@ -54,8 +65,13 @@ class PipelineResumeTest(unittest.TestCase):
     def test_no_resume_flag_keeps_fresh_pipeline_behavior(self):
         def stage(name, config_path, extra, cfg):
             self.assertNotIn("--resume-attempt", extra)
-            return {"stage": name, "workspace": str(self.out / name), "finished": True}
-        with patch.object(D, "load_config", return_value=self.cfg), patch.object(D, "run_agent_stage", side_effect=stage), \
+            workspace = self.out / name
+            workspace.mkdir(parents=True, exist_ok=True)
+            record = {"verdict": {"ok": True, "reports": {"fixture": {"ok": True}}}}
+            (workspace / "run.json").write_text(json.dumps(record))
+            return {"stage": name, "workspace": str(workspace), "finished": True, "run_record": record}
+        with patch.object(D, "load_config", return_value=self.cfg), patch.object(D, "preflight", self.passed_preflight), \
+                patch.object(D, "run_agent_stage", side_effect=stage), \
                 patch("agent.reuse.save_run", return_value=None), patch.object(D, "summary_table"):
             result = D.main(["config.yaml", "--from", "stage3", "--to", "stage3", "--yes"])
         self.assertEqual(result, 0)
@@ -63,8 +79,10 @@ class PipelineResumeTest(unittest.TestCase):
     def test_cooperative_stop_ends_pipeline_without_upstream_repair(self):
         stopped = {"stage": "stage3", "workspace": str(self.out / "stage3"), "finished": False,
                    "stopped": True, "stop_reason": "cooperative_search_checkpoint",
+                   "run_record": {"verdict": {"ok": False, "reports": {"fixture": {"ok": False}}}},
                    "search_checkpoint": {"checkpoint_json": "saved.json"}, "failure": "administrative stop"}
-        with patch.object(D, "load_config", return_value=self.cfg), patch.object(D, "run_agent_stage", return_value=stopped) as stage, \
+        with patch.object(D, "load_config", return_value=self.cfg), patch.object(D, "preflight", self.passed_preflight), \
+                patch.object(D, "run_agent_stage", return_value=stopped) as stage, \
                 patch.object(D, "run_stage4") as stage4, patch.object(D, "summary_table"):
             result = D.main(["config.yaml", "--from", "stage3", "--resume-stage3-attempt", str(self.attempt), "--yes"])
         self.assertEqual(result, 1)

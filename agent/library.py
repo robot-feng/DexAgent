@@ -98,6 +98,8 @@ CONFIG_ARGS = {
 }
 TOOL_CONFIG_ARGS = {"estimate_depth": {"checkpoint": ("models", "video_depth_anything_ckpt")},
                     "track_objects": {"checkpoint": ("models", "sam2_checkpoint")},
+                    "detect_objects": {"version": ("models", "segmentation_backend")},
+                    "segment_with_text_prompts": {"version": ("models", "segmentation_backend")},
                     "optimize_grasp_pose": {"launcher": ("compute", "launcher"), "workers": ("compute", "workers")},
                     "sampling_mpc_refinement": {"workers": ("compute", "workers")},
                     "reinforcement_learning_tracking": {"workers": ("compute", "workers")}}
@@ -241,7 +243,10 @@ def call_tool(lib: Path, index: dict, name: str, args: dict, cfg: dict | None = 
     args = {**filled, **{k: v for k, v in args.items() if not (v is None and k in filled)}}
     hf = ((cfg or {}).get("models") or {}).get("hf_home")
     if hf:
-        os.environ.setdefault("HF_HOME", str(hf))
+        os.environ["HF_HOME"] = str(hf)
+    sam3_litetext = ((cfg or {}).get("models") or {}).get("sam3_litetext_dir")
+    if sam3_litetext:
+        os.environ["DEXAGENT_SAM3_LITETEXT_PATH"] = str(sam3_litetext)
     python = interpreter_for(cfg, tool)
     try:
         stress = tool.get("type") == "verifier" and tool.get("category") == "Grasp Stress Tests"

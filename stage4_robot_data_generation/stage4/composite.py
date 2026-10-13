@@ -128,6 +128,7 @@ def encode(view_dirs, out_dir, crf, references=()):
 
 
 def run(cfg, log=print):
+    import json
     from .export import current_samples, stage_views
     crf = int(cfg["render"]["crf"])
     views = stage_views(cfg)
@@ -145,5 +146,19 @@ def run(cfg, log=print):
             if cfg.get("sim_video"):
                 refs.append(("simulation", cfg.path("sim_video")))
         r = encode({v: rdir / v for v in views}, sdir, crf, refs)
+        scene = json.loads((rdir / views[0] / "scene.json").read_text())
+        record = {
+            "schema": "dexagent.composite.v1",
+            "sample": sdir.name,
+            "videos": r["videos"],
+            "preview": r["preview"],
+            "compare": r["compare"],
+            "trajectory_mapping": scene.get("trajectory_mapping", {
+                "render_frames": r["n_frames"], "render_fps": r["fps"],
+                "source_frame_for_render_frame": "unknown", "human_video_time_aligned": False,
+            }),
+            "reference_alignment": "visual_resampling_only; not time synchronized" if refs else None,
+        }
+        (sdir / "composite.json").write_text(json.dumps(record, indent=1, allow_nan=False))
         log(f"[composite] {sdir.name}: {r['n_frames']} frames @ {r['fps']:g} fps -> "
             f"{sdir}/{{{','.join(views)},preview}}.mp4")

@@ -10653,8 +10653,8 @@
    "title": "Detect objects",
    "type": "skill",
    "category": "Perception & Grounding",
-   "summary": "SAM 3 text-prompted detection on a few frames: the best box per keyword and frame, plus every instance found.",
-   "description": "Prompts SAM 3 with each keyword on a sparse sample of frames and records, per frame and keyword, the highest-scoring box and the full list of instances with scores. Two uses: it validates that the names chosen for the task objects are findable at all, and it yields the seed boxes that tracking starts from. The number of confident instances per frame is a count instrument (four 'drawer' boxes is a four-drawer cabinet). Frames should be spread over the clip, because a part that opens is only visible while it is open. Without frame_indices it scans a fifth of the frames in frames_dir and never fewer than 8 (all of them when the folder holds 8 or fewer), evenly spaced from the first frame to the last. The scan records which frames it read (frame_indices, frame_selection).",
+   "summary": "SAM3-LiteText text-prompted detection on a few frames: the best box per keyword and frame, plus every instance found.",
+   "description": "Prompts SAM3-LiteText with each keyword on a sparse sample of frames and records, per frame and keyword, the highest-scoring box and the full list of instances with scores. Two uses: it validates that the names chosen for the task objects are findable at all, and it yields the seed boxes that tracking starts from. The number of confident instances per frame is a count instrument (four 'drawer' boxes is a four-drawer cabinet). Frames should be spread over the clip, because a part that opens is only visible while it is open. Without frame_indices it scans a fifth of the frames in frames_dir and never fewer than 8 (all of them when the folder holds 8 or fewer), evenly spaced from the first frame to the last. The scan records which frames it read (frame_indices, frame_selection).",
    "inputs": [
     {
      "name": "frames_dir",
@@ -10686,7 +10686,7 @@
     {
      "name": "version",
      "type": "str",
-     "description": "Image checkpoint version: 'sam3' (default). SAM 3.1 multiplex video checkpoints are not compatible with this image tool.",
+     "description": "Image checkpoint version: 'sam3-litetext-s0' (default).",
      "optional": true
     }
    ],
@@ -10700,12 +10700,13 @@
    "status": "tested",
    "entrypoint": "detect_objects",
    "requirements": [
-    "sam3 (pip install git+https://github.com/facebookresearch/sam3.git)",
+    "transformers>=5.6,<5.14",
+    "accelerate>=1.1",
     "torch",
-    "Hugging Face access to facebook/sam3 (or its already cached checkpoint)"
+    "Pillow"
    ],
    "tags": [
-    "SAM 3",
+    "SAM3-LiteText",
     "detection",
     "open vocabulary"
    ],
@@ -19885,8 +19886,8 @@
    "title": "Segment with text prompts",
    "type": "skill",
    "category": "Perception & Grounding",
-   "summary": "SAM 3 on every frame: the union of all instances of the given prompts as one binary mask per frame, and optionally one mask per instance.",
-   "description": "For each frame, each prompt is segmented with SAM 3 and all instances above the score floor are merged into a single mask (255 = matched). This is the mask a video eraser needs: name the hands and arms and every object the simulation re-creates, and the result marks exactly the pixels to remove. Frames can be downscaled for speed; masks are returned at full resolution. With `instances` each instance above the floor is also written as its own mask (instances/<prompt>/frame%05d_<k>.png, k by descending score) with its score, box and area in meta.json: several same-coloured parts (identical bricks) get one mask each without a detect-then-track detour. Instance numbers are per frame (ranked by score), not identities tracked through the video: track_objects does that.",
+   "summary": "SAM3-LiteText on every frame: the union of all instances of the given prompts as one binary mask per frame, and optionally one mask per instance.",
+   "description": "For each frame, each prompt is segmented with SAM3-LiteText and all instances above the score floor are merged into a single mask (255 = matched). This is the mask a video eraser needs: name the hands and arms and every object the simulation re-creates, and the result marks exactly the pixels to remove. Frames can be downscaled for speed; masks are returned at full resolution. With `instances` each instance above the floor is also written as its own mask (instances/<prompt>/frame%05d_<k>.png, k by descending score) with its score, box and area in meta.json: several same-coloured parts (identical bricks) get one mask each without a detect-then-track detour. Instance numbers are per frame (ranked by score), not identities tracked through the video: track_objects does that.",
    "inputs": [
     {
      "name": "frames_dir",
@@ -19924,7 +19925,7 @@
     {
      "name": "version",
      "type": "str",
-     "description": "Image checkpoint version: 'sam3' (default). SAM 3.1 multiplex video checkpoints are not supported by this image tool.",
+     "description": "Image checkpoint version: 'sam3-litetext-s0' (default).",
      "optional": true
     }
    ],
@@ -19938,12 +19939,13 @@
    "status": "tested",
    "entrypoint": "segment_with_text_prompts",
    "requirements": [
-    "sam3 (pip install git+https://github.com/facebookresearch/sam3.git)",
+    "transformers>=5.6,<5.14",
+    "accelerate>=1.1",
     "torch",
-    "Hugging Face access to facebook/sam3 (or its already cached checkpoint)"
+    "Pillow"
    ],
    "tags": [
-    "SAM 3",
+    "SAM3-LiteText",
     "segmentation",
     "masks",
     "erase"
