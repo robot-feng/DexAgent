@@ -10686,7 +10686,7 @@
     {
      "name": "version",
      "type": "str",
-     "description": "Image checkpoint version: 'sam3-litetext-s0' (default).",
+     "description": "Registered text-segmentation backend (default: sam3-litetext-s0).",
      "optional": true
     }
    ],
@@ -18565,7 +18565,7 @@
    "type": "skill",
    "category": "Scene Runtime & Rendering",
    "summary": "Renders one exported view (scene.json + transforms.npz) to RGBA frames with Blender Cycles, in parallel chunks, skipping frames already on disk.",
-   "description": "Builds the Blender scene once from the bundle (principled materials, textures, transmission for see-through geoms, a near-fade so a wrist lens does not dissolve its own hand, sun + fill + world light from the plate), keyframes every moving geom, and lets Blender's animation loop render the frame range on a transparent film. The frames are PNG RGBA f%05d.png, ready for composite_renders. Runs the bundled stage4 renderer as a subprocess in an interpreter that has bpy, so it can be split into chunks across GPUs.",
+   "description": "Builds the Blender scene once from the bundle (principled materials, textures, transmission for see-through geoms, a near-fade so a wrist lens does not dissolve its own hand, sun + fill + world light from the plate), keyframes every moving geom, and lets Blender's animation loop render the frame range on a transparent film. The frames are PNG RGBA f%05d.png, ready for composite_renders. Runs the bundled stage4 renderer through DEXAGENT_BLENDER (the standalone executable) or an interpreter with bpy, split into chunks across GPUs.",
    "inputs": [
     {
      "name": "view_dir",
@@ -18581,7 +18581,7 @@
     {
      "name": "python",
      "type": "str | None",
-     "description": "Interpreter with bpy installed (default: current).",
+     "description": "Interpreter with bpy when no standalone Blender is configured (default: current).",
      "optional": true
     },
     {
@@ -18607,7 +18607,7 @@
    "status": "tested",
    "entrypoint": "render_cycles",
    "requirements": [
-    "bpy (Blender as a Python module, 4.x)",
+    "Blender 5.0.1 executable (DEXAGENT_BLENDER), or bpy",
     "the stage4_robot_data_generation package"
    ],
    "tags": [
@@ -19925,7 +19925,7 @@
     {
      "name": "version",
      "type": "str",
-     "description": "Image checkpoint version: 'sam3-litetext-s0' (default).",
+     "description": "Registered text-segmentation backend (default: sam3-litetext-s0).",
      "optional": true
     }
    ],

@@ -201,6 +201,8 @@ def run_stage4(cfg: dict) -> dict:
         env["VOID_DIR"] = str(models["void_dir"])
     if models.get("hf_home"):                      # where SAM 3, VOID and CogVideoX weights are cached (as for the tools)
         env["HF_HOME"] = str(models["hf_home"])
+    if models.get("blender_executable"):
+        env["DEXAGENT_BLENDER"] = str(models["blender_executable"])
     if models.get("sam3_litetext_dir"):
         env["DEXAGENT_SAM3_LITETEXT_PATH"] = str(models["sam3_litetext_dir"])
     if models.get("lama_checkpoint"):
@@ -528,6 +530,8 @@ def apply_cli_runtime_options(cfg: dict, args) -> dict:
 def _main_impl(argv=None):
     import argparse
     ap = argparse.ArgumentParser(description="DexAgent end to end")
+    ap.add_argument("--backend-eval", choices=("rigid", "towel", "sharpa", "grasp"),
+                    help="evaluate the RoboSimStudio backend and its recorded artifacts")
     ap.add_argument("config", nargs="?", default=os.environ.get("DEXAGENT_CONFIG", str(REPO / "dexagent.yaml")))
     ap.add_argument("--from", dest="start", default="stage1", choices=ORDER)
     ap.add_argument("--to", dest="stop", default="stage4", choices=ORDER)
@@ -542,6 +546,9 @@ def _main_impl(argv=None):
     ap.add_argument("--confirm-stages", action="store_true", help="pause for confirmation between stages")
     a = ap.parse_args(argv)
     cfg = apply_profile(load_config(a.config), a.profile)
+    if a.backend_eval:
+        from run_robosimstudio import main as backend_main
+        return backend_main([a.backend_eval, "--config", str(cfg["_config_path"])])
     a.profile = cfg["evaluation"]["profile"]
     cfg = apply_cli_runtime_options(cfg, a)
     name = str(cfg["run"]["name"])
@@ -781,7 +788,7 @@ if __name__ == "__main__":
         if os.environ.get("DEXAGENT_ENV_SWITCHED") == "1" or os.environ.get("DEXAGENT_NO_ENV_SWITCH") == "1":
             return
         value_flags = {"--from", "--to", "--name", "--video", "--prompt", "--max-rounds", "--profile", "--llm",
-                       "--resume-stage3-attempt"}
+                       "--resume-stage3-attempt", "--backend-eval"}
         config = None
         skip = False
         for value in argv:

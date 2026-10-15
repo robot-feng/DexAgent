@@ -316,6 +316,8 @@ def build_scene(bpy, meta):
 
 
 def main():
+    if "--" in sys.argv:
+        sys.argv = [sys.argv[0], *sys.argv[sys.argv.index("--") + 1:]]
     view = Path(sys.argv[1])
     meta = json.loads((view / "scene.json").read_text())
     T = np.load(meta["transforms"])["T"]

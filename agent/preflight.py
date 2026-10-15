@@ -163,6 +163,15 @@ def preflight(cfg: dict, requested_stages: list[str], profile: str) -> dict:
             interpreter_results[name] = info
             required_modules = {"pipeline": ("numpy", "PyYAML"), "sam3": ("torch", "transformers", "accelerate"),
                                 "stage4": ("numpy", "mujoco", "opencv-python", "bpy", "scipy", "trimesh")}[name]
+            if name == "stage4" and info["versions"].get("bpy") is None:
+                blender = ((cfg.get("models") or {}).get("blender_executable")
+                           or os.environ.get("DEXAGENT_BLENDER") or shutil.which("blender"))
+                if blender and Path(blender).is_file() and os.access(blender, os.X_OK):
+                    probe = subprocess.run([str(blender), "--background", "--version"],
+                                           capture_output=True, text=True, timeout=30)
+                    if probe.returncode == 0 and probe.stdout.startswith("Blender "):
+                        required_modules = tuple(m for m in required_modules if m != "bpy")
+                        metrics["blender"] = {"executable": str(blender), "version": probe.stdout.splitlines()[0]}
             if name == "stage4" and segmentation_backend == "sam3-litetext-s0":
                 required_modules = (*required_modules, "torch", "transformers", "accelerate")
             if name == "stage4" and inpaint_backend == "lama":

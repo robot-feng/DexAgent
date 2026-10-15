@@ -38,6 +38,7 @@ HERE = Path(__file__).resolve().parent
 def render(cfg, log=print):
     """Render every view of every sample, a few chunk processes at a time."""
     from stage4.export import current_samples, stage_views
+    from stage4.render_launch import render_command
     rc = cfg["render"]
     chunks = int(rc["chunks"])
     parallel = int(rc.get("parallel", 1))
@@ -66,8 +67,7 @@ def render(cfg, log=print):
                 v, i = jobs.pop(0)
                 lf = open(v / f"render_{i}.log", "w")
                 try:
-                    p = subprocess.Popen([sys.executable, "-m", "stage4.render_cycles", str(v),
-                                      f"{i}/{chunks}"], cwd=HERE, stdout=lf,
+                    p = subprocess.Popen(render_command(v, f"{i}/{chunks}"), cwd=HERE, stdout=lf,
                                      stderr=subprocess.STDOUT, start_new_session=True)
                 except BaseException:
                     lf.close()

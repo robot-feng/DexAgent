@@ -244,6 +244,9 @@ def call_tool(lib: Path, index: dict, name: str, args: dict, cfg: dict | None = 
     hf = ((cfg or {}).get("models") or {}).get("hf_home")
     if hf:
         os.environ["HF_HOME"] = str(hf)
+    blender = ((cfg or {}).get("models") or {}).get("blender_executable")
+    if blender:
+        os.environ["DEXAGENT_BLENDER"] = str(blender)
     sam3_litetext = ((cfg or {}).get("models") or {}).get("sam3_litetext_dir")
     if sam3_litetext:
         os.environ["DEXAGENT_SAM3_LITETEXT_PATH"] = str(sam3_litetext)

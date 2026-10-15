@@ -12,7 +12,7 @@ DEFAULT_YAML = REPO / "dexagent.yaml"
 
 PATH_KEYS = {("inputs", "video"), ("inputs", "setup"), ("inputs", "library"), ("inputs", "egodex_hdf5"),
              ("agent", "transport_dir"), ("run", "output_dir"), ("examples", "dir"),
-             ("models", "hf_home"), ("models", "sam3_litetext_dir"), ("models", "void_dir"), ("models", "hamer_root"),
+             ("models", "hf_home"), ("models", "blender_executable"), ("models", "sam3_litetext_dir"), ("models", "void_dir"), ("models", "hamer_root"),
              ("models", "sam3d_repo"), ("models", "articraft_dir"), ("models", "bodex_dir"), ("models", "dexgraspnet_dir"),
              ("models", "hand_urdf"), ("models", "video_depth_anything_dir"), ("models", "video_depth_anything_ckpt"),
              ("models", "sam2_checkpoint"), ("models", "spider_dir"), ("models", "lama_checkpoint"),

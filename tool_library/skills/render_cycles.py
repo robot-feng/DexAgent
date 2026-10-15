@@ -13,13 +13,13 @@ TOOL = {
         "own hand, sun + fill + world light from the plate), keyframes every moving geom, and "
         "lets Blender's animation loop render the frame range on a transparent film. The frames "
         "are PNG RGBA f%05d.png, ready for composite_renders. Runs the bundled stage4 renderer "
-        "as a subprocess in an interpreter that has bpy, so it can be split into chunks across "
+        "through DEXAGENT_BLENDER (the standalone executable) or an interpreter with bpy, split into chunks across "
         "GPUs."
     ),
     "inputs": [
         {"name": "view_dir", "type": "path", "description": "A view folder written by export_blender_bundle."},
         {"name": "chunks", "type": "int", "description": "Parallel processes over the frame range (1)."},
-        {"name": "python", "type": "str | None", "description": "Interpreter with bpy installed (default: current)."},
+        {"name": "python", "type": "str | None", "description": "Interpreter with bpy when no standalone Blender is configured (default: current)."},
         {"name": "samples", "type": "int | None", "description": "Override Cycles samples in scene.json before rendering."},
         {"name": "env", "type": "dict | None", "description": "Extra environment, e.g. CUDA_VISIBLE_DEVICES per chunk as a list under 'gpus'."},
     ],
@@ -28,7 +28,7 @@ TOOL = {
     ],
     "status": "tested",
     "entrypoint": "render_cycles",
-    "requirements": ["bpy (Blender as a Python module, 4.x)", "the stage4_robot_data_generation package"],
+    "requirements": ["Blender 5.0.1 executable (DEXAGENT_BLENDER), or bpy", "the stage4_robot_data_generation package"],
     "tags": ["Blender", "Cycles", "photoreal", "render"],
     "used_in": ["Place Cup in Bowl", "Multi-Cup Grasping", "Place Toy in Drawer", "Giftbox Packing", "Knot the Rope",
                 "Battery Insertion", "Drawing and Wiping", "Computer Installation", "Open the Bottle", "Scissor Cutting",
@@ -47,6 +47,7 @@ from tool_library.common.stage4 import STAGE4_ROOT
 
 
 def render_cycles(view_dir, chunks=1, python=None, samples=None, env=None):
+    from stage4_robot_data_generation.stage4.render_launch import render_command
     view = Path(view_dir)
     meta_f = view / "scene.json"
     assert meta_f.exists(), f"{view} is not an exported view (no scene.json)"
@@ -65,7 +66,7 @@ def render_cycles(view_dir, chunks=1, python=None, samples=None, env=None):
             e["CUDA_VISIBLE_DEVICES"] = str(gpus[i % len(gpus)])
         log = view / f"render_{i}.log"
         logs.append(str(log))
-        cmd = [python or sys.executable, "-m", "stage4.render_cycles", str(view)] + ([f"{i}/{chunks}"] if chunks > 1 else [])
+        cmd = render_command(view, f"{i}/{chunks}" if chunks > 1 else None, python=python)
         procs.append(subprocess.Popen(cmd, cwd=STAGE4_ROOT, env=e, stdout=open(log, "w"), stderr=subprocess.STDOUT))
     rcs = [p.wait() for p in procs]
     frames = view / "frames"

@@ -1,4 +1,4 @@
-"""Small text-segmentation backend registry shared by perception and Stage 4.
+"""Internal text-segmentation registry shared by perception and Stage 4.
 
 Plugins implement ``segment(image, prompt)`` and expose ``model_identity`` with
 ``version``, ``repo_id`` and a SHA-256 ``checkpoint_sha256``. The returned

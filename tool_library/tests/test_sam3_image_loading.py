@@ -128,7 +128,7 @@ class SamLiteTextLoadingTests(unittest.TestCase):
                 return {"masks": masks, "scores": np.array([.9])}
 
         processor = Processor()
-        with patch("tool_library.skills.segmentation_backend.load_backend", return_value=processor) as load:
+        with patch("tool_library.common.segmentation_backend.load_backend", return_value=processor) as load:
             result = S.segment_with_text_prompts(frames, ["object"], self.root / "masks", instances=True)
         load.assert_called_once_with(D.SAM3_LITETEXT_VERSION, min_score=0.3)
         self.assertEqual(result["model_identity"], processor.model_identity)

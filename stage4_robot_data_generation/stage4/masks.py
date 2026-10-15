@@ -30,7 +30,7 @@ def main():
     repo = Path(__file__).resolve().parents[2]
     if str(repo) not in sys.path:
         sys.path.insert(0, str(repo))
-    from tool_library.skills.segmentation_backend import load_backend
+    from tool_library.common.segmentation_backend import load_backend
 
     processor = load_backend(backend_name, min_score=min_score)
     print(f"[masks] backend {backend_name}; prompts {prompts} on {len(files)} frames", flush=True)

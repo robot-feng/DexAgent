@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # One-time setup for DexAgent Stage 4 (robot data generation).
-# Run inside a fresh Python 3.11 environment:
+# Run inside the shared environment (Python 3.12 uses DEXAGENT_BLENDER):
 #
-#   conda create -y -n dexagent-stage4 python=3.11
-#   conda activate dexagent-stage4
+#   conda activate dexagent
+#   export DEXAGENT_BLENDER=/path/to/blender
 #   bash setup.sh
 #
 # Steps: (1) prepare the selected inpainting backend, (2) install Python packages, (3) download model weights.
@@ -14,7 +14,10 @@ cd "$HERE"
 
 python - <<'PY'
 import sys
-assert sys.version_info[:2] == (3, 11), f"Python 3.11 is required (bpy wheel), found {sys.version.split()[0]}"
+assert sys.version_info[:2] in {(3, 11), (3, 12)}, f"Python 3.11 or 3.12 required, found {sys.version.split()[0]}"
+if sys.version_info[:2] == (3, 12):
+    import os, shutil
+    assert os.environ.get("DEXAGENT_BLENDER") or shutil.which("blender"), "Set DEXAGENT_BLENDER to the Blender executable"
 PY
 
 # The exact revision Stage 4 was tested with (override at your own risk)

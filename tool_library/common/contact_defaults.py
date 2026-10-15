@@ -69,7 +69,7 @@ def add_rigid_pairs(spec, names):
     """
     # Mixing/filtering below is verified against this engine's implementation.
     # On other engine versions preserve ordinary contacts until revalidated.
-    if tuple(map(int, mujoco.__version__.split(".")[:2])) != (3, 10) or len(set(names)) < 2:
+    if tuple(map(int, mujoco.__version__.split(".")[:2])) not in {(3, 10), (3, 12)} or len(set(names)) < 2:
         return []
     model = spec.compile()
     if mujoco.get_mjcb_contactfilter() is not None:
@@ -115,7 +115,7 @@ def add_rigid_pairs(spec, names):
             pair.solreffriction = [0., 0.]
             pair.condim = dim
             pair.friction = [friction[0], friction[0], friction[1], friction[2], friction[2]]
-            # MuJoCo 3.10 collision-driver getMargin/getGap use sums.
+            # MuJoCo 3.10 and 3.12 collision-driver getMargin/getGap use sums.
             pair.margin = float(model.geom_margin[a] + model.geom_margin[b])
             pair.gap = float(model.geom_gap[a] + model.geom_gap[b])
             existing.add(key)

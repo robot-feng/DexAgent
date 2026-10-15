@@ -63,7 +63,7 @@ def _slug(p):
 
 def load_sam3(min_score=0.3, version=SAM3_LITETEXT_VERSION):
     """Backward-compatible loader hook; new backends use the same adapter contract."""
-    from tool_library.skills.segmentation_backend import load_backend
+    from tool_library.common.segmentation_backend import load_backend
     return load_backend(version, min_score=min_score)
 
 

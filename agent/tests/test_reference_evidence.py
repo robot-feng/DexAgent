@@ -402,7 +402,7 @@ class ReferenceEvidenceTests(unittest.TestCase):
                 dispatch.assert_not_called()
 
     def test_alternate_segmentation_backend_identity_can_be_replayed(self):
-        from tool_library.skills import segmentation_backend
+        from tool_library.common import segmentation_backend
         args = {"prompts": ["red object"], "min_score": .3, "downscale": 1.,
                 "instances": False, "version": "alternate-segmenter"}
         identity = {"version": "v2", "repo_id": "example/alternate-segmenter", "checkpoint_sha256": "b" * 64}

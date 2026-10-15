@@ -15,14 +15,15 @@ Stage 3's verified robot trajectory and the human video in; randomized, photorea
 - **OS**: Linux, with an NVIDIA GPU and a recent driver.
 - **GPU memory**: **40 GB or more** for the default VOID `plate` backend. VOID loads a 5B-parameter video model and peaked at 38 GB in our runs on an RTX A6000 (48 GB). The optional LaMa image backend uses far less memory. The `render` step needs about 8 GB.
 - **Disk**: about 35 GB for the default VOID model weights and 9 GB for the Python environment. The LaMa checkpoint is about 206 MB.
-- **Python**: 3.11 exactly. The Blender wheel only exists for 3.11.
-- **Blender**: you do **not** need to install Blender. It comes as the `bpy` Python package and is installed by `setup.sh`.
+- **Python**: the shared DexAgent/RoboSimStudio environment uses 3.12; the previous 3.11 renderer also remains supported.
+- **Blender**: Python 3.12 launches Blender as an executable. Set `models.blender_executable` in `dexagent.yaml`, or `DEXAGENT_BLENDER` for a direct Stage 4/tool invocation. Python 3.11 can use the `bpy` wheel.
 
 ## Installation
 
 ```bash
-conda create -y -n dexagent-stage4 python=3.11
-conda activate dexagent-stage4
+conda activate dexagent
+export DEXAGENT_BLENDER=/data/tzq/tools/blender-5.0.1-linux-x64/blender
+export DEXAGENT_STAGE4_INPAINT_BACKEND=lama
 cd stage4_robot_data_generation
 bash setup.sh
 ```
@@ -30,7 +31,7 @@ bash setup.sh
 With the default `DEXAGENT_STAGE4_INPAINT_BACKEND=void`, `setup.sh` does three things:
 
 1. clones VOID into `third_party/void-model`,
-2. installs the Python packages (VOID's pinned requirements, Transformers, MuJoCo, Blender),
+2. installs the Python packages (VOID's requirements when selected, Transformers, MuJoCo, and `bpy` on Python 3.11),
 3. downloads the model weights listed below into the Hugging Face cache.
 
 The repository-level [`dexagent.yaml`](../dexagent.yaml) selects the local LaMa checkpoint for the automated pipeline because VOID and CogVideoX weights are not present on this machine. Stage 4 preflight checks the configured LaMa file and its hash before running. Standalone Stage 4 configs keep `void` as their default and need the weights listed below.

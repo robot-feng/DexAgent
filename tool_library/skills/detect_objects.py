@@ -193,7 +193,7 @@ def detect_objects(frames_dir, keywords, out_json, frame_indices=None, min_score
         idx = sample_indices(len(files))
         selection = f"default: {len(idx)} of {len(files)} frames evenly spaced (20%, at least {MIN_FRAMES})"
     if processor is None:
-        from tool_library.skills.segmentation_backend import load_backend
+        from tool_library.common.segmentation_backend import load_backend
         proc = load_backend(version, min_score=min_score)
     else:
         proc = processor

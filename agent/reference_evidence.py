@@ -416,7 +416,7 @@ class _Replay:
         if file_digest(frame) != frame_spec["sha256"]:
             raise ValueError("independently decoded source pixels differ from the SAM input frame")
         args = _sam_arguments(recipe["args"])
-        from tool_library.skills.segmentation_backend import backend_available
+        from tool_library.common.segmentation_backend import backend_available
         if not backend_available(args["version"]):
             raise ValueError(f"segmentation backend {args['version']!r} is not installed for independent replay")
         model_identity = _model_identity(recipe["model_identity"])

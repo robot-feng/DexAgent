@@ -30,18 +30,18 @@ Each agent stage is a long loop of model turns. Runtime depends on the video and
 
 ```bash
 git clone https://github.com/dexagent1/DexAgent.git && cd DexAgent
-conda create -y -n dexagent python=3.11 && conda activate dexagent
+conda create -y -n dexagent python=3.12 && conda activate dexagent
 pip install -r requirements.txt
 ```
 
-This is the harness and every CPU tool: Stages 1 and 3 run on it with the language model named in `dexagent.yaml`, and Stage 2 adds SAM 3 for the object masks (its own environment, a GPU; first row below). The physics is validated on MuJoCo 3.10 with NumPy 1.x, the versions `requirements.txt` pins; other versions simulate contacts differently. Optional parts live in their own environments and are named in `dexagent.yaml`:
+This installs the harness and CPU tools. The shared environment uses Python 3.12, MuJoCo 3.12 and NumPy 1.x; generation and replay must use the same physics version. SAM3-LiteText runs in this environment with the configured cached weights. Optional components are configured in `dexagent.yaml`:
 
 | Part | Needed for | Install |
 |---|---|---|
 | SAM 3, SAM 2, HaMeR, Video Depth Anything, GeoCalib, SAM 3D | the perception skills (masks, tracks, depth, gravity, hand meshes, mesh objects); a GPU | `environments:` in `dexagent.yaml` |
 | Isaac Sim 5.0 | Stage 2 on deformable cords | `environments.isaac` |
 | BODex, DexGraspNet | the optional GPU grasp priors | `models.bodex_dir`, `models.dexgraspnet_dir` |
-| VOID, Blender (`bpy`) | Stage 4; a GPU with 40 GB | [Stage 4 README](stage4_robot_data_generation/README.md) (`setup.sh`, Python 3.11), then `environments.stage4` |
+| VOID / LaMa, Blender | Stage 4; VOID needs about 40 GB GPU memory | [Stage 4 README](stage4_robot_data_generation/README.md); Python 3.12 uses the configured Blender executable |
 
 A tool whose package is missing says so when it is called; the agent then uses another one.
 
@@ -50,6 +50,25 @@ A tool whose package is missing says so when it is called; the agent then uses a
 Edit [`dexagent.yaml`](dexagent.yaml) with your video, camera calibration, and robot setup. This checkout uses `agent.provider: external`: the pipeline exchanges request/response files with the Codex session and makes no model API calls. The configured Python environments and model cache live under `/data`. To use your own robot or bench, copy `setup/` and edit it as its README describes.
 
 ### 3. Run
+
+The RoboSimStudio backend is available for acceptance examples through the same entry point:
+
+```bash
+# Once, in the shared Python 3.12 environment:
+git clone https://github.com/robosimstudio/robosimstudio.git robosimstudio
+git -C robosimstudio checkout 73739abe212f963e8a9f5862b27bca370df091a7
+pip install -r requirements-robosimstudio.txt
+python run_dexagent.py dexagent.yaml --backend-eval rigid
+python run_dexagent.py dexagent.yaml --backend-eval towel
+python run_dexagent.py dexagent.yaml --backend-eval sharpa
+python run_dexagent.py dexagent.yaml --backend-eval grasp
+```
+
+These examples record physics, joint commands and cloth particles, then re-render and check the output video.
+The Sharpa checks import the full physical bench, preserve its passive/free task objects, and evaluate an actual Sharpa hand grasp of a free cube through lift, carry, place and release. The grasp gate also compares object motion against an independent CPU MuJoCo replay.
+The verified cube task does not certify an end-to-end human-video reconstruction or deformable-object grasping; see the [integration report](docs/ROBOSIMSTUDIO_INTEGRATION.md) for measured results and assumptions.
+Python 3.12 uses `models.blender_executable` for the existing Stage 4 Cycles renderer.
+See [the integration status and environment instructions](docs/ROBOSIMSTUDIO_INTEGRATION.md).
 
 One command runs the four stages in order and prints a closing table; each stage also runs on its own (its README says what it reads, what it writes and which GPU it needs).
 

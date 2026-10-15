@@ -29,6 +29,30 @@ examples:                              # verified examples (asset reuse)
 
 evaluation:
   profile: pipeline_eval               # smoke | pipeline_eval | dataset_release
+  robosimstudio:                       # backend acceptance examples, separate from a human-video pipeline pass
+    max_fold_extent: 0.6
+    min_fold_score: 0.85
+    max_settle_speed_mps: 0.02
+    sharpa:
+      max_arm_error_rad: 0.05
+      max_finger_error_rad: 0.08
+      min_motion_rad: 0.02
+      max_final_error_rad: 0.025
+      max_cpu_replay_error_rad: 0.025
+      max_local_error_rad: 0.00005
+      min_hand_pixels: 100
+    grasp:
+      physics_device: cpu                # CPU MuJoCo contact physics; RSS GPU still handles state/rendering
+      min_lift_m: 0.08
+      max_arm_error_rad: 0.08
+      max_penetration_m: 0.004
+      support_height_error_m: 0.006
+      max_placement_error_m: 0.025
+      max_slip_m: 0.015
+      min_contact_fraction: 0.9
+      max_release_force_n: 0.05
+      max_settle_speed_mps: 0.02
+      max_cpu_object_error_m: 0.03
   smoke_stage4:                        # reduced Stage 4 workload for an end-to-end wiring check
     num_samples: 1
     views: []
@@ -103,6 +127,7 @@ stage4:                                # robot data generation; see stage4_robot
   inpaint_backend: lama                # cached LaMa alternative; VOID/CogVideoX weights are not installed
 
 models:                                # checkouts and weights; a tool call that leaves the matching argument out gets these
+  blender_executable: /data/tzq/tools/blender-5.0.1-linux-x64/blender # standalone renderer for the shared Python 3.12 environment
   hf_home: /data/miniconda3/hf_cache  # shared Hugging Face cache on the data drive
   segmentation_backend: sam3-litetext-s0 # baseline backend; alternative adapters can be registered via entry points
   sam3_litetext_dir: /data/tzq/datasets/starVLA/playground/Pretrained_models/sam3-litetext-s0
