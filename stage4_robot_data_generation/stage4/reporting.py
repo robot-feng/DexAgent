@@ -18,6 +18,30 @@ def digest(value):
                                      default=str, allow_nan=False).encode()).hexdigest()
 
 
+def source_identity(root=None):
+    """Hash Stage 4 implementation and its local tool-library dependencies."""
+    root = Path(root or Path(__file__).resolve().parents[2]).resolve()
+    files = {}
+    source_roots = ("stage4_robot_data_generation", "tool_library/common",
+                    "tool_library/skills", "tool_library/verifiers")
+    suffixes = {".py", ".json", ".yaml", ".yml", ".toml"}
+    for source_root in source_roots:
+        directory = root / source_root
+        if not directory.is_dir():
+            raise FileNotFoundError(f"Stage 4 source dependency is missing: {directory}")
+        for path in sorted(directory.rglob("*")):
+            rel = path.relative_to(root)
+            if (not path.is_file() or path.suffix.lower() not in suffixes or
+                    any(part in {"tests", "__pycache__", "outputs", "runs"} for part in rel.parts)):
+                continue
+            files[rel.as_posix()] = sha256_file(path)
+    report_helper = root / "agent/run_reports.py"
+    if not report_helper.is_file():
+        raise FileNotFoundError(f"Stage 4 report dependency is missing: {report_helper}")
+    files[report_helper.relative_to(root).as_posix()] = sha256_file(report_helper)
+    return {"sha256": digest(files), "file_count": len(files)}
+
+
 def input_identity(cfg):
     """Include external config paths and MJCF assets, not generated output files."""
     files, visited = {}, set()
@@ -71,7 +95,7 @@ def input_identity(cfg):
     for key in ("DEXAGENT_SAM3_LITETEXT_PATH", "DEXAGENT_LAMA_MODEL"):
         if environment[key]:
             add(environment[key])
-    return {"files": files, "environment": environment}
+    return {"files": files, "environment": environment, "source": source_identity()}
 
 
 def artifact_manifest(cfg, step, artifacts):

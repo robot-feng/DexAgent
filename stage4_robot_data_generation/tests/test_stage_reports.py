@@ -16,6 +16,7 @@ sys.path.insert(0, str(PKG))
 sys.path.insert(0, str(ROOT))
 
 import run_stage4 as S4  # noqa: E402
+from stage4.reporting import source_identity  # noqa: E402
 
 
 class FakeConfig(dict):
@@ -159,6 +160,29 @@ class Stage4ReportTests(unittest.TestCase):
         self.run_steps()
         (self.root / "trajectory.npz").write_text("different")
         self.assertEqual(self.run_steps("render"), ([], 1))
+
+    def test_source_changes_reject_recovery(self):
+        self.run_steps()
+        with patch("stage4.reporting.source_identity", return_value={"sha256": "changed", "file_count": 1}):
+            self.assertEqual(self.run_steps("composite"), ([], 1))
+
+    def test_source_identity_tracks_implementation_not_tests(self):
+        (self.root / "stage4_robot_data_generation/stage4").mkdir(parents=True)
+        source = self.root / "stage4_robot_data_generation/stage4/composite.py"
+        source.write_text("version 1")
+        tests = self.root / "stage4_robot_data_generation/tests/test_composite.py"
+        tests.parent.mkdir(parents=True)
+        tests.write_text("test version 1")
+        (self.root / "agent").mkdir()
+        (self.root / "agent/run_reports.py").write_text("report helper")
+        for package in ("tool_library/common", "tool_library/skills", "tool_library/verifiers"):
+            (self.root / package).mkdir(parents=True)
+
+        before = source_identity(self.root)
+        tests.write_text("test version 2")
+        self.assertEqual(source_identity(self.root), before)
+        source.write_text("version 2")
+        self.assertNotEqual(source_identity(self.root), before)
 
     def test_artifact_tamper_rejects_downstream_recovery(self):
         self.run_steps()
