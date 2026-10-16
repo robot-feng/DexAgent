@@ -29,6 +29,24 @@ class RunReportTests(unittest.TestCase):
         checks = verifier_checks({"ok": True, "reports": {}})
         self.assertEqual(checks[0]["status"], "failed")
 
+    def test_verifier_warnings_reach_the_stage_status(self):
+        checks = verifier_checks({"ok": True, "reports": {
+            "scene_gate": {"ok": True, "warnings": ["reach search inconclusive"]}}})
+        self.assertEqual(checks[0]["status"], "warning")
+        self.assertEqual(checks[0]["observed"]["warnings"], ["reach search inconclusive"])
+        self.assertEqual(status_for_checks(checks), "warning")
+
+    def test_skipped_reason_is_not_a_passing_required_verifier(self):
+        checks = verifier_checks({"ok": True, "reports": {
+            "camera_check": {"ok": True, "skipped": "no camera observations"}}})
+        self.assertEqual(checks[0]["status"], "skipped")
+        self.assertEqual(status_for_checks(checks), "failed")
+
+    def test_a_suite_skip_mapping_does_not_mark_the_entire_suite_skipped(self):
+        checks = verifier_checks({"ok": True, "reports": {
+            "scene_gate": {"ok": True, "skipped": {}}}})
+        self.assertEqual(checks[0]["status"], "passed")
+
     def test_profiles_control_example_reuse(self):
         cfg = {"examples": {"reuse": True}}
         self.assertFalse(apply_profile(cfg, "pipeline_eval")["examples"]["reuse"])

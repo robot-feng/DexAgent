@@ -137,6 +137,14 @@ class SharpaBridge:
                     inverse[i] = np.linalg.inv(tensor)
             model.body_inertia.assign(tensors.astype(np.float32))
             model.body_inv_inertia.assign(inverse.astype(np.float32))
+            # Compound mesh volumes are integrated differently by Newton and
+            # MuJoCo (notably hollow cups/bowls). The compiled source model is
+            # the contract for mass and centre of mass as well as inertia.
+            masses = m.body_mass[ids]
+            model.body_mass.assign(masses.astype(np.float32))
+            inv_mass = np.divide(1., masses, out=np.zeros_like(masses), where=masses > 0)
+            model.body_inv_mass.assign(inv_mass.astype(np.float32))
+            model.body_com.assign(m.body_ipos[ids].astype(np.float32))
             import newton
             # MJCF's inherited classes hide some of this hand's visual geoms.
             # Restore authored render groups 0/1; never change collision flags.
@@ -339,7 +347,8 @@ class SharpaBridge:
         ids = [m.body(n).id for n in self.body_indices]
         checks.append(check("body_mass_and_inertia", bool(
             np.allclose(imported.body_mass.numpy(), m.body_mass[ids], rtol=2e-6, atol=1e-9) and
-            np.allclose(imported.body_inertia.numpy(), expected[ids], rtol=2e-5, atol=1e-12))))
+            np.allclose(imported.body_inertia.numpy(), expected[ids], rtol=2e-5, atol=1e-12) and
+            np.allclose(imported.body_com.numpy(), m.body_ipos[ids], rtol=2e-6, atol=1e-9))))
         # Compare the actual solver actuators as well, using its own control-source map.
         order = np.argsort(solver.mjc_actuator_to_newton_idx.numpy())[self.ctrl_indices]
         actual = solver.mj_model
@@ -412,12 +421,12 @@ class SharpaBridge:
             center += [0, 0.03, 0.08]
             return CameraSpec(name="workspace", width=640, height=480, eye=tuple(center + [0.12, -0.45, 0.5]),
                               look_at=tuple(center), fov_y=58, channels=("rgb", "seg"))
-        if name != "ego":
-            raise ValueError(f"unknown camera: {name}")
-        c = m.camera("ego").id
+        c = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_CAMERA, name)
+        if c < 0:
+            raise ValueError(f"unknown source camera: {name}")
         eye = d.cam_xpos[c]
         rotation = d.cam_xmat[c].reshape(3, 3)
-        return CameraSpec(name="ego", width=640, height=480, eye=tuple(eye),
+        return CameraSpec(name=name, width=640, height=480, eye=tuple(eye),
                           look_at=tuple(eye - rotation[:, 2]), up=tuple(rotation[:, 1]), fov_y=float(m.cam_fovy[c]))
 
     def manifest(self):
@@ -433,7 +442,7 @@ class SharpaBridge:
                 "actuator_control_units": ["Nm" if n.endswith("_motor") else "rad" for n in self.actuator_names],
                 "control_semantics": "raw source actuator controls; arm torque / individual finger position",
                 "recorded_action": "joint_reference: 56 position targets [rad], ordered by joint_names; controls also saved separately",
-                "diagnostic_palette": "light grey; display only, not a calibrated real robot appearance",
+                "diagnostic_palette": "source MJCF colors; tiled rendering does not implement Stage 4 PBR materials",
                 "acceptance_controller": "computed-torque joint PD, omega=12 rad/s, damping=24 /s; not Stage 3 Cartesian control",
                 "state_joint_names": self.state_joint_names,
                 "state_q_starts": self.state_q_starts,

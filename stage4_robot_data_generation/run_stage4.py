@@ -470,6 +470,10 @@ def _validate_composite(cfg):
         record_path = sample / "composite.json"
         try:
             record = json.loads(record_path.read_text())
+            shadow_opacity = record.get("shadow_opacity")
+            if (not isinstance(shadow_opacity, (int, float)) or
+                    not 0.0 <= float(shadow_opacity) <= 1.0):
+                issues.append(f"{sample.name}: missing or invalid shadow_opacity in composite record")
             for view in views:
                 path = sample / f"{view}.mp4"
                 cap = cv2.VideoCapture(str(path))
@@ -530,7 +534,8 @@ def _validate_composite(cfg):
                                 issues.append(f"{sample.name}/{view}: ffprobe duration differs from decoded frame count")
                 records[f"{sample.name}/{view}"] = {"frames": n, "decoded_frames": decoded,
                     "width": w, "height": h, "fps": fps,
-                    "duration_s": round(n / fps, 4) if fps > 0 else None, "ffprobe": probe}
+                    "duration_s": round(n / fps, 4) if fps > 0 else None, "ffprobe": probe,
+                    "shadow_opacity": shadow_opacity}
         except (OSError, ValueError, TypeError) as exc:
             issues.append(f"{sample.name}: {type(exc).__name__}: {exc}")
     checks = [_check("composite_videos_and_trajectory_mapping", bool(expected_samples) and not issues,

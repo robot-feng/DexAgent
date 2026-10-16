@@ -62,11 +62,13 @@ python run_dexagent.py dexagent.yaml --backend-eval rigid
 python run_dexagent.py dexagent.yaml --backend-eval towel
 python run_dexagent.py dexagent.yaml --backend-eval sharpa
 python run_dexagent.py dexagent.yaml --backend-eval grasp
+python run_dexagent.py dexagent.yaml --backend-eval reference --reference-run runs/e2e_top_smoke_20261013
 ```
 
 These examples record physics, joint commands and cloth particles, then re-render and check the output video.
 The Sharpa checks import the full physical bench, preserve its passive/free task objects, and evaluate an actual Sharpa hand grasp of a free cube through lift, carry, place and release. The grasp gate also compares object motion against an independent CPU MuJoCo replay.
 The verified cube task does not certify an end-to-end human-video reconstruction or deformable-object grasping; see the [integration report](docs/ROBOSIMSTUDIO_INTEGRATION.md) for measured results and assumptions.
+The `reference` mode executes an existing DexAgent episode in RSS, evaluates every original task goal and writes same-camera comparisons. It labels the reused upstream inputs explicitly; this is a backend comparison. See the [fusion review](docs/DEXAGENT_RSS_FUSION_REVIEW.md) for the control contract and remaining integration work.
 Python 3.12 uses `models.blender_executable` for the existing Stage 4 Cycles renderer.
 See [the integration status and environment instructions](docs/ROBOSIMSTUDIO_INTEGRATION.md).
 

@@ -20,6 +20,26 @@ import cv2
 import imageio
 import numpy as np
 
+SHADOW_OPACITY = 0.30
+
+
+def blend_rgba(plate_rgb, rgba_bgra, shadow_opacity=SHADOW_OPACITY):
+    """Blend a transparent render, softening only its black shadow-catcher pixels.
+
+    Cycles writes the shadow catcher as black RGB with alpha. Its unscaled alpha
+    is too strong over the real video plate, while robot/object pixels carry
+    their rendered color. Keep object alpha and antialiased edges intact.
+    """
+    opacity = float(shadow_opacity)
+    if not 0.0 <= opacity <= 1.0:
+        raise ValueError("shadow_opacity must be between 0 and 1")
+    rgba = np.asarray(rgba_bgra)
+    a = rgba[..., 3:].astype(np.float32) / 255.0
+    rgb = cv2.cvtColor(rgba[..., :3], cv2.COLOR_BGR2RGB).astype(np.float32)
+    shadow = (rgba[..., :3].max(axis=2) <= 1) & (a[..., 0] > 0.0)
+    a[shadow, 0] *= opacity
+    return (plate_rgb * (1.0 - a) + rgb * a).astype(np.uint8)
+
 
 def writer(path, fps, crf):
     return imageio.get_writer(path, fps=fps, macro_block_size=1, codec="libx264",
@@ -27,7 +47,7 @@ def writer(path, fps, crf):
                                              "-pix_fmt", "yuv420p"])
 
 
-def view_frames(vdir):
+def view_frames(vdir, shadow_opacity=SHADOW_OPACITY):
     """Composited RGB frames of one view."""
     meta = json.loads((vdir / "scene.json").read_text())
     W, H = meta["width"], meta["height"]
@@ -44,9 +64,7 @@ def view_frames(vdir):
         else:
             plate = cv2.cvtColor(cv2.imread(f"{meta['plates_dir']}/frame{t:05d}.png"),
                                  cv2.COLOR_BGR2RGB).astype(np.float32)
-        a = rgba[..., 3:].astype(np.float32) / 255.0
-        rgb = cv2.cvtColor(rgba[..., :3], cv2.COLOR_BGR2RGB).astype(np.float32)
-        yield (plate * (1 - a) + rgb * a).astype(np.uint8)
+        yield blend_rgba(plate, rgba, meta.get("shadow_opacity", shadow_opacity))
 
 
 def label(img, text):
@@ -87,7 +105,7 @@ def resample(path, n, size):
     return list(iter_video(path, n, size))
 
 
-def encode(view_dirs, out_dir, crf, references=()):
+def encode(view_dirs, out_dir, crf, references=(), shadow_opacity=SHADOW_OPACITY):
     """Composite and encode one rendered sample, holding one frame of every view in memory at a time.
 
     view_dirs  {view: render folder with scene.json and frames/}, ego (or the first view) first
@@ -103,7 +121,10 @@ def encode(view_dirs, out_dir, crf, references=()):
         assert (int(m["n_frames"]), int(m["width"]), int(m["height"])) == (n, *size), (
             f"view {v} has {m['n_frames']} frames of {m['width']} x {m['height']}, {views[0]} {n} of "
             f"{size[0]} x {size[1]}: re-run the export step")
-    frames = {v: view_frames(Path(view_dirs[v])) for v in views}
+    opacity = float(shadow_opacity)
+    if not 0.0 <= opacity <= 1.0:
+        raise ValueError("shadow_opacity must be between 0 and 1")
+    frames = {v: view_frames(Path(view_dirs[v]), opacity) for v in views}
     refs = [(name, iter_video(path, n, size)) for name, path in references]
     writers = {}
     try:
@@ -124,7 +145,8 @@ def encode(view_dirs, out_dir, crf, references=()):
         for w in writers.values():
             w.close()
     return {"videos": {v: str(out / f"{v}.mp4") for v in views}, "preview": str(out / "preview.mp4"),
-            "compare": str(out / "compare.mp4") if refs else None, "n_frames": n, "fps": fps}
+            "compare": str(out / "compare.mp4") if refs else None, "n_frames": n, "fps": fps,
+            "shadow_opacity": opacity}
 
 
 def run(cfg, log=print):
@@ -153,6 +175,7 @@ def run(cfg, log=print):
             "videos": r["videos"],
             "preview": r["preview"],
             "compare": r["compare"],
+            "shadow_opacity": r["shadow_opacity"],
             "trajectory_mapping": scene.get("trajectory_mapping", {
                 "render_frames": r["n_frames"], "render_fps": r["fps"],
                 "source_frame_for_render_frame": "unknown", "human_video_time_aligned": False,

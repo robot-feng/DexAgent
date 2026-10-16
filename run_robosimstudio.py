@@ -118,7 +118,7 @@ def render_tape(sim, episode_dir, out, fps, camera=None, hand_labels=None, min_h
             ok, image = cap.read()
             if not ok:
                 break
-            if image.shape[:2] != (480, 640):
+            if image.shape[:2] != (camera.height, camera.width):
                 raise ValueError(f"bad video frame dimensions: {image.shape}")
             decoded += 1
     finally:
@@ -139,6 +139,9 @@ def run(args, out, report):
     from robosimstudio.specs import CaptureSpec, RecordSpec
 
     wp.init()
+    if args.task == "reference":
+        from agent.rss_episode import run_reference
+        return run_reference(args, out, report)
     commit = subprocess.check_output(["git", "-C", str(ROOT / "robosimstudio"), "rev-parse", "HEAD"], text=True).strip()
     report["model_identity"] = {"robosimstudio": {"path": str(ROOT / "robosimstudio"), "commit": commit}}
     report["metrics"].update({"versions": {n: version(n) for n in ("numpy", "mujoco", "newton", "warp-lang", "jax")},
@@ -400,7 +403,10 @@ def run_sharpa_motion(bridge, recorder, record, out, limits):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("task", choices=("rigid", "towel", "sharpa", "grasp"))
+    parser.add_argument("task", choices=("rigid", "towel", "sharpa", "grasp", "reference"))
+    parser.add_argument("--reference-run", type=Path, help="existing DexAgent run with Stage 1–3 evidence")
+    parser.add_argument("--reference-control", choices=("feedback", "raw"), default="feedback",
+                        help="reference feedforward plus bounded feedback, or diagnostic open-loop raw replay")
     parser.add_argument("--no-grip", action="store_true", help="negative control for grasp; must fail the grasp gates")
     parser.add_argument("--physics-device", choices=("cpu", "gpu"), help="rigid physics device; grasp defaults to the configured CPU profile")
     parser.add_argument("--gpu", default=os.environ.get("CUDA_VISIBLE_DEVICES", "2"))
@@ -409,6 +415,8 @@ def main(argv=None):
     parser.add_argument("--fps", type=int, default=15)
     parser.add_argument("--config", type=Path, default=ROOT / "dexagent.yaml")
     args = parser.parse_args(argv)
+    if args.task == "reference" and args.reference_run is None:
+        parser.error("reference requires --reference-run")
     if args.fps < 1:
         parser.error("fps must be positive")
     from agent.config import load_config
@@ -427,9 +435,14 @@ def main(argv=None):
                          "max_slip_m": 0.015, "min_contact_fraction": 0.9, "max_release_force_n": 0.05,
                          "max_settle_speed_mps": 0.02, "max_cpu_object_error_m": 0.03,
                          **args.thresholds.get("grasp", {})}
-    args.physics_device = args.physics_device or (args.grasp_limits.get("physics_device", "cpu") if args.task == "grasp" else "gpu")
+    args.physics_device = args.physics_device or (args.grasp_limits.get("physics_device", "cpu") if args.task in {"grasp", "reference"} else "gpu")
+    args.reference_limits = {"max_arm_error_rad": .025, "max_finger_error_rad": .08, "max_object_error_m": .01,
+                             "feedback_omega_rad_s": 48., "min_silhouette_iou": .85, **args.thresholds.get("reference", {})}
     # All controls are set before importing GPU libraries.
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+    os.environ.setdefault("MUJOCO_GL", "egl")
+    if (cfg.get("models") or {}).get("hf_home"):
+        os.environ["HF_HOME"] = cfg["models"]["hf_home"]
     os.environ.setdefault("JAX_PLATFORMS", "cpu")
     os.environ.setdefault("XLA_PYTHON_CLIENT_PREALLOCATE", "false")
     os.environ.setdefault("WARP_CACHE_PATH", str(ROOT / "runs/cache/warp"))
@@ -455,7 +468,7 @@ def main(argv=None):
         report["elapsed_s"] = round(time.monotonic() - started, 3)
         atomic_json(path, report)
         atomic_json(out / "run_summary.json", {"status": "passed_with_warnings" if report["status"] == "warning" else report["status"],
-                    "scope": "backend_acceptance_example", "full_pipeline_complete": False,
+                    "scope": report["metrics"].get("scope", "backend_acceptance_example"), "full_pipeline_complete": False,
                     "report": str(path), "metrics": report["metrics"]})
         print_report(report, path)
     return 1 if report["status"] in {"failed", "blocked", "running"} else 0

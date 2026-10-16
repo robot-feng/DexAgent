@@ -11,7 +11,9 @@
 - 按用户选择，以一个统一运行环境、一个主流程为目标。
 - 本次启动的独立环境克隆已停止并清理。现有 `/data/miniconda3/envs/dexagent` 已就地升级为 Python 3.12.14，两个项目共用该环境。
 - 第一条后端验收链路已经实现：仿真 → 控制和形变记录 → 离线重渲染 → 逐项校验 → DexAgent JSON 报告。
-- `--backend-eval` 支持上游本体样例和 DexAgent 自身的 YAM + Sharpa 固定工作台。后者已验证本体导入、小幅双臂运动和手指屈伸；任意人类视频的 Stage 1–4、物体抓取和 Sharpa 毛巾折叠仍未迁移。原有 MuJoCo 流程保留自己的门禁。
+- `--backend-eval` 已支持 DexAgent 的完整 YAM + Sharpa 场景、方块接触抓取和标准杯子入碗 episode 对照。标准 episode 的原任务目标在 RSS 中重新验收；上游视频重建与轨迹提案复用并明确标记。新视频冷启动 Stage 1–4 与 Sharpa 毛巾折叠仍未迁移。
+
+2026-10-16 的逐模块复查、真实迁移问题和融合流程见 [融合复查文档](DEXAGENT_RSS_FUSION_REVIEW.md)。本轮按用户选择先运行已有标准参考。
 
 ## 当前可运行入口
 
@@ -19,6 +21,7 @@
 python run_dexagent.py dexagent.yaml --backend-eval rigid
 python run_dexagent.py dexagent.yaml --backend-eval towel
 python run_dexagent.py dexagent.yaml --backend-eval sharpa
+python run_dexagent.py dexagent.yaml --backend-eval reference --reference-run runs/e2e_top_smoke_20261013
 
 # 指定 GPU 和新的输出目录：
 python run_robosimstudio.py towel --gpu 2 --output runs/my_towel_check
@@ -46,6 +49,19 @@ pip install -r requirements-robosimstudio.txt
 ```
 
 ## 本机已验证的结果
+
+### 2026-10-16：标准杯子入碗对照
+
+- [最终报告](../runs/rss_reference_cpu_final_20261016/stage_report.json)：37/37 必需检查通过，三个原始子目标均通过；总状态 `passed_with_warnings`，警告仅表示上游参考复用。
+- [同相机初始对照](../runs/rss_reference_cpu_final_20261016/frame0_compare_rss.png)：人类参考、原 MuJoCo、RSS、叠加图。两模拟器的杯子/碗轮廓 IoU 分别为 `0.92562 / 0.96429`。
+- [动态对照视频](../runs/rss_reference_cpu_final_20261016/comparison.mp4)：两个模拟器使用相同物理时间；人类视频列仅为重采样视觉参考。[映射](../runs/rss_reference_cpu_final_20261016/comparison_frame_map.json)明确记录这种区别。
+- [工作台视频](../runs/rss_reference_cpu_final_20261016/simulation.mp4)和 [实际轨迹](../runs/rss_reference_cpu_final_20261016/trajectory.npz)：7850 个物理子步、15.7 秒，保留 nominal/actual 控制；原轨迹有 472 个检查帧。
+- 最大机械臂差 `0.022135 rad`、手指差 `0.017522 rad`；杯子最大位置差 `0.006110 m`、末位置差 `0.005529 m`；碗最大位置差 `0.000146 m`。
+- [物理检查](../runs/rss_reference_cpu_final_20261016/physics_report.json)：手与物体最大穿透 `0.17 mm`、物体间最大穿透 `0.48 mm`，末帧没有悬空物体。
+
+导入时发现并修复了复合网格质量/质心变化；直接重放原力矩失败后，加入有力矩上限的机械臂反馈。原始开环失败保留在 `runs/rss_reference_cpu_20261016_v4/`。以上数值描述后端执行差异，不是单目或真机误差；本轮不标为新的完整视频重建通过。
+
+### 较早的环境与后端验收
 
 | 验证 | 当前结果 | 证据 |
 | --- | --- | --- |

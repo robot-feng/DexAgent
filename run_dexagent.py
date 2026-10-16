@@ -530,8 +530,9 @@ def apply_cli_runtime_options(cfg: dict, args) -> dict:
 def _main_impl(argv=None):
     import argparse
     ap = argparse.ArgumentParser(description="DexAgent end to end")
-    ap.add_argument("--backend-eval", choices=("rigid", "towel", "sharpa", "grasp"),
+    ap.add_argument("--backend-eval", choices=("rigid", "towel", "sharpa", "grasp", "reference"),
                     help="evaluate the RoboSimStudio backend and its recorded artifacts")
+    ap.add_argument("--reference-run", type=Path, help="DexAgent reference run for --backend-eval reference")
     ap.add_argument("config", nargs="?", default=os.environ.get("DEXAGENT_CONFIG", str(REPO / "dexagent.yaml")))
     ap.add_argument("--from", dest="start", default="stage1", choices=ORDER)
     ap.add_argument("--to", dest="stop", default="stage4", choices=ORDER)
@@ -548,7 +549,10 @@ def _main_impl(argv=None):
     cfg = apply_profile(load_config(a.config), a.profile)
     if a.backend_eval:
         from run_robosimstudio import main as backend_main
-        return backend_main([a.backend_eval, "--config", str(cfg["_config_path"])])
+        options = [a.backend_eval, "--config", str(cfg["_config_path"])]
+        if a.reference_run is not None:
+            options += ["--reference-run", str(a.reference_run)]
+        return backend_main(options)
     a.profile = cfg["evaluation"]["profile"]
     cfg = apply_cli_runtime_options(cfg, a)
     name = str(cfg["run"]["name"])
@@ -788,7 +792,7 @@ if __name__ == "__main__":
         if os.environ.get("DEXAGENT_ENV_SWITCHED") == "1" or os.environ.get("DEXAGENT_NO_ENV_SWITCH") == "1":
             return
         value_flags = {"--from", "--to", "--name", "--video", "--prompt", "--max-rounds", "--profile", "--llm",
-                       "--resume-stage3-attempt", "--backend-eval"}
+                       "--resume-stage3-attempt", "--backend-eval", "--reference-run"}
         config = None
         skip = False
         for value in argv:

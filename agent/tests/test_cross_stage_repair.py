@@ -10,6 +10,7 @@ import os
 import sys
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
@@ -39,14 +40,6 @@ def marker_verifier(ws):
 
 
 marker_verifier.__name__ = "marker_check"
-for mod in (S1, S2, S3):
-    mod.make_verifiers = lambda *a, **k: [marker_verifier]
-S3.make_diagnosis = lambda *a, **k: (lambda ws, verdict: "Diagnosis (test): upstream_suspect -> report_blocked(upstream='stage2')")
-# This fixture tests repair routing only; actual sealed delivery has separate
-# physical integration tests. Keep its publication boundary explicit.
-delivery.publish_stage3 = lambda *a, **k: {"ok": True, "issues": [], "test_stub": "repair routing"}
-
-
 def T(name, **inp):
     return [{"type": "tool_use", "name": name, "input": inp}]
 
@@ -197,10 +190,20 @@ def bounded_checks(tmp):
 
 
 def main():
-    tmp = Path(tempfile.mkdtemp(prefix="dexagent_repair_", dir=os.environ.get("TMPDIR")))
-    runner_checks(tmp)
-    loop_checks(tmp)
-    bounded_checks(tmp)
+    marker_factory = lambda *a, **k: [marker_verifier]
+    diagnosis_stub = lambda *a, **k: (lambda ws, verdict: "Diagnosis (test): upstream_suspect -> report_blocked(upstream='stage2')")
+    publication_stub = lambda *a, **k: {"ok": True, "issues": [], "test_stub": "repair routing"}
+    # Keep routing stubs scoped to this script. Importing the test module must
+    # not replace the production delivery/verifier hooks for sibling tests.
+    with patch.object(S1, "make_verifiers", marker_factory), \
+            patch.object(S2, "make_verifiers", marker_factory), \
+            patch.object(S3, "make_verifiers", marker_factory), \
+            patch.object(S3, "make_diagnosis", diagnosis_stub), \
+            patch.object(delivery, "publish_stage3", publication_stub):
+        tmp = Path(tempfile.mkdtemp(prefix="dexagent_repair_", dir=os.environ.get("TMPDIR")))
+        runner_checks(tmp)
+        loop_checks(tmp)
+        bounded_checks(tmp)
     print("ALL PASS" if not FAILS else f"{FAILS} FAILED")
     return 1 if FAILS else 0
 

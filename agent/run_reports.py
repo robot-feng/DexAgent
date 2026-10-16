@@ -64,12 +64,16 @@ def verifier_checks(verdict: dict | None) -> list[dict]:
     reports = (verdict or {}).get("reports") or {}
     for name, report in reports.items():
         report = report if isinstance(report, dict) else {"ok": False, "issues": [str(report)]}
-        skipped = report.get("skipped") is True or report.get("status") == "skipped"
+        skip_reason = report.get("skipped")
+        skipped = (skip_reason is True or
+                   isinstance(skip_reason, str) and bool(skip_reason.strip()) or
+                   report.get("status") == "skipped")
         ok = report.get("ok") is True
+        warnings = report.get("warnings") or report.get("deferred")
         checks.append({
             "id": name,
             "required": report.get("required", True),
-            "status": "skipped" if skipped else "passed" if ok else "failed",
+            "status": "skipped" if skipped else "failed" if not ok else "warning" if warnings else "passed",
             "observed": {k: v for k, v in report.items() if k not in {"ok", "issues", "required"}},
             "evidence": report.get("issues", []),
         })

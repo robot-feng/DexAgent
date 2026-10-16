@@ -33,6 +33,12 @@ evaluation:
     max_fold_extent: 0.6
     min_fold_score: 0.85
     max_settle_speed_mps: 0.02
+    reference:                          # same scene/actions, fresh RSS physics versus a standard DexAgent episode
+      max_arm_error_rad: 0.025
+      max_finger_error_rad: 0.08          # same contact-hand tolerance as the existing Sharpa acceptance profile
+      max_object_error_m: 0.01
+      min_silhouette_iou: 0.85
+      feedback_omega_rad_s: 48.0
     sharpa:
       max_arm_error_rad: 0.05
       max_finger_error_rad: 0.08

@@ -24,15 +24,8 @@ class TaskSceneEntity(rss.Entity):
     def build(self, builder, episode):
         # None honors each root's own freejoint/fixed declaration. False would
         # anchor objects; the robot importer additionally strips them entirely.
-        start = builder.shape_count
         builder.add_mjcf(self.spec.path, floating=None, collapse_fixed_joints=False,
                          enable_self_collisions=True, ctrl_direct=True, verbose=False)
-        # Preview colors do not alter contact properties or shape collision bits.
-        for i in range(start, builder.shape_count):
-            body = builder.shape_body[int(i)]
-            name = builder.body_label[body].rsplit("/", 1)[-1] if body >= 0 else ""
-            if name.startswith("robot_"):
-                builder.shape_color[int(i)] = (0.62, 0.66, 0.71)
 
     def handle(self, model):
         bodies = tuple(int(i) for i in self.range.body_indices)
