@@ -2,12 +2,17 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.metadata
 import json
 import os
+import platform
+import subprocess
+import sys
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
 from agent.run_reports import sha256_file
+from .render_launch import blender_executable
 
 DEPENDENCIES = {"randomize": (), "plate": (), "export": ("randomize", "plate"),
                 "render": ("export",), "composite": ("randomize", "plate", "render")}
@@ -40,6 +45,36 @@ def source_identity(root=None):
         raise FileNotFoundError(f"Stage 4 report dependency is missing: {report_helper}")
     files[report_helper.relative_to(root).as_posix()] = sha256_file(report_helper)
     return {"sha256": digest(files), "file_count": len(files)}
+
+
+def runtime_identity():
+    """Capture the Python packages and renderer selected for this invocation."""
+    packages = sorted(
+        ({"name": dist.metadata.get("Name", ""), "version": dist.version}
+         for dist in importlib.metadata.distributions() if dist.metadata.get("Name")),
+        key=lambda package: (package["name"].casefold(), package["version"]))
+    runtime = {"python": {"executable": sys.executable, "version": platform.python_version()},
+               "packages": packages}
+    executable = blender_executable()
+    if executable is None:
+        runtime["renderer"] = {"mode": "python_bpy", "executable": sys.executable}
+        return runtime
+
+    path = Path(executable).expanduser().resolve()
+    renderer = {"mode": "blender", "executable": str(path), "available": path.is_file() and os.access(path, os.X_OK)}
+    if renderer["available"]:
+        stat = path.stat()
+        renderer.update(size_bytes=stat.st_size, mtime_ns=stat.st_mtime_ns)
+        try:
+            probe = subprocess.run([str(path), "--background", "--version"], capture_output=True,
+                                   text=True, timeout=10)
+            renderer["version"] = probe.stdout.splitlines()[0] if probe.returncode == 0 and probe.stdout else None
+            if probe.returncode:
+                renderer["version_probe_returncode"] = probe.returncode
+        except (OSError, subprocess.SubprocessError) as exc:
+            renderer["version_probe_error"] = type(exc).__name__
+    runtime["renderer"] = renderer
+    return runtime
 
 
 def input_identity(cfg):
@@ -90,12 +125,14 @@ def input_identity(cfg):
     walk({k: v for k, v in cfg.items() if k != "output_dir"})
     environment = {key: os.environ.get(key) for key in
                    ("DEXAGENT_SEGMENTATION_BACKEND", "DEXAGENT_SAM3_LITETEXT_PATH",
-                    "DEXAGENT_LAMA_MODEL", "VOID_DIR", "HF_HOME", "DEXAGENT_ISAAC_PYTHON")}
+                    "DEXAGENT_LAMA_MODEL", "VOID_DIR", "HF_HOME", "DEXAGENT_ISAAC_PYTHON",
+                    "CUDA_VISIBLE_DEVICES", "CUDA_DEVICE_ORDER", "NVIDIA_VISIBLE_DEVICES")}
     # Model files explicitly supplied through environment are inputs too.
     for key in ("DEXAGENT_SAM3_LITETEXT_PATH", "DEXAGENT_LAMA_MODEL"):
         if environment[key]:
             add(environment[key])
-    return {"files": files, "environment": environment, "source": source_identity()}
+    return {"files": files, "environment": environment, "source": source_identity(),
+            "runtime": runtime_identity()}
 
 
 def artifact_manifest(cfg, step, artifacts):

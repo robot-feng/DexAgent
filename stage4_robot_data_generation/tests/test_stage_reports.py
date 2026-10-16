@@ -8,6 +8,7 @@ import types
 import unittest
 from contextlib import ExitStack
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 PKG = Path(__file__).resolve().parents[1]
@@ -16,7 +17,7 @@ sys.path.insert(0, str(PKG))
 sys.path.insert(0, str(ROOT))
 
 import run_stage4 as S4  # noqa: E402
-from stage4.reporting import source_identity  # noqa: E402
+from stage4.reporting import runtime_identity, source_identity  # noqa: E402
 
 
 class FakeConfig(dict):
@@ -165,6 +166,24 @@ class Stage4ReportTests(unittest.TestCase):
         self.run_steps()
         with patch("stage4.reporting.source_identity", return_value={"sha256": "changed", "file_count": 1}):
             self.assertEqual(self.run_steps("composite"), ([], 1))
+
+    def test_runtime_changes_reject_recovery(self):
+        self.run_steps()
+        with patch("stage4.reporting.runtime_identity", return_value={"python": {"version": "changed"}}):
+            self.assertEqual(self.run_steps("composite"), ([], 1))
+
+    def test_runtime_identity_records_python_packages_and_blender_build(self):
+        executable = self.root / "blender"
+        executable.write_text("fixture executable")
+        executable.chmod(0o755)
+        probe = SimpleNamespace(returncode=0, stdout="Blender 5.0.1\n", stderr="")
+        with patch("stage4.reporting.blender_executable", return_value=str(executable)), \
+             patch("stage4.reporting.subprocess.run", return_value=probe):
+            identity = runtime_identity()
+        self.assertTrue(identity["python"]["executable"])
+        self.assertTrue(any(package["name"].casefold() == "numpy" for package in identity["packages"]))
+        self.assertEqual(identity["renderer"]["version"], "Blender 5.0.1")
+        self.assertEqual(identity["renderer"]["size_bytes"], len("fixture executable"))
 
     def test_source_identity_tracks_implementation_not_tests(self):
         (self.root / "stage4_robot_data_generation/stage4").mkdir(parents=True)

@@ -7,8 +7,13 @@ import sys
 from pathlib import Path
 
 
+def blender_executable():
+    """The standalone Blender selected by both rendering and provenance checks."""
+    return os.environ.get("DEXAGENT_BLENDER") or shutil.which("blender")
+
+
 def render_command(view, chunk=None, *, python=None):
-    executable = os.environ.get("DEXAGENT_BLENDER") or shutil.which("blender")
+    executable = blender_executable()
     args = [str(Path(view).resolve())] + ([str(chunk)] if chunk is not None else [])
     if executable:
         if not Path(executable).is_file() or not os.access(executable, os.X_OK):
