@@ -20,7 +20,7 @@ import mujoco
 import numpy as np
 
 from agent.run_reports import atomic_json, finish_report, make_report, sha256_file
-from agent.rss_sharpa import SharpaBridge
+from agent.rss_sharpa import SharpaBridge, full_mass_matrix
 
 
 def validate_reference(model, data):
@@ -59,6 +59,12 @@ def validate_reference(model, data):
     frames = np.rint(data['time_s'] / model.opt.timestep).astype(int)
     if frames[-1] > len(times) or not np.allclose(frames * model.opt.timestep, data['time_s'], atol=1e-7):
         raise ValueError('reference frames do not map to physics substeps')
+    if not np.allclose(data['qpos'][0], data['initial_qpos'], rtol=0, atol=1e-8):
+        raise ValueError('reference frame 0 does not match the initial state')
+    sampled = data['substep_qpos'][frames[1:] - 1]
+    if not np.allclose(data['qpos'][1:], sampled, rtol=0, atol=1e-8):
+        error = float(np.max(np.abs(data['qpos'][1:] - sampled)))
+        raise ValueError(f'reference frame states disagree with recorded physics substeps (max error {error:g})')
     limited = model.actuator_ctrllimited.astype(bool)
     lo, hi = model.actuator_ctrlrange.T
     if np.any(limited & ((data['substep_ctrl'] < lo) | (data['substep_ctrl'] > hi))):
@@ -94,8 +100,7 @@ def feedback_control(bridge, data, index, state, *, omega=12.):
     qa, va = bridge.source_q_indices[arm], bridge.source_v_indices[arm]
     d.qpos[bridge.source_q_indices] = q
     mujoco.mj_forward(m, d)
-    mass = np.zeros((m.nv, m.nv))
-    mujoco.mj_fullM(m, d, mass)
+    mass = full_mass_matrix(m, d)
     acceleration = np.zeros(m.nv)
     acceleration[va] = omega**2 * (desired_q[qa] - q[arm]) + 2 * omega * (desired_v[va] - v[arm])
     correction = mass @ acceleration

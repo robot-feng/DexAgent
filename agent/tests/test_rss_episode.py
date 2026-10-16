@@ -66,6 +66,17 @@ class ReferenceContractTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'missing'):
             validate_reference(self.model, self.data)
 
+    def test_frame_states_must_match_the_recorded_physics_substeps(self):
+        data = copy.deepcopy(self.data)
+        data['qpos'][1, 0] += 0.01
+        with self.assertRaisesRegex(ValueError, 'frame states disagree'):
+            validate_reference(self.model, data)
+
+        data = copy.deepcopy(self.data)
+        data['qpos'][0, 0] += 0.01
+        with self.assertRaisesRegex(ValueError, 'frame 0'):
+            validate_reference(self.model, data)
+
     def test_inverse_mapping_resolves_names_and_preserves_free_quaternion(self):
         m = self.model
         # Importer puts the free joint first and uses xyzw; hinge is last.
