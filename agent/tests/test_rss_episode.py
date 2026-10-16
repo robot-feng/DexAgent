@@ -8,6 +8,7 @@ import numpy as np
 
 from agent.rss_episode import feedback_control, source_qpos, validate_reference
 from agent.rss_sharpa import SharpaBridge
+from tool_library.common.mujoco_utils import full_mass_matrix
 from tool_library.common.episode import joint_names
 from tool_library.common.rigid_robot import compile_rigid
 from pathlib import Path
@@ -113,6 +114,32 @@ class FeedbackTests(unittest.TestCase):
         fingers = np.asarray([not n.endswith('_motor') for n in bridge.actuator_names])
         np.testing.assert_array_equal(actual[fingers], nominal[fingers])
         np.testing.assert_array_equal(values, before)
+
+
+class FullMassMatrixTests(unittest.TestCase):
+    def setUp(self):
+        self.model = mujoco.MjModel.from_xml_string(
+            '<mujoco><worldbody><body><joint/><geom size=".1"/></body></worldbody></mujoco>')
+        self.data = mujoco.MjData(self.model)
+
+    def test_current_binding_signature(self):
+        def current(model, data, full):
+            full[:] = np.eye(model.nv) * 2
+
+        with patch('tool_library.common.mujoco_utils.mujoco.mj_fullM', side_effect=current):
+            result = full_mass_matrix(self.model, self.data)
+        np.testing.assert_array_equal(result, np.eye(self.model.nv) * 2)
+
+    def test_legacy_binding_signature(self):
+        def legacy(model, *args):
+            if isinstance(args[0], mujoco.MjData):
+                raise TypeError('legacy signature')
+            full, sparse = args
+            full[:] = np.eye(model.nv) * 3
+
+        with patch('tool_library.common.mujoco_utils.mujoco.mj_fullM', side_effect=legacy):
+            result = full_mass_matrix(self.model, self.data)
+        np.testing.assert_array_equal(result, np.eye(self.model.nv) * 3)
 
 
 if __name__ == '__main__':

@@ -12,17 +12,8 @@ import mujoco
 import numpy as np
 
 from tool_library.common.rigid_robot import RigidRobot, compile_rigid, register_model
+from tool_library.common.mujoco_utils import full_mass_matrix
 from agent.run_reports import sha256_file
-
-
-def full_mass_matrix(model, data):
-    """Expand MuJoCo's sparse inertia matrix across supported Python bindings."""
-    full = np.zeros((model.nv, model.nv))
-    try:
-        mujoco.mj_fullM(model, data, full)
-    except TypeError:
-        mujoco.mj_fullM(model, full, data.qM)
-    return full
 
 
 def named_indices(labels, wanted=None):

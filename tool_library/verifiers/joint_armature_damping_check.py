@@ -50,6 +50,7 @@ import mujoco
 import numpy as np
 
 from tool_library.common import compile_checks as C
+from tool_library.common.mujoco_utils import full_mass_matrix
 
 _FIELDS = ("armature", "damping", "frictionloss", "stiffness")
 
@@ -71,13 +72,8 @@ def joint_armature_damping_check(scene, reference=None, expected=None, max_omega
     dt = float(model.opt.timestep)
     euler = int(model.opt.integrator) == int(mujoco.mjtIntegrator.mjINT_EULER)
     rows, issues = [], []
-    # the joint-space inertia's diagonal, read through mj_fullM: the sparse storage changed name and layout across
-    # MuJoCo versions (data.qM with dof_Madr up to 3.1x, data.M later)
-    full = np.zeros((model.nv, model.nv))
-    try:
-        mujoco.mj_fullM(model, data, full)           # MuJoCo >= 3.3: (model, data, dst)
-    except TypeError:
-        mujoco.mj_fullM(model, full, data.qM)        # older bindings: (model, dst, qM)
+    # The binding signature changed; the shared helper keeps all callers in sync.
+    full = full_mass_matrix(model, data)
     for s in C.servo_actuators(model):
         d = s["dof"]
         inertia = float(full[int(d), int(d)])

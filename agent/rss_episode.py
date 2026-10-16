@@ -20,7 +20,8 @@ import mujoco
 import numpy as np
 
 from agent.run_reports import atomic_json, finish_report, make_report, sha256_file
-from agent.rss_sharpa import SharpaBridge, full_mass_matrix
+from agent.rss_sharpa import SharpaBridge
+from tool_library.common.mujoco_utils import full_mass_matrix
 
 
 def validate_reference(model, data):
