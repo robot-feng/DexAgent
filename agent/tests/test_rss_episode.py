@@ -132,13 +132,13 @@ class FullMassMatrixTests(unittest.TestCase):
 
     def test_legacy_binding_signature(self):
         def legacy(model, *args):
-            if isinstance(args[0], mujoco.MjData):
+            if not isinstance(args[0], np.ndarray):
                 raise TypeError('legacy signature')
             full, sparse = args
             full[:] = np.eye(model.nv) * 3
 
         with patch('tool_library.common.mujoco_utils.mujoco.mj_fullM', side_effect=legacy):
-            result = full_mass_matrix(self.model, self.data)
+            result = full_mass_matrix(self.model, SimpleNamespace(qM=np.zeros(1)))
         np.testing.assert_array_equal(result, np.eye(self.model.nv) * 3)
 
 
