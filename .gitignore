@@ -7,3 +7,9 @@ dexagent.local.yaml
 .claude/
 examples/asset_reuse/*
 !examples/asset_reuse/.gitkeep
+.workbench/
+workbench/frontend/node_modules/
+workbench/frontend/dist/
+workbench/frontend/test-results/
+workbench/frontend/playwright-report/
+workbench/frontend/*.tsbuildinfo

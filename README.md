@@ -17,6 +17,8 @@ DexAgent keeps every skill and verifier it develops in a self-evolving tool libr
 
 ## Quick start
 
+For a unified local view of runs, videos, stage checks, native episode curves and recorded 3D scenes, see the **[RobotSim Workbench](workbench/README.md)**. Start it with `python run_workbench.py` after installing its optional dependencies and building the frontend. The workbench reads existing outputs without starting the generation pipeline.
+
 ### 0. ⚠️ Cost and run time
 
 Each agent stage is a long loop of model turns. Runtime depends on the video and the available tools. This checkout uses Codex through the external file transport and makes no model API calls; API-backed providers are optional alternatives.

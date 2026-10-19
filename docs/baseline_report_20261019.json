@@ -1,0 +1,299 @@
+{
+  "schema": "robotsim_unified.baseline.v1",
+  "date": "2026-10-19",
+  "status": "partial",
+  "summary": "Static and lightweight tests were recorded, SimFoundry Stage 1b completed on its bundled Fruits scan video, and isolated CPU alpha probes completed for BRIA RMBG-2.0 and U2NetP. Full model-backed scene reconstruction, auto-background reconstruction and cross-project scene validation remain unrun.",
+  "repositories": {
+    "DexAgent": {
+      "path": ".",
+      "commit": "cb3d7edb3bf072c0fa603d0d3d8b8f161ac2fa46",
+      "dirty": true,
+      "porcelain_entries_at_check": 27
+    },
+    "SimFoundry": {
+      "path": "SimFoundry",
+      "commit": "9e34ebefcd020583fbb755a8b57268dce78eca26",
+      "dirty": true,
+      "porcelain_entries_at_check": 3
+    },
+    "RoboSimStudio": {
+      "path": "robosimstudio",
+      "commit": "73739abe212f963e8a9f5862b27bca370df091a7",
+      "dirty": false,
+      "porcelain_entries_at_check": 0
+    }
+  },
+  "environment": {
+    "default_shell_python": "3.13.9",
+    "dexagent_python": {
+      "executable": "/data/miniconda3/envs/dexagent/bin/python",
+      "python": "3.12.14",
+      "platform": "Linux-5.15.0-139-generic-x86_64-with-glibc2.31",
+      "packages": {
+        "torch": "2.5.1",
+        "torch_cuda_build": "12.4",
+        "torch_cuda_available": true,
+        "numpy": "1.26.4",
+        "omegaconf": "2.3.1",
+        "mujoco": "3.12.0",
+        "newton": "1.6.0",
+        "pytest": "9.1.1",
+        "viser": "1.1.1",
+        "omnigibson": null,
+        "rembg": null,
+        "fastapi": null
+      }
+    },
+    "gpu": {
+      "model": "NVIDIA A100-SXM4-80GB",
+      "count": 4,
+      "driver": "580.82.09",
+      "used_by_this_baseline": false
+    },
+    "mamba_available": false,
+    "simfoundry_conda_environment_exists": false
+  },
+  "isolated_preprocessing_environment": {
+    "path": ".workbench/venvs/simfoundry-preprocess",
+    "base_interpreter": "/data/miniconda3/envs/dexagent/bin/python",
+    "uses_system_site_packages": true,
+    "additional_packages": {
+      "open3d": "0.19.0",
+      "supervision": "0.31.0"
+    },
+    "base_dexagent_environment_modified": false,
+    "purpose": "Run the lightweight video preprocessing stage without installing into the active DexAgent environment.",
+    "reproducibility_note": "This is a local probe environment, not a complete or locked SimFoundry runtime."
+  },
+  "checks": {
+    "simfoundry_dry_runs": {
+      "status": "passed_command_planning_only",
+      "python": "/data/miniconda3/envs/dexagent/bin/python",
+      "commands": [
+        "A_reconstruction/run.sh --dry-run --no-env-switch --include 1b,2",
+        "B_augmentation/run.sh --dry-run --no-env-switch --include 1",
+        "C_application/run.sh --dry-run --no-env-switch --mode smoke-random"
+      ],
+      "return_codes": [
+        0,
+        0,
+        0
+      ],
+      "configured_default_video": "SimFoundry/Data/home_coffee_4/s1_video/video/scene.mp4",
+      "configured_default_video_exists": false,
+      "limitation": "Dry-runs generated stage commands but did not validate the input file, call models, run OmniGibson, or produce scene/data artifacts."
+    },
+    "simfoundry_unit_tests": {
+      "status": "passed_with_skip",
+      "command": "pytest -q tests/test_subpipeline_layout.py tests/test_resource_scheduler.py tests/test_pipeline_reporting.py tests/test_pipeline_orchestrator.py",
+      "passed": 20,
+      "skipped": 1,
+      "failed": 0
+    },
+    "simfoundry_stage_1b": {
+      "status": "passed",
+      "command": "A_reconstruction/run.sh --no-env-switch --scene-name baseline_p0_20261019 --root-dir .workbench/baseline/simfoundry_20261019 --video-fpath SimFoundry/docs/assets/example_videos/Fruits.mp4 --include 1b",
+      "input_video": "SimFoundry/docs/assets/example_videos/Fruits.mp4",
+      "input_sha256": "a9c099cea15ec73bc203cff0925aa88f166acc2c75e672d9ff89d3bb34169b4d",
+      "stage_info_success": true,
+      "stage_duration_seconds": 18.58,
+      "output": ".workbench/baseline/simfoundry_20261019/baseline_p0_20261019",
+      "normalized_video_bytes": 2264620,
+      "decoded_frames": 452,
+      "sampled_frames": 15,
+      "frame_size": [
+        1280,
+        720
+      ],
+      "total_output_bytes": 341919015,
+      "model_inference": false,
+      "used_gpu": false,
+      "note": "The stage writes PNGs for all source frames, so this small input produced about 326 MiB of local ignored artifacts."
+    },
+    "simfoundry_depth_backend_probe": {
+      "status": "blocked_before_inference",
+      "configured_backend": "da3",
+      "configured_model": "depth-anything/DA3NESTED-GIANT-LARGE-1.1",
+      "local_wrapper_present": true,
+      "depth_anything_3_package_in_dexagent_environment": false,
+      "matching_huggingface_cache_entry_found": false,
+      "stage_2_executed": false,
+      "model_selection_code": "implemented; model profiles are resolved from s2_da.model_name in both single-pass and chunked paths, and successful stage_info records the profile identity/capabilities/license",
+      "compatible_runtime_profiles": [
+        "DA3NESTED-GIANT-LARGE-1.1",
+        "DA3NESTED-GIANT-LARGE"
+      ],
+      "known_candidate_blocked_by_output_contract": {
+        "profile": "DA3-BASE",
+        "license": "Apache-2.0",
+        "depth_scale": "relative",
+        "reason": "Downstream Stage 2 consumers treat depth as metric; it is rejected until metric scale calibration is implemented and validated."
+      },
+      "inference_or_checkpoint_validated": false
+    },
+    "simfoundry_depth_profile_tests": {
+      "status": "passed_with_skip",
+      "command": "python -m pytest -q tests/test_depth_model_profiles.py tests/test_pipeline_refactor_utils.py tests/test_pipeline_reporting.py tests/test_pipeline_orchestrator.py tests/test_subpipeline_layout.py tests/test_resource_scheduler.py",
+      "passed": 25,
+      "skipped": 1,
+      "failed": 0,
+      "covers": [
+        "default and explicit DA3 profile resolution",
+        "relative-depth candidate rejected before inference",
+        "selected profile forwarded to chunk subprocess",
+        "profile identity/contract carried in backend result"
+      ],
+      "limitation": "Does not load DA3 code or weights and does not validate reconstruction quality."
+    },
+    "simfoundry_matting_profile_tests": {
+      "status": "passed_with_skip",
+      "command": "python -m pytest -q tests/test_matting_profiles.py tests/test_depth_model_profiles.py tests/test_pipeline_refactor_utils.py tests/test_pipeline_reporting.py tests/test_pipeline_orchestrator.py tests/test_subpipeline_layout.py tests/test_resource_scheduler.py",
+      "passed": 34,
+      "skipped": 1,
+      "failed": 0,
+      "default_model": "bria-rmbg",
+      "default_weight_license": "CC-BY-NC-4.0",
+      "candidate_models": [
+        "u2net",
+        "u2netp",
+        "silueta",
+        "isnet-general-use",
+        "birefnet-general",
+        "birefnet-general-lite"
+      ],
+      "remote_model_names_rejected": [
+        "withoutbg",
+        "atlascloud"
+      ],
+      "inference_or_checkpoint_validated": false,
+      "covers": [
+        "all pipeline configs declare the default alpha model",
+        "selected local model reaches rembg session creation",
+        "single-object RGBA output preserves input dimensions",
+        "stage_info persists model identity and known license",
+        "remote API model identifiers fail before inference",
+        "actual ONNX checkpoint discovery and SHA-256 capture in a temporary model cache",
+        "actual ONNX checkpoint discovery and SHA-256 capture in a temporary model cache"
+      ],
+      "limitation": "Mocked session validates configuration/report plumbing; no rembg package or weights were installed or run."
+    },
+    "dexagent_harness_tests": {
+      "status": "partial",
+      "runner": "tool_library/tests/run_all.py",
+      "selected_filters": [
+        "rss_episode",
+        "run_reports",
+        "input_identity"
+      ],
+      "passed": 3,
+      "failed": 0,
+      "incomplete": 0,
+      "note": "Direct pytest collection of agent/tests is incompatible with script-style test_config.py, which calls sys.exit during collection; no production test failure was established. The full stage3 suite was not run."
+    },
+    "robosimstudio_unit_tests": {
+      "status": "passed",
+      "command": "pytest -q tests/test_agent.py tests/test_agent_checks.py tests/test_agent_server.py tests/test_asset_mjcf.py tests/test_bench_documents_and_runs.py",
+      "passed": 81,
+      "subtests_passed": 80,
+      "failed": 0,
+      "warnings": 46,
+      "elapsed_seconds": 261.27,
+      "warning_summary": "Dependency deprecations in Newton collision/contact settings, Viser theme configuration, and Pyroki/JAXLS cost factory API."
+    },
+    "workbench": {
+      "status": "prior_validation_recorded",
+      "evidence": "docs/WORKBENCH_VALIDATION_20261019.md",
+      "rerun_in_this_baseline": false
+    },
+    "simfoundry_u2netp_cpu_probe": {
+      "status": "passed",
+      "model": "u2netp",
+      "license": "Apache-2.0 (upstream U-2-Net repository license; not independently assigned to the rembg wrapper)",
+      "license_source": "https://github.com/xuebinqin/U-2-Net/blob/master/LICENSE",
+      "weights_sha256": "309c8469258dda742793dce0ebea8e6dd393174f89934733ecc8b14c76f4ddd8",
+      "weights_bytes": 4574861,
+      "rembg_version": "2.0.85",
+      "execution_provider": [
+        "CPUExecutionProvider"
+      ],
+      "session_load_seconds": 0.0848,
+      "sample_inference_seconds": {
+        "apple": 0.3157,
+        "banana": 0.4064,
+        "pear": 0.2757
+      },
+      "outputs": {
+        "apple": ".workbench/baseline/matting_compare_20261019/results/u2netp/apple_rgba.png",
+        "banana": ".workbench/baseline/matting_compare_20261019/results/u2netp/banana_rgba.png",
+        "pear": ".workbench/baseline/matting_compare_20261019/results/u2netp/pear_rgba.png"
+      },
+      "input_manifest": ".workbench/baseline/matting_compare_20261019/input_manifest.json",
+      "limitations": [
+        "No pixel-level ground-truth masks are available.",
+        "ROI diagnostics use manually drawn loose object boxes and are not segmentation scores.",
+        "This measures per-image alpha only; it does not test temporal consistency or video inpainting."
+      ],
+      "assessment": "CPU inference completed; alpha inspected on apple, banana and pear; no pixel-level masks, so not a scored segmentation benchmark.",
+      "onnxruntime_version": "1.31.0",
+      "input_manifest_sha256": "e2245c6592e82f9195de0ed1444ba956a6bef144332b86e25be3eca267f30062"
+    },
+    "simfoundry_bria_cpu_probe": {
+      "status": "passed",
+      "model": "bria-rmbg",
+      "license": "CC-BY-NC-4.0",
+      "license_status": "known_non_commercial",
+      "license_source": "https://huggingface.co/briaai/RMBG-2.0",
+      "weights_sha256": "5b486f08200f513f460da46dd701db5fbb47d79b4be4b708a19444bcd4e79958",
+      "weights_bytes": 1024331469,
+      "first_cache_miss_session_setup_seconds_including_download": 764.7304,
+      "cached_session_load_seconds": 15.832,
+      "rembg_version": "2.0.85",
+      "onnxruntime_version": "1.31.0",
+      "python_version": "3.12.14",
+      "execution_provider": [
+        "CPUExecutionProvider"
+      ],
+      "sample_inference_seconds": {
+        "apple": 17.9976,
+        "banana": 16.5585,
+        "pear": 16.341
+      },
+      "outputs": {
+        "apple": ".workbench/baseline/matting_compare_20261019/results/bria-rmbg/apple_rgba.png",
+        "banana": ".workbench/baseline/matting_compare_20261019/results/bria-rmbg/banana_rgba.png",
+        "pear": ".workbench/baseline/matting_compare_20261019/results/bria-rmbg/pear_rgba.png"
+      },
+      "input_manifest": ".workbench/baseline/matting_compare_20261019/input_manifest.json",
+      "input_manifest_sha256": "e2245c6592e82f9195de0ed1444ba956a6bef144332b86e25be3eca267f30062",
+      "visual_comparison": ".workbench/baseline/matting_compare_20261019/comparison_contact_sheet.png",
+      "assessment": "BRIA and U2NetP visually retain the apple, banana and pear and remove most wood background on this fixed small sample. No pixel-level masks exist; this is not an accuracy comparison. CPU-only timings are not representative of GPU production.",
+      "limitations": [
+        "No pixel-level ground-truth masks are available.",
+        "ROI diagnostics use manually drawn loose object boxes and are not segmentation scores.",
+        "This measures per-image alpha only; it does not test temporal consistency or video inpainting."
+      ]
+    }
+  },
+  "not_yet_verified": [
+    "SimFoundry model-backed depth, decomposition, inpainting, mesh, pose, and physics stages",
+    "SimFoundry B/C runtime execution and outputs",
+    "API-free SimFoundry reconstruction subset",
+    "SimFoundry SAM3/SAM2/VOID/DA3 inference, full automatic-background output, and Stage 6 executed within a complete A reconstruction",
+    "SimFoundry asset conversion into RoboSimStudio and coordinate/physics parity",
+    "Human demonstration to target robot trajectory mapping",
+    "End-to-end accepted episode and training-format export"
+  ],
+  "next_gate": "Run auto-background incrementally on a fixed scene: first validate the Gemini/SAM3 keyframe mask and SAM2 propagation, then run VOID two-pass inpainting, cleaned-stream DA3 and depth-supervised splat alignment. The current baseline environment lacks the SimFoundry conda environment and mamba; use the project-pinned stage environments before attempting the full chain.",
+  "isolated_matting_environment": {
+    "path": ".workbench/venvs/simfoundry-matting",
+    "base_interpreter": "/data/miniconda3/envs/dexagent/bin/python",
+    "additional_packages": {
+      "rembg": "2.0.85",
+      "onnxruntime": "1.31.0",
+      "numpy": "2.5.4"
+    },
+    "base_dexagent_environment_modified": false,
+    "model_cache": ".workbench/models/rembg",
+    "purpose": "CPU alpha inference comparison for BRIA RMBG-2.0 and U2NetP; not a full SimFoundry runtime."
+  }
+}
