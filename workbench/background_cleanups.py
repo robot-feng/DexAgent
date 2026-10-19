@@ -21,9 +21,14 @@ ACTIVE = {'preparing', 'inpainting', 'building'}
 
 def _gemini_capability() -> tuple[bool, str]:
     """Check configured Gemini auth without treating a Vertex project as credentials."""
-    for key in ('GEMINI_API_KEY', 'GOOGLE_API_KEY'):
-        if os.environ.get(key, '').strip():
-            return True, '检测到 Gemini API key；模型配额和权限仍需运行时验证。'
+    backend = os.environ.get('SIMFOUNDRY_GEMINI_BACKEND', 'auto').strip().lower()
+    if backend not in {'auto', 'api_key', 'vertex'}:
+        return False, 'SIMFOUNDRY_GEMINI_BACKEND 必须是 auto、api_key 或 vertex。'
+    has_api_key = any(os.environ.get(key, '').strip() for key in ('GEMINI_API_KEY', 'GOOGLE_API_KEY'))
+    if backend in {'auto', 'api_key'} and has_api_key:
+        return True, '检测到 Gemini API key；模型配额和权限仍需运行时验证。'
+    if backend == 'api_key':
+        return False, 'Gemini 后端被强制设为 api_key，但未配置 GEMINI_API_KEY 或 GOOGLE_API_KEY。'
 
     project = (os.environ.get('GCLOUD_PROJECT') or os.environ.get('GOOGLE_CLOUD_PROJECT') or '').strip()
     if not project and shutil.which('gcloud'):
@@ -50,6 +55,8 @@ def _gemini_capability() -> tuple[bool, str]:
     if project and has_adc_file:
         return True, '检测到 Vertex 项目和 ADC 凭据文件；模型权限仍需运行时验证。'
     if not project:
+        if backend == 'vertex':
+            return False, 'Gemini 后端被强制设为 vertex，但未检测到 Vertex 项目 ID。'
         return False, '缺少 Gemini API key；Vertex AI 还需要项目 ID 和 ADC 凭据。'
     return False, '检测到 Vertex 项目，但未找到 ADC 凭据文件；请配置 GOOGLE_APPLICATION_CREDENTIALS 或 gcloud ADC。'
 

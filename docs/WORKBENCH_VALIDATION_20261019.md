@@ -12,7 +12,7 @@
 
 | 检查 | 结果 | 覆盖范围 |
 | --- | --- | --- |
-| `python -m pytest -q workbench/tests` | 40 passed | 覆盖原有工作台契约、背景清理 API/状态流转、Codex external 图像请求/结构化提案往返、Gemini API key 与 Vertex 项目/ADC 预检、AutoBG 专属配置隔离，以及全量 A 构建的 Stage 5 对象类别复用参数 |
+| `python -m pytest -q workbench/tests` | 41 passed | 覆盖原有工作台契约、背景清理 API/状态流转、Codex external 图像请求/结构化提案往返、Gemini API key 与 Vertex 项目/ADC/强制路由预检、AutoBG 专属配置隔离，以及全量 A 构建的 Stage 5 对象类别复用参数 |
 | `npm run generate:api` | 通过 | 从当前 OpenAPI 生成 TypeScript；无手工放宽类型 |
 | `npm run build` | 通过 | TypeScript strict 检查和 Vite 生产构建 |
 | 背景与配色调整后的现有浏览器回归 | 10 passed，2.2 分钟 | 真实视频播放、刷新恢复、失败证据、工具详情、手机布局、键盘导航、两类原生曲线、两类真实 3D、跨运行预览隔离 |
@@ -95,7 +95,7 @@ RSS live 状态桥先通过临时 Unix socket fixture 验证协议与只读白�
 
 背景清理页面曾在独立 `8767` 完成早期冒烟检查，随后已停止；最终版本运行在用户指定的默认端口 `8765`。本轮运行健康状态为 `ok`，页面和 catalog API 均返回 200。对象提案 provider 已从 Gemini 布尔开关改为 Codex external（默认）、Gemini API/Vertex、手动三种选择。默认外部 Agent 复用 `agent.external`：每个清理任务独立保存请求、关键帧图像和匹配的响应；响应通过 `propose_objects` schema 校验后，作为 SimFoundry 的 SAM 文本提示。协议往返测试使用隔离 fixture 验证了图像文件、session 身份和结构化对象解析；没有声称本轮运行了真实视觉模型或当前 Codex 会话推理。全量 A 构建会把已确认类别传给 Stage 5 `s5_scene.force_categories`，使用 SAM3 分割而跳过重复的 Gemini 对象提案；关键帧筛选使用几何启发式。
 
-最新验证结果：`.workbench/venv/bin/python -m pytest -q workbench/tests` 为 40 passed，包含 Stage 5 强制类别构建命令契约，以及 Gemini API key / Vertex 项目和受支持 ADC JSON 结构的配置探测；Hydra parser 成功解析 `s3_ground.floor_categories` 与 `s5_scene.force_categories` 覆盖。背景清理 provider 选择器在默认 8765 的 Playwright 定向检查 1 passed；`npm run generate:api` 和 TypeScript/Vite 构建通过。当前主机缺少 SimFoundry/SAM/VOID/DA3 推理环境和权重，因此未执行真实分割、视频补洞或 3D 构建。Stage 5 对象提案已复用 AutoBG 阶段确认的类别；图像编辑等其它 A 阶段仍直接调用 Gemini，构建预检暂时保留这些上游兼容检查，且预检不验证模型权限或配额。官方 SAM3 predictor 接口支持 `both`、`forward`、`backward` 传播方向及指定起始帧；本次核对接口并完成代码/页面接线，尚未在缺失模型环境的主机上实测质量、速度或显存。
+最新验证结果：`.workbench/venv/bin/python -m pytest -q workbench/tests` 为 41 passed，包含 Stage 5 强制类别构建命令契约，以及 Gemini API key / Vertex 项目和受支持 ADC JSON 结构的探测，并验证 `SIMFOUNDRY_GEMINI_BACKEND` 强制路由不会被另一种认证凭据误放行；Hydra parser 成功解析 `s3_ground.floor_categories` 与 `s5_scene.force_categories` 覆盖。背景清理 provider 选择器在默认 8765 的 Playwright 定向检查 1 passed；`npm run generate:api` 和 TypeScript/Vite 构建通过。当前主机缺少 SimFoundry/SAM/VOID/DA3 推理环境和权重，因此未执行真实分割、视频补洞或 3D 构建。Stage 5 对象提案已复用 AutoBG 阶段确认的类别；图像编辑等其它 A 阶段仍直接调用 Gemini，构建预检暂时保留这些上游兼容检查，且预检不验证模型权限或配额。官方 SAM3 predictor 接口支持 `both`、`forward`、`backward` 传播方向及指定起始帧；本次核对接口并完成代码/页面接线，尚未在缺失模型环境的主机上实测质量、速度或显存。
 
 ## 剩余限制
 

@@ -299,7 +299,7 @@ def test_gemini_preflight_requires_vertex_adc_but_accepts_api_key(tmp_path, monk
     from workbench import background_cleanups
 
     for key in ('GEMINI_API_KEY', 'GOOGLE_API_KEY', 'GCLOUD_PROJECT', 'GOOGLE_CLOUD_PROJECT',
-                'GOOGLE_APPLICATION_CREDENTIALS', 'CLOUDSDK_CONFIG'):
+                'GOOGLE_APPLICATION_CREDENTIALS', 'CLOUDSDK_CONFIG', 'SIMFOUNDRY_GEMINI_BACKEND'):
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv('XDG_CONFIG_HOME', str(tmp_path / 'config'))
     monkeypatch.setattr(background_cleanups.shutil, 'which', lambda _name: None)
@@ -329,6 +329,39 @@ def test_gemini_preflight_requires_vertex_adc_but_accepts_api_key(tmp_path, monk
     available, detail = background_cleanups._gemini_capability()
     assert available
     assert 'Gemini API key' in detail
+
+
+def test_gemini_preflight_honors_simfoundry_forced_backend(tmp_path, monkeypatch):
+    from workbench import background_cleanups
+
+    for key in ('GEMINI_API_KEY', 'GOOGLE_API_KEY', 'GCLOUD_PROJECT', 'GOOGLE_CLOUD_PROJECT',
+                'GOOGLE_APPLICATION_CREDENTIALS', 'CLOUDSDK_CONFIG'):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setenv('XDG_CONFIG_HOME', str(tmp_path / 'config'))
+    monkeypatch.setattr(background_cleanups.shutil, 'which', lambda _name: None)
+    monkeypatch.setenv('GEMINI_API_KEY', 'configured-test-key')
+    monkeypatch.setenv('SIMFOUNDRY_GEMINI_BACKEND', 'vertex')
+
+    available, detail = background_cleanups._gemini_capability()
+    assert not available
+    assert '强制设为 vertex' in detail
+
+    monkeypatch.setenv('GCLOUD_PROJECT', 'example-project')
+    adc = tmp_path / 'adc.json'
+    adc.write_text(json.dumps({
+        'type': 'service_account', 'client_email': 'test@example.invalid',
+        'private_key': 'test-only-placeholder', 'token_uri': 'https://oauth2.example.invalid/token',
+    }))
+    monkeypatch.setenv('GOOGLE_APPLICATION_CREDENTIALS', str(adc))
+    available, detail = background_cleanups._gemini_capability()
+    assert available
+    assert 'Vertex 项目和 ADC' in detail
+
+    monkeypatch.setenv('SIMFOUNDRY_GEMINI_BACKEND', 'api_key')
+    monkeypatch.delenv('GEMINI_API_KEY')
+    available, detail = background_cleanups._gemini_capability()
+    assert not available
+    assert '强制设为 api_key' in detail
 
 
 def test_background_cleanup_codex_proposal_does_not_require_gemini(tmp_path, monkeypatch):

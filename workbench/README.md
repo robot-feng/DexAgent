@@ -93,7 +93,7 @@ python -m agent.external inspect "/path/to/requests/<session-turn>.json"
 python -m agent.external respond "/path/to/requests/<session-turn>.json" /path/to/response.json
 ```
 
-响应需要和本任务 request/session 匹配；每个任务有独立 transport，结果与图像留在该任务目录供审计。全量构建会复用已确认的对象类别作为 SimFoundry Stage 5 `force_categories`，跳过重复的 Gemini 对象提案，并使用启发式关键帧选择。Gemini API/Vertex 仍可作为提案 provider 选项；图像补全等其它上游模型调用尚未全部接入 provider 协议，因此构建预检仍会报告这些兼容要求。Vertex 预检要求项目 ID 和带有已识别类型/必填字段的 ADC JSON；单有项目 ID 不算可调用。预检只检查本地凭据配置，不验证模型权限或配额。
+响应需要和本任务 request/session 匹配；每个任务有独立 transport，结果与图像留在该任务目录供审计。全量构建会复用已确认的对象类别作为 SimFoundry Stage 5 `force_categories`，跳过重复的 Gemini 对象提案，并使用启发式关键帧选择。Gemini API/Vertex 仍可作为提案 provider 选项；图像补全等其它上游模型调用尚未全部接入 provider 协议，因此构建预检仍会报告这些兼容要求。预检遵循 `SIMFOUNDRY_GEMINI_BACKEND`：Vertex 路由要求项目 ID 和带有已识别类型/必填字段的 ADC JSON；API key 路由要求 key；`auto` 则优先 key，再检查 Vertex。预检只检查本地凭据配置，不验证模型权限或配额。
 
 ### 场景布局编辑
 
