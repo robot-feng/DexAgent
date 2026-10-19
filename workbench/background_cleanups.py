@@ -76,12 +76,13 @@ class BackgroundCleanups:
         has_void = ((void_root / 'inference/cogvideox_fun/inference_with_pass1_warped_noise.py').is_file()
                     and (void_root / 'void_pass1.safetensors').is_file()
                     and (void_root / 'void_pass2.safetensors').is_file())
-        has_project = bool(os.environ.get('GCLOUD_PROJECT'))
-        if not has_project and shutil.which('gcloud'):
+        has_gemini_auth = bool(os.environ.get('GEMINI_API_KEY') or os.environ.get('GOOGLE_API_KEY')
+                               or os.environ.get('GCLOUD_PROJECT'))
+        if not has_gemini_auth and shutil.which('gcloud'):
             try:
                 result = subprocess.run(['gcloud', 'config', 'get-value', 'project'],
                                         capture_output=True, text=True, timeout=3, check=True)
-                has_project = bool(result.stdout.strip() and result.stdout.strip() != '(unset)')
+                has_gemini_auth = bool(result.stdout.strip() and result.stdout.strip() != '(unset)')
             except (OSError, subprocess.SubprocessError):
                 pass
         values = [
@@ -95,8 +96,8 @@ class BackgroundCleanups:
                                detail='缺少 sam2.1_hiera_large.pt；按 SimFoundry 默认路径检查。' if not has_sam2 else 'SAM2 权重已找到。'),
             CleanupRequirement(id='void_env', title='VOID 环境与权重', available=self._has_env('void') and has_void,
                                detail='需要 void 环境、VOID 源码和 pass1/pass2 权重。' if not (self._has_env('void') and has_void) else 'VOID 环境与权重已找到。'),
-            CleanupRequirement(id='gemini', title='Gemini 对象提案（可选）', available=has_project,
-                               detail='设置 GCLOUD_PROJECT 可自动提议桌面物体；关闭自动提案后可只用手动对象名。' if not has_project else 'GCLOUD_PROJECT 已设置。'),
+            CleanupRequirement(id='gemini', title='上游 Gemini 后端（兼容项）', available=has_gemini_auth,
+                               detail='当前 SimFoundry 全量构建仍直接调用 Gemini；可配置 Gemini API key/Vertex 项目，或后续切换到已接入的 provider adapter。' if not has_gemini_auth else '检测到 Gemini API key 或 Vertex 项目。'),
             CleanupRequirement(id='da3_env', title='DA3 环境', available=self._has_env('da3'),
                                detail='完整 3D 场景生成需要 da3 环境。' if not self._has_env('da3') else '环境已安装。'),
             CleanupRequirement(id='nerfstudio_env', title='Nerfstudio 环境', available=self._has_env('nerfstudio_simfoundry'),
@@ -190,7 +191,7 @@ class BackgroundCleanups:
                     continue
         raise KeyError(video_id)
 
-    def _require(self, *, phase: str, use_gemini: bool = False, propagation_model: str = 'sam3'):
+    def _require(self, *, phase: str, proposal_backend: str = 'codex_external', propagation_model: str = 'sam3'):
         catalog = self.catalog()
         requirements = {item.id: item for item in catalog.requirements}
         required = ['video_tools', 'conda', 'simfoundry_env', 'sam2_checkpoint', 'auto_bg_sources']
@@ -203,7 +204,7 @@ class BackgroundCleanups:
         # upstream adapter gap, not a product-level requirement; remove the
         # Gemini capability gate only after those stages use the provider
         # contract (for example, DexAgent's Codex external transport).
-        if use_gemini or phase == 'build':
+        if proposal_backend == 'gemini' or phase == 'build':
             required.append('gemini')
         if phase == 'build':
             required.extend(['da3_env', 'nerfstudio_env', '3dgrut_env', 'mesh_env'])
@@ -217,9 +218,9 @@ class BackgroundCleanups:
             raise ValueError('SimFoundry 示例中的操作演示视频不能标记为相机扫描视频。')
         include_objects = self._clean_names(body.include_objects)
         skip_objects = self._clean_names(body.skip_objects)
-        if not body.use_gemini_proposal and not include_objects:
-            raise ValueError('关闭 Gemini 自动提案时，至少填写一个要从背景移除的对象名。')
-        self._require(phase='mask', use_gemini=body.use_gemini_proposal,
+        if body.proposal_backend == 'manual' and not include_objects:
+            raise ValueError('手动提案模式需要至少填写一个要从背景移除的对象名。')
+        self._require(phase='mask', proposal_backend=body.proposal_backend,
                       propagation_model=body.propagation_model)
         with self.lock:
             self._ensure_idle()
@@ -239,7 +240,7 @@ class BackgroundCleanups:
                 'include_objects': include_objects,
                 'skip_objects': skip_objects,
                 'propagation_model': body.propagation_model,
-                'use_gemini_proposal': body.use_gemini_proposal,
+                'proposal_backend': body.proposal_backend,
                 'status': 'preparing', 'current_step': '准备同一组 400 帧并生成关键帧 mask',
                 'message': '正在启动 SimFoundry mask 流程。',
                 'updated_at': self._now(), 'pid': None,
@@ -379,7 +380,11 @@ class BackgroundCleanups:
             id=job_id, scene_name=scene, source_video=CleanupVideo.model_validate(job['source_video']),
             capture_type=job['capture_type'], status=status, current_step=job['current_step'],
             message=job['message'], include_objects=job['include_objects'], skip_objects=job['skip_objects'],
-            propagation_model=job['propagation_model'], detected_objects=job.get('detected_objects', []),
+            propagation_model=job['propagation_model'],
+            proposal_backend=job.get('proposal_backend', 'gemini' if job.get('use_gemini_proposal') else 'manual'),
+            proposal_transport_dir=job.get('proposal_transport_dir'),
+            proposed_objects=job.get('proposed_objects', []),
+            detected_objects=job.get('detected_objects', []),
             mask_preview_url=f'/api/workbench/v1/background-cleanups/{job_id}/media/mask' if mask.is_file() else None,
             mask_video_url=f'/api/workbench/v1/background-cleanups/{job_id}/media/quadmask' if mask_video.is_file() else None,
             source_video_url=f'/api/workbench/v1/background-cleanups/{job_id}/media/source' if source.is_file() else '',

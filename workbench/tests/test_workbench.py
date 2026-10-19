@@ -263,13 +263,13 @@ def test_background_cleanup_lists_local_video_and_reports_missing_pipeline_env(t
         assert video['capture_type'] == 'operation_demo'
         assert video['path'].endswith('ThrowAwayTrash.mp4')
         rejected = test.post(PREFIX + '/background-cleanups', json={
-            'video_id': video['id'], 'capture_type': 'scene_scan', 'use_gemini_proposal': False,
+            'video_id': video['id'], 'capture_type': 'scene_scan', 'proposal_backend': 'manual',
             'include_objects': ['robot arm'], 'propagation_model': 'sam3',
         })
         assert rejected.status_code == 422
         assert '不能标记为相机扫描' in rejected.json()['detail']
         unavailable = test.post(PREFIX + '/background-cleanups', json={
-            'video_id': video['id'], 'capture_type': 'operation_demo', 'use_gemini_proposal': False,
+            'video_id': video['id'], 'capture_type': 'operation_demo', 'proposal_backend': 'manual',
             'include_objects': ['robot arm'], 'propagation_model': 'sam3',
         })
         assert unavailable.status_code == 503
@@ -292,7 +292,77 @@ def test_background_cleanup_build_preflight_reports_current_upstream_gemini_gap(
         videos=[], requirements=requirements, preview_available=True, build_available=False))
 
     with pytest.raises(CleanupUnavailable, match='GCP project is missing'):
-        manager._require(phase='build', use_gemini=False)
+        manager._require(phase='build', proposal_backend='codex_external')
+
+
+def test_background_cleanup_codex_proposal_does_not_require_gemini(tmp_path, monkeypatch):
+    from workbench.background_cleanups import BackgroundCleanups
+    from workbench.models import CleanupCatalog, CleanupRequirement
+
+    requirements = [CleanupRequirement(id=name, title=name, available=True, detail='ready') for name in (
+        'video_tools', 'conda', 'simfoundry_env', 'sam2_checkpoint', 'auto_bg_sources',
+    )]
+    requirements.extend([
+        CleanupRequirement(id='gemini', title='Gemini', available=False, detail='not configured'),
+        CleanupRequirement(id='void_env', title='VOID', available=False, detail='not needed for masks'),
+    ])
+    manager = BackgroundCleanups(tmp_path, tmp_path / 'state')
+    monkeypatch.setattr(manager, 'catalog', lambda: CleanupCatalog(
+        videos=[], requirements=requirements, preview_available=True, build_available=False))
+
+    manager._require(phase='mask', proposal_backend='codex_external', propagation_model='sam3')
+
+
+def test_background_cleanup_codex_external_proposal_uses_shared_agent_transport(tmp_path):
+    import threading
+    import time
+    from agent.external import atomic_json
+    from workbench import background_cleanup_worker as worker
+
+    job_dir = tmp_path / 'jobs' / '0123456789abcdef01234567'
+    job_dir.mkdir(parents=True)
+    keyframe = job_dir / 'frame.png'
+    keyframe.write_bytes(b'test image bytes')
+    write(job_dir / 'job.json', {
+        'floor_category': 'desk', 'include_objects': ['fixed robot arm'],
+        'skip_objects': ['table'], 'proposal_backend': 'codex_external',
+    })
+    result, errors = [], []
+
+    def request_proposal():
+        try:
+            result.append(worker._agent_object_proposal(job_dir, keyframe, {}))
+        except Exception as exc:
+            errors.append(exc)
+
+    thread = threading.Thread(target=request_proposal)
+    thread.start()
+    transport = job_dir / 'agent_external'
+    deadline = time.monotonic() + 5
+    status = {}
+    while time.monotonic() < deadline:
+        status_path = transport / 'status.json'
+        if status_path.is_file():
+            status = json.loads(status_path.read_text())
+            if status.get('state') == 'waiting':
+                break
+        time.sleep(0.01)
+    assert status.get('state') == 'waiting'
+    request = json.loads(Path(status['request']).read_text())
+    image = request['messages'][0]['content'][1]
+    assert image['type'] == 'image' and Path(image['path']).is_file()
+    response = [{'type': 'tool_use', 'id': 'proposal-1', 'name': 'propose_objects',
+                 'input': {'objects': ['robot arm', 'gripper'], 'evidence': 'visible foreground robot'}}]
+    atomic_json(transport / 'responses' / f'{request["id"]}.json', {
+        'session': request['session'], 'id': request['id'], 'content': response,
+    })
+    thread.join(timeout=5)
+
+    assert not thread.is_alive() and not errors
+    assert result == [['robot arm', 'gripper']]
+    saved = json.loads((job_dir / 'job.json').read_text())
+    assert saved['proposal_transport_dir'] == str(transport)
+    assert json.loads((transport / 'status.json').read_text())['state'] == 'finished'
 
 
 def test_background_cleanup_build_does_not_pass_auto_bg_key_to_canonical_hydra(tmp_path, monkeypatch):

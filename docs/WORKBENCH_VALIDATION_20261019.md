@@ -12,7 +12,7 @@
 
 | 检查 | 结果 | 覆盖范围 |
 | --- | --- | --- |
-| `python -m pytest -q workbench/tests` | 37 passed | 覆盖原有工作台契约、背景清理 API/状态流转、当前上游 VLM 兼容预检，以及 AutoBG 专属配置不会泄漏到 canonical Hydra 配置的回归 |
+| `python -m pytest -q workbench/tests` | 39 passed | 覆盖原有工作台契约、背景清理 API/状态流转、Codex external 图像请求/结构化提案往返、provider 预检，以及 AutoBG 专属配置隔离 |
 | `npm run generate:api` | 通过 | 从当前 OpenAPI 生成 TypeScript；无手工放宽类型 |
 | `npm run build` | 通过 | TypeScript strict 检查和 Vite 生产构建 |
 | 背景与配色调整后的现有浏览器回归 | 10 passed，2.2 分钟 | 真实视频播放、刷新恢复、失败证据、工具详情、手机布局、键盘导航、两类原生曲线、两类真实 3D、跨运行预览隔离 |
@@ -93,7 +93,9 @@ RSS live 状态桥先通过临时 Unix socket fixture 验证协议与只读白�
 
 用户选定 `SimFoundry/docs/assets/example_videos/ThrowAwayTrash.mp4` 作为冒烟输入。系统把示例视频归类为操作演示，仅用于 mask/补洞，不允许进入相机扫描的 3D 重建。该示例不能替代当前带机器人残影场景的原始扫描视频。本机目录扫描到 6 个示例视频；实际预检发现缺少 SimFoundry 环境、SAM2 checkpoint、VOID 环境/权重和 DA3/重建环境。SAM3 与 VOID 因此没有执行真实权重推理，界面禁用启动操作并显示缺失项；没有把未运行的流程报告成成功。
 
-背景清理页面曾在独立 `8767` 完成早期冒烟检查，随后已停止；最终版本运行在用户指定的默认端口 `8765`。经用户确认关闭当前无未保存更改的场景编辑会话后，服务按原默认配置重启到 `http://127.0.0.1:8765/background-cleanup`；同一个服务的健康检查为 `ok`，页面和 catalog API 均返回 200。最新验证结果：`.workbench/venv/bin/python -m pytest -q workbench/tests` 为 37 passed；背景清理页面 Playwright 定向检查在默认 8765 上 1 passed；前端 TypeScript/Vite 构建、Python 编译、SimFoundry 脚本语法检查通过。官方 SAM3 predictor 接口明确支持 `both`、`forward`、`backward` 传播方向及指定起始帧；本次核对接口并完成代码/页面接线，尚未在缺失模型环境的主机上实测质量、速度或显存。
+背景清理页面曾在独立 `8767` 完成早期冒烟检查，随后已停止；最终版本运行在用户指定的默认端口 `8765`。本轮运行健康状态为 `ok`，页面和 catalog API 均返回 200。对象提案 provider 已从 Gemini 布尔开关改为 Codex external（默认）、Gemini API/Vertex、手动三种选择。默认外部 Agent 复用 `agent.external`：每个清理任务独立保存请求、关键帧图像和匹配的响应；响应通过 `propose_objects` schema 校验后，作为 SimFoundry 的 SAM 文本提示。协议往返测试使用隔离 fixture 验证了图像文件、session 身份和结构化对象解析；没有声称本轮运行了真实视觉模型或当前 Codex 会话推理。
+
+最新验证结果：`.workbench/venv/bin/python -m pytest -q workbench/tests` 为 39 passed；背景清理 provider 选择器在默认 8765 的 Playwright 定向检查 1 passed；`npm run generate:api` 和 TypeScript/Vite 构建通过。当前主机缺少 SimFoundry/SAM/VOID/DA3 推理环境和权重，因此未执行真实分割、视频补洞或 3D 构建。全量 A 重建的其它阶段仍直接调用 Gemini，构建预检暂时保留这一上游兼容检查；Codex external 已替换的是 AutoBG 对象提案这一个阶段。官方 SAM3 predictor 接口支持 `both`、`forward`、`backward` 传播方向及指定起始帧；本次核对接口并完成代码/页面接线，尚未在缺失模型环境的主机上实测质量、速度或显存。
 
 ## 剩余限制
 

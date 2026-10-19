@@ -228,7 +228,7 @@ class CleanupCreate(BaseModel):
     include_objects: list[str] = Field(default_factory=list, max_length=20)
     skip_objects: list[str] = Field(default_factory=list, max_length=50)
     propagation_model: Literal['sam2', 'sam3'] = 'sam3'
-    use_gemini_proposal: bool = True
+    proposal_backend: Literal['codex_external', 'gemini', 'manual'] = 'codex_external'
 
 
 class CleanupJob(ReadModel):
@@ -243,6 +243,9 @@ class CleanupJob(ReadModel):
     include_objects: list[str] = Field(default_factory=list)
     skip_objects: list[str] = Field(default_factory=list)
     propagation_model: Literal['sam2', 'sam3'] = 'sam3'
+    proposal_backend: Literal['codex_external', 'gemini', 'manual'] = 'codex_external'
+    proposal_transport_dir: str | None = None
+    proposed_objects: list[str] = Field(default_factory=list)
     detected_objects: list[str] = Field(default_factory=list)
     mask_preview_url: str | None = None
     mask_video_url: str | None = None

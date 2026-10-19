@@ -13,6 +13,13 @@ test("background cleanup exposes SAM3 and the SimFoundry comparison with truthfu
   await expect(video).toHaveValue(/.+/);
   await expect(video.locator("option:checked")).toContainText("ThrowAwayTrash.mp4");
   await expect(page.getByText("操作演示只用于 mask/补洞冒烟测试", { exact: false })).toBeVisible();
+  const proposal = page.getByLabel("对象提案 provider");
+  await expect(proposal).toHaveValue("codex_external");
+  await expect(proposal.locator("option")).toContainText([
+    "DexAgent / Codex external（推荐）",
+    "Gemini API / Vertex（上游兼容）",
+    "手动对象提示词",
+  ]);
   const model = page.getByLabel("视频分割模型");
   await expect(model.locator("option")).toContainText([
     "SAM3 单模型（文字分割 + 跨帧跟踪）",

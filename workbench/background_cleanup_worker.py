@@ -1,6 +1,7 @@
 """Run one supervised phase of the optional SimFoundry cleanup workflow."""
 from __future__ import annotations
 
+import base64
 import argparse
 import json
 import os
@@ -45,6 +46,58 @@ def _runner_command(manager: Path, env_name: str, script: Path, *overrides: str)
     return [str(manager), 'run', '-n', env_name, 'python', str(script), *overrides]
 
 
+def _agent_object_proposal(job_dir: Path, keyframe: Path, job: dict) -> list[str]:
+    """Ask the existing DexAgent external-model transport for typed object labels."""
+    from agent.external import ExternalLLM
+
+    transport = job_dir / 'agent_external'
+    job = _load(job_dir)
+    job.update(current_step='等待 Codex external 对象提案', proposal_transport_dir=str(transport),
+               message='关键帧已准备。请通过 DexAgent external 请求/响应给出要从静态背景移除的对象；可在工作台检查返回结果。')
+    _save(job_dir, job)
+    llm = ExternalLLM(transport, timeout_s=float(os.environ.get('WORKBENCH_AGENT_PROPOSAL_TIMEOUT_S', '43200')))
+    manual = job.get('include_objects', [])
+    skip = job.get('skip_objects', [])
+    content = llm.complete(
+        system=(
+            'You are the scene-understanding provider in EmbodiForge. Inspect the representative frame from a moving-camera scene scan. '
+            'Return concise SAM3 text prompts for every foreground item that must be removed from the static background, including robot arms, '
+            'grippers, hands, and task objects. Do not include the floor, table/support surface, walls, or fixed room structure. '
+            'Respect operator-provided removals and exclusions. Do not invent objects that are not visible. Return one structured tool result only.'
+        ),
+        messages=[{'role': 'user', 'content': [
+            {'type': 'text', 'text': json.dumps({
+                'floor_category': job['floor_category'],
+                'operator_include_objects': manual,
+                'operator_skip_objects': skip,
+                'task': 'Propose visible foreground removal targets as short text prompts. Include confidence and a short evidence note for each target.',
+            }, ensure_ascii=False)},
+            {'type': 'image', 'mime': 'image/png', 'data': base64.b64encode(keyframe.read_bytes()).decode('ascii')},
+        ]}],
+        tools=[{'name': 'propose_objects', 'description': 'Return foreground objects to remove from the static background.',
+                'input_schema': {'type': 'object', 'properties': {
+                    'objects': {'type': 'array', 'items': {'type': 'string'}, 'minItems': 1, 'maxItems': 20},
+                    'evidence': {'type': 'string'},
+                }, 'required': ['objects'], 'additionalProperties': False}}],
+    )
+    calls = [block for block in content if block.get('type') == 'tool_use' and block.get('name') == 'propose_objects']
+    if len(calls) != 1:
+        raise RuntimeError('Codex external proposal must return exactly one propose_objects tool result.')
+    raw = calls[0]['input'].get('objects')
+    if not isinstance(raw, list) or not raw or len(raw) > 20 or any(not isinstance(name, str) for name in raw):
+        raise RuntimeError('Codex external proposal objects must be a nonempty list of at most 20 text prompts.')
+    names, seen = [], set()
+    for value in raw:
+        name = ' '.join(value.split())
+        if name and name.casefold() not in seen:
+            names.append(name)
+            seen.add(name.casefold())
+    if not names:
+        raise RuntimeError('Codex external returned no usable object prompts.')
+    llm.close({'provider': 'codex_external', 'objects': names})
+    return names
+
+
 def _mask_phase(repo: Path, manager: Path, job_dir: Path, env: dict[str, str], job: dict) -> None:
     sim = repo / 'SimFoundry'
     data_root = sim / 'Data'
@@ -78,6 +131,21 @@ def _mask_phase(repo: Path, manager: Path, job_dir: Path, env: dict[str, str], j
     (void_input / 'subsampled').symlink_to(frames, target_is_directory=True)
     (void_input / 'input_video.mp4').symlink_to(input_video)
 
+    if job.get('proposal_backend', 'manual') == 'codex_external':
+        _set_phase(job_dir, 'preparing', '等待对象提案', '关键帧已生成，正在通过 DexAgent external 请求对象移除提案。')
+        proposed = _agent_object_proposal(job_dir, frame_paths[0], job)
+        job = _load(job_dir)
+        combined = list(job.get('include_objects', [])) + proposed
+        names, seen = [], set()
+        for value in combined:
+            name = ' '.join(str(value).split())
+            if name and name.casefold() not in seen:
+                names.append(name)
+                seen.add(name.casefold())
+        job.update(proposed_objects=proposed, include_objects=names,
+                   message=f'Codex external 提议 {len(proposed)} 个对象：{", ".join(proposed)}。正在生成并传播 SAM mask。')
+        _save(job_dir, job)
+
     model_name = ('SAM3 单模型双向跟踪' if job['propagation_model'] == 'sam3'
                   else 'SAM3 关键帧分割 + SAM2 双向传播')
     _set_phase(job_dir, 'preparing', model_name,
@@ -86,7 +154,7 @@ def _mask_phase(repo: Path, manager: Path, job_dir: Path, env: dict[str, str], j
     override_values = [
         f'scene_name={scene}',
         f'floor_category={_hydra_string(job["floor_category"])}',
-        f's1_quadmask.use_gemini_proposal={str(job["use_gemini_proposal"]).lower()}',
+        f's1_quadmask.use_gemini_proposal={str(job.get("proposal_backend") == "gemini").lower()}',
         's1_quadmask.include_objects=' + json.dumps(job['include_objects'], ensure_ascii=False),
         's1_quadmask.skip=' + json.dumps(job['skip_objects'], ensure_ascii=False),
         f's1_quadmask.propagation_model={job["propagation_model"]}',

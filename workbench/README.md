@@ -13,7 +13,7 @@ EmbodiForge Studio 统一查看 DexAgent 与 RoboSimStudio 的真实运行、场
 - RSS 刚体记录与 DexAgent rigid_robot 轨迹的原生 Viser 3D 回放。生成过程使用现有 SharpaBridge / StateReplay，核对场景、资产、坐标身份和记录时钟，不执行物理。
 - RoboSimStudio live 会话只读状态卡片：显示真实仿真步数、时钟、暂停/运行、数值状态和实体位姿，并可跳转原生 Viewer；不启动、暂停或驱动仿真。
 - SimFoundry scene JSON 的原位布局编辑：保留原生房间网格、贴图与机器人；支持选中、变换、保存候选、跨会话历史与继续编辑，离开或续编时检查未保存修改。
-- 背景清理：浏览 SimFoundry 示例与本地视频；选择 SAM3 单模型视频跟踪或原流程 SAM3 mask + SAM2 传播；确认关键帧/跨帧 mask 后再运行 VOID，并复核补洞视频。相机扫描可继续进入原生 A 重建与 AutoBG 对齐；操作演示仅用于清理冒烟测试。
+- 背景清理：浏览 SimFoundry 示例与本地视频；对象提案可选 DexAgent/Codex external、Gemini API/Vertex 或手动提示词；SAM3 单模型视频跟踪与原流程 SAM3 mask + SAM2 传播共用同一 mask 契约。确认关键帧/跨帧 mask 后再运行 VOID，并复核补洞视频。相机扫描可继续进入原生 A 重建与 AutoBG 对齐；操作演示仅用于清理冒烟测试。
 - 当前工作树中的工具库检索及输入输出声明；不会执行浏览器提交的 Python。
 
 ## 启动
@@ -73,6 +73,27 @@ Node 环境已在 22.23.2 验证。服务不自动安装或启动 RSS；3D 生�
 6. 底部日志支持查看开头/末尾、暂停跟随和完整下载；向上阅读时暂停自动跟随。
 
 总览只汇集已有 API 状态，不启动新的 DexAgent/RSS 运行。执行范围、机器验收和发布资格分别显示。`scope_completed` 不等于单次 Stage 1–4 完成；缺失报告、未知 schema、损坏 JSON、未绑定的跨调用汇总均不能产生绿色通过。视频背景清理是独立入口，运行前展示当前 SimFoundry/VOID 环境状态。
+
+### 背景清理 Agent 提案
+
+默认对象提案走 DexAgent 已有的 `external` 请求/响应协议，不调用 Gemini API。任务抽帧后，详情页会显示隔离的 transport 目录；在 DexAgent Python 环境中读取请求：
+
+```bash
+python -m agent.external wait "/path/from/workbench" --timeout 60
+python -m agent.external inspect "/path/to/requests/<session-turn>.json"
+```
+
+按请求中的 `propose_objects` schema 写响应 JSON（图像文件路径位于请求中），再提交：
+
+```json
+[{"type":"tool_use","id":"proposal-1","name":"propose_objects","input":{"objects":["robot arm","gripper"],"evidence":"visible foreground robot"}}]
+```
+
+```bash
+python -m agent.external respond "/path/to/requests/<session-turn>.json" /path/to/response.json
+```
+
+响应需要和本任务 request/session 匹配；每个任务有独立 transport，结果与图像留在该任务目录供审计。Gemini API/Vertex 仍可作为提案 provider 选项；全量场景构建中的其它直接 Gemini 调用尚未全部接入该 provider 协议，因此构建预检会如实报告兼容限制。
 
 ### 场景布局编辑
 

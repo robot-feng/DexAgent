@@ -635,10 +635,11 @@ export interface components {
              */
             propagation_model: "sam2" | "sam3";
             /**
-             * Use Gemini Proposal
-             * @default true
+             * Proposal Backend
+             * @default codex_external
+             * @enum {string}
              */
-            use_gemini_proposal: boolean;
+            proposal_backend: "codex_external" | "gemini" | "manual";
         };
         /** CleanupJob */
         CleanupJob: {
@@ -671,6 +672,16 @@ export interface components {
              * @enum {string}
              */
             propagation_model: "sam2" | "sam3";
+            /**
+             * Proposal Backend
+             * @default codex_external
+             * @enum {string}
+             */
+            proposal_backend: "codex_external" | "gemini" | "manual";
+            /** Proposal Transport Dir */
+            proposal_transport_dir: string | null;
+            /** Proposed Objects */
+            proposed_objects: string[];
             /** Detected Objects */
             detected_objects: string[];
             /** Mask Preview Url */

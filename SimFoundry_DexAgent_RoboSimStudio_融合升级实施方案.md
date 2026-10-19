@@ -184,7 +184,7 @@ DA3 默认 Nested 权重标注 CC BY-NC 4.0；许可证允许与否必须作为�
 
 SimFoundry 论文和当前代码把场景构建拆成“可交互前景实体”和“静态背景”两条分支。标准 A reconstruction 会从代表帧提取对象 RGB-D、生成对象网格并估计位姿/物理属性；若还要得到干净的房间/桌面背景，需额外运行 [auto-background 支路](SimFoundry/scripts/pipeline/A_reconstruction/stages/auto_bg_reconstruction/README.md)。只运行标准重建或普通 Stage 2c 高斯训练，不等价于完成对象去除、视频补洞和背景对齐。
 
-代码中的自动背景顺序是：同一源视频关键帧由可替换的对象提案 provider 列出前景类别 → SAM3 生成各类 mask（可选利用 provider 返回的框做点提示）→ SAM3 单模型传播或 SAM2 双向传播 → VOID 分两遍、分块修复 → DA3 在修复帧估深度，并复用原视频 DA3 相机轨迹 → 深度监督 Gaussian Splat 训练 → 将背景刚性桥接到重建场景坐标 → 与场景资产合并。当前上游默认提案实现是 Gemini；EmbodiForge 的目标是让 Codex external、本地 VLM 或其它显式配置后端提供同一结构化提案契约。这样修复帧提供“对象后面可能是什么”的视觉推断，而实体几何/碰撞仍单独从前景分支生成；补全纹理不应充当已实测碰撞表面。论文报告自动补洞分支单 GPU 约 90 分钟/场景，适合与对象生成并行。
+代码中的自动背景顺序是：同一源视频关键帧由可替换的对象提案 provider 列出前景类别 → SAM3 生成各类 mask（可选利用 provider 返回的框做点提示）→ SAM3 单模型传播或 SAM2 双向传播 → VOID 分两遍、分块修复 → DA3 在修复帧估深度，并复用原视频 DA3 相机轨迹 → 深度监督 Gaussian Splat 训练 → 将背景刚性桥接到重建场景坐标 → 与场景资产合并。SimFoundry AutoBG 原生配置默认用 Gemini；Workbench 已把提案后端接成 Codex external（默认）、Gemini 或手动对象提示，并将外部结果传入既有 SAM 阶段。这样修复帧提供“对象后面可能是什么”的视觉推断，而实体几何/碰撞仍单独从前景分支生成；补全纹理不应充当已实测碰撞表面。论文报告自动补洞分支单 GPU 约 90 分钟/场景，适合与对象生成并行。
 
 DINOv3 不参与上述背景分支。它只在可选 Pixal3D 单图网格生成后端里提取 global 与 patch 特征，并把 patch 特征按相机参数回投到 3D 网格条件中；BRIA 则只负责 Stage 6 物体图的前景 alpha。复现完整自动数据生成器还需接上 SimFoundry B/C（对象、布局、任务变体与运行时采集/评估）、DexAgent 的演示语义和阶段修复、RoboSimStudio 的目标运行时物理验收及权威 episode 记录；EmbodiForge Studio 提供统一 run/场景/证据入口，不再建立第二套权威数据格式。
 
@@ -302,6 +302,8 @@ DexAgent 已有统一入口 `run_dexagent.py`、阶段报告、交付校验、�
 DexAgent 不通过模型 API 调用 Codex。需要 Codex 判断的步骤使用现有 external 文件请求/响应流程：程序写出带输入哈希和 schema 版本的请求文件，Codex 读取并生成响应文件，程序校验响应后继续。SimFoundry 中的 Gemini/Vertex、GPT 图像或其它在线调用必须关闭、替换为本地模型，或改成上述文件交互；不能在正式流程中静默回退到在线服务。离线缓存只用于复现已有请求，不代表新输入可无 API 处理。
 
 **Gemini 是当前上游代码的一种实现，不是 EmbodiForge 的系统要求。** 每个需要语义判断/提案的阶段都应调用统一的 provider 能力契约，可按阶段选择 Codex external（复用 `agent/external.py` 的请求/响应协议）、本地模型、显式配置的远程 API，或人工提供结构化结果。阶段只检查本次所选 provider 和其输入/输出契约；不能把 `GCLOUD_PROJECT` 当成全流程能力门槛。当前某些 SimFoundry 阶段仍直接实例化 Gemini，因此升级期间可报告该上游兼容缺口并阻止无效的长任务；移除检查前必须先接好替代 provider，不能把失败推迟到昂贵阶段中。
+
+**已落地的第一处替换：** Workbench 背景清理中的 AutoBG 对象提案默认调用 DexAgent external，发出带关键帧图像的隔离请求，要求 Agent 通过 `propose_objects` 返回对象文本提示，再交给 SimFoundry 既有 SAM mask 阶段；Gemini 与手动提示仍可选择。该适配只替换 AutoBG 提案环节。SimFoundry A 全量构建的其它识别和图像编辑阶段还未全部接入 provider，当前预检仍会拦截缺少 Gemini 凭据的全量构建。
 
 ### 5.5 静态环境与操作实体必须分离
 

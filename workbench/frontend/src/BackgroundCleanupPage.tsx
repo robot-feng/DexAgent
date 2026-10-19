@@ -44,7 +44,7 @@ export function BackgroundCleanupPage() {
   const [floorCategory, setFloorCategory] = useState("desk");
   const [includeText, setIncludeText] = useState("robot arm, gripper");
   const [skipText, setSkipText] = useState("");
-  const [useGemini, setUseGemini] = useState(false);
+  const [proposalBackend, setProposalBackend] = useState<"codex_external" | "gemini" | "manual">("codex_external");
   const [propagationModel, setPropagationModel] = useState<"sam3" | "sam2">("sam3");
   const [selectedJobId, setSelectedJobId] = useState("");
 
@@ -57,9 +57,9 @@ export function BackgroundCleanupPage() {
   const canStart = Boolean(
     catalog.data?.preview_available &&
     (propagationModel === "sam3" || requirement("sam2_checkpoint")?.available) &&
-    (!useGemini || requirement("gemini")?.available) &&
+    (proposalBackend !== "gemini" || requirement("gemini")?.available) &&
     videoId &&
-    (useGemini || objectNames(includeText).length),
+    (proposalBackend !== "manual" || objectNames(includeText).length),
   );
 
   useEffect(() => {
@@ -84,7 +84,7 @@ export function BackgroundCleanupPage() {
       include_objects: objectNames(includeText),
       skip_objects: objectNames(skipText),
       propagation_model: propagationModel,
-      use_gemini_proposal: useGemini,
+      proposal_backend: proposalBackend,
     }),
     onSuccess: (job) => {
       setSelectedJobId(job.id);
@@ -165,9 +165,9 @@ export function BackgroundCleanupPage() {
               </label>
             </div>
             <label>
-              <span>要移除的对象提示词</span>
+              <span>{proposalBackend === "manual" ? "要移除的对象提示词" : "补充要移除的对象（可选）"}</span>
               <textarea aria-label="要移除的对象提示词" value={includeText} onChange={(event) => setIncludeText(event.target.value)} placeholder="例如：robot arm, gripper" rows={3} />
-              <small className="muted">逗号分隔。固定安装的机器人不一定会被自动提案发现，建议明确填写 robot arm、gripper 等。</small>
+              <small className="muted">逗号分隔。固定机器人、夹爪或人手容易漏检，可把它们作为明确的补充移除对象。</small>
             </label>
             <label>
               <span>保留对象（可选）</span>
@@ -181,20 +181,27 @@ export function BackgroundCleanupPage() {
                   <option value="sam2">SimFoundry 原流程（SAM3 mask + SAM2 传播）</option>
                 </select>
               </label>
-              <label className="check-row">
-                <input type="checkbox" checked={useGemini} onChange={(event) => setUseGemini(event.target.checked)} />
-                <span>同时使用 Gemini 提议桌面物体</span>
+              <label>
+                <span>对象提案 provider</span>
+                <select aria-label="对象提案 provider" value={proposalBackend} onChange={(event) => setProposalBackend(event.target.value as typeof proposalBackend)}>
+                  <option value="codex_external">DexAgent / Codex external（推荐）</option>
+                  <option value="gemini">Gemini API / Vertex（上游兼容）</option>
+                  <option value="manual">手动对象提示词</option>
+                </select>
               </label>
             </div>
             <div className="notice cleanup-note">
               <ShieldCheck size={16} />
-              <span>默认由 SAM3 完成关键帧文本分割与双向视频跟踪；SAM2 组合可作为对照。VOID 负责后续视频补洞。每次只运行一个 GPU 清理阶段。</span>
+              <span>对象提案由所选 provider 生成结构化标签；DexAgent external 会把关键帧交给外部 Agent 并等待匹配响应。默认由 SAM3 完成关键帧文本分割与双向跟踪，SAM2 可作对照；VOID 负责后续视频补洞。</span>
             </div>
             {catalog.data?.preview_available && propagationModel === "sam2" && requirement("sam2_checkpoint")?.available === false && (
               <p className="notice warning cleanup-warning">所选 SimFoundry 原组合需要本机 SAM2 checkpoint；当前未检测到，切回 SAM3 单模型或安装该权重。</p>
             )}
-            {catalog.data?.preview_available && useGemini && requirement("gemini")?.available === false && (
-              <p className="notice warning cleanup-warning">Gemini 对象提案需要配置 GCP 项目；也可以关闭该选项并填写对象提示词。</p>
+            {catalog.data?.preview_available && proposalBackend === "gemini" && requirement("gemini")?.available === false && (
+              <p className="notice warning cleanup-warning">所选 Gemini provider 需要 Gemini API key 或 Vertex 项目；也可以切换到 DexAgent external 或手动提示词。</p>
+            )}
+            {proposalBackend === "codex_external" && (
+              <p className="muted small">Agent 请求与图像会保存在本次任务目录；任务启动后可从详情页复制 external transport 命令。</p>
             )}
             <button className="button primary" disabled={create.isPending || !canStart}>
               <Play size={15} />
@@ -259,6 +266,14 @@ function CleanupReview({ job, onApprove, onBuild, onStop, busy, canBuild }: {
         <div><span className={`cleanup-status ${job.status}`}>{statusNames[job.status]}</span><p>{job.current_step}</p><small className="muted">{job.message}</small></div>
         {isActive(job) && <button className="button" onClick={onStop} disabled={busy}><Square size={14} />停止</button>}
       </div>
+      {job.status === "preparing" && job.proposal_backend === "codex_external" && job.proposal_transport_dir && (
+        <div className="notice cleanup-note">
+          <div><strong>等待 Agent 对象提案</strong><p>在终端读取本任务请求；拿到 request.json 后用 external inspect 查看关键帧，再提交 propose_objects 响应。</p>
+            <code className="mono">python -m agent.external wait "{job.proposal_transport_dir}" --timeout 60</code>
+            <small className="muted">重复 wait 直到返回 waiting 请求；响应示例和提交命令见工作台 README 的“背景清理 Agent 提案”。</small>
+          </div>
+        </div>
+      )}
       {job.status === "review_mask" && (
         <>
           <div className="notice warning cleanup-warning"><AlertTriangle size={16} /><span>确认彩色区域只覆盖要移除的对象，并在黑白视频中检查跨帧跟踪。mask 不正确时请调整对象提示词后重新生成。</span></div>
