@@ -302,6 +302,8 @@ SimFoundry 官方 `install_everything.sh` 明确按上游阶段建立七个工�
 
 第一版不需要微服务、消息总线或分布式调度器。
 
+**2026-10-20 环境预检增量：** Workbench 背景清理目录不再把 `conda-meta` 存在当成环境安装完成；现在用目标环境的 Python 发现对应阶段所需模块，缺少解释器、缺包、检查超时或结果损坏都会禁用相应启动。目录浏览的检查缓存 30 秒，任务启动前重新检查；支持 `CONDA_ENVS_PATH` 与 `MAMBA_ROOT_PREFIX` 中的环境位置。该检查不加载模型、初始化 CUDA 或启动 OmniGibson，也不证明权重、原生扩展或推理已通过。当前主环境仍在安装，真实 API 和浏览器均显示缺少模块并禁止生成 mask；全套 Workbench 测试为 54 passed。详见[本轮验证记录](docs/WORKBENCH_ENV_PREFLIGHT_20261020.md)。
+
 ### 5.4 无模型 API 约束
 
 DexAgent 不通过模型 API 调用 Codex。需要 Codex 判断的步骤使用现有 external 文件请求/响应流程：程序写出带输入哈希和 schema 版本的请求文件，Codex 读取并生成响应文件，程序校验响应后继续。SimFoundry 中的 Gemini/Vertex、GPT 图像或其它在线调用必须关闭、替换为本地模型，或改成上述文件交互；不能在正式流程中静默回退到在线服务。离线缓存只用于复现已有请求，不代表新输入可无 API 处理。

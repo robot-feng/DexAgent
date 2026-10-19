@@ -17,6 +17,16 @@ from .models import CleanupCatalog, CleanupCreate, CleanupJob, CleanupRequiremen
 
 VIDEO_SUFFIXES = {'.mp4', '.mov', '.mkv', '.webm'}
 ACTIVE = {'preparing', 'inpainting', 'building'}
+# Match the environments used by the native stage launchers. Module discovery
+# does not load checkpoints, initialize CUDA, or boot OmniGibson.
+ENV_MODULES = {
+    'simfoundry': ('simfoundry', 'torch', 'numpy', 'PIL', 'cv2', 'hydra', 'omegaconf', 'sam3', 'transformers', 'skimage'),
+    'void': ('torch', 'diffusers', 'transformers', 'safetensors', 'accelerate', 'av', 'rp', 'omegaconf'),
+    'da3': ('simfoundry', 'torch', 'depth_anything_3', 'cv2', 'hydra'),
+    'nerfstudio_simfoundry': ('torch', 'nerfstudio', 'gsplat', 'hydra'),
+    '3dgrut': ('torch', 'threedgrut', 'kaolin', 'ppisp', 'fused_ssim'),
+    'hunyuan': ('simfoundry', 'torch', 'diffusers', 'transformers', 'bpy'),
+}
 
 
 def _gemini_capability() -> tuple[bool, str]:
@@ -104,6 +114,7 @@ class BackgroundCleanups:
         self.timeout_s = timeout_s
         self.lock = threading.RLock()
         self.processes: dict[str, tuple[subprocess.Popen, float]] = {}
+        self.environment_probes: dict[tuple[str, tuple[str, ...]], tuple[float, bool, str]] = {}
 
     def _conda(self) -> Path | None:
         configured = os.environ.get('CONDA_EXE')
@@ -112,7 +123,9 @@ class BackgroundCleanups:
         return Path(found).resolve() if found else None
 
     def _env_dirs(self) -> list[Path]:
-        values = []
+        values = [Path(p).expanduser() for p in os.environ.get('CONDA_ENVS_PATH', '').split(os.pathsep) if p]
+        if os.environ.get('MAMBA_ROOT_PREFIX'):
+            values.append(Path(os.environ['MAMBA_ROOT_PREFIX']).expanduser() / 'envs')
         conda = self._conda()
         if conda:
             base = conda.parent.parent if conda.parent.name in {'bin', 'condabin'} else conda.parent
@@ -123,8 +136,45 @@ class BackgroundCleanups:
             values.append(path.parent if path.parent.name == 'envs' else path / 'envs')
         return [p for p in dict.fromkeys(values) if p.is_dir()]
 
-    def _has_env(self, name: str) -> bool:
-        return any((root / name / 'conda-meta').is_dir() for root in self._env_dirs())
+    def _environment_ready(self, name: str) -> tuple[bool, str]:
+        prefix = next((root / name for root in self._env_dirs() if (root / name / 'conda-meta').is_dir()), None)
+        if prefix is None:
+            return False, f'缺少 {name} 环境；请先完成对应安装。'
+        interpreter = prefix / 'bin/python'
+        if not interpreter.is_file():
+            return False, f'{name} 环境目录已创建，但缺少 Python 解释器；安装尚未完成。'
+        modules = ENV_MODULES[name]
+        key = (str(interpreter), modules)
+        with self.lock:
+            cached = self.environment_probes.get(key)
+        if cached and time.monotonic() - cached[0] < 30:
+            return cached[1], cached[2]
+        script = '''import importlib.util, json, sys
+modules = json.loads(sys.argv[1])
+missing = [name for name in modules if importlib.util.find_spec(name) is None]
+print(json.dumps({"missing": missing}))
+'''
+        try:
+            result = subprocess.run([str(interpreter), '-c', script, json.dumps(modules)],
+                                    cwd=self.repo, capture_output=True, text=True, timeout=5, check=True)
+            missing = json.loads(result.stdout.strip().splitlines()[-1])['missing']
+            if not isinstance(missing, list) or any(not isinstance(item, str) or item not in modules for item in missing):
+                raise ValueError('invalid missing-module list')
+            ready = not missing
+            detail = (f'{name} 环境目录已创建，但缺少 Python 模块：{"、".join(missing)}；请完成安装。'
+                      if missing else f'{name} 所需 Python 模块已找到；模型权重、CUDA 扩展和实际推理尚需运行验证。')
+        except (OSError, subprocess.SubprocessError, ValueError, KeyError, IndexError, TypeError) as exc:
+            ready = False
+            # Do not expose subprocess output: startup scripts may contain local
+            # configuration or credentials. Keep diagnostics bounded and explicit.
+            detail = f'{name} 环境依赖检查失败（{type(exc).__name__}）；未确认可运行，请检查安装。'
+        with self.lock:
+            self.environment_probes[key] = (time.monotonic(), ready, detail)
+        return ready, detail
+
+    def _environment_requirement(self, requirement_id: str, title: str, name: str) -> CleanupRequirement:
+        ready, detail = self._environment_ready(name)
+        return CleanupRequirement(id=requirement_id, title=title, available=ready, detail=detail)
 
     def _requirements(self) -> list[CleanupRequirement]:
         auto_bg = self.simfoundry / 'scripts/pipeline/A_reconstruction/stages/auto_bg_reconstruction'
@@ -137,29 +187,29 @@ class BackgroundCleanups:
         has_void = ((void_root / 'inference/cogvideox_fun/inference_with_pass1_warped_noise.py').is_file()
                     and (void_root / 'void_pass1.safetensors').is_file()
                     and (void_root / 'void_pass2.safetensors').is_file())
+        void_ready, void_detail = self._environment_ready('void')
+        if void_ready and not has_void:
+            void_detail = 'VOID Python 模块已找到，但缺少 VOID 源码或 pass1/pass2 权重。'
+        elif void_ready:
+            void_detail += ' VOID 源码和 pass1/pass2 权重文件已找到。'
         has_gemini_auth, gemini_detail = _gemini_capability()
         values = [
             CleanupRequirement(id='video_tools', title='视频工具', available=bool(shutil.which('ffmpeg')),
                                detail='需要 ffmpeg 处理输入和预览视频。' if not shutil.which('ffmpeg') else 'ffmpeg 可用。'),
             CleanupRequirement(id='conda', title='Conda/Mamba', available=self._conda() is not None,
                                detail='需要 conda 或 mamba 启动 SimFoundry 环境。' if not self._conda() else f'检测到 {self._conda()}。'),
-            CleanupRequirement(id='simfoundry_env', title='SimFoundry 环境', available=self._has_env('simfoundry'),
-                               detail='需要 simfoundry 环境运行抽帧、SAM3 和场景流程。' if not self._has_env('simfoundry') else '环境已安装。'),
+            self._environment_requirement('simfoundry_env', 'SimFoundry 环境', 'simfoundry'),
             CleanupRequirement(id='sam2_checkpoint', title='SAM2 视频传播权重', available=has_sam2,
                                detail='缺少 sam2.1_hiera_large.pt；按 SimFoundry 默认路径检查。' if not has_sam2 else 'SAM2 权重已找到。'),
-            CleanupRequirement(id='void_env', title='VOID 环境与权重', available=self._has_env('void') and has_void,
-                               detail='需要 void 环境、VOID 源码和 pass1/pass2 权重。' if not (self._has_env('void') and has_void) else 'VOID 环境与权重已找到。'),
+            CleanupRequirement(id='void_env', title='VOID 环境与权重', available=void_ready and has_void,
+                               detail=void_detail),
             CleanupRequirement(id='gemini', title='上游 Gemini 后端（兼容项）', available=has_gemini_auth,
                                detail=(f'当前全量 A 仍有对象图像编辑、模型分类等 Gemini 调用。{gemini_detail}'
                                        if not has_gemini_auth else gemini_detail)),
-            CleanupRequirement(id='da3_env', title='DA3 环境', available=self._has_env('da3'),
-                               detail='完整 3D 场景生成需要 da3 环境。' if not self._has_env('da3') else '环境已安装。'),
-            CleanupRequirement(id='nerfstudio_env', title='Nerfstudio 环境', available=self._has_env('nerfstudio_simfoundry'),
-                               detail='完整背景高斯训练需要 nerfstudio_simfoundry 环境。' if not self._has_env('nerfstudio_simfoundry') else '环境已安装。'),
-            CleanupRequirement(id='3dgrut_env', title='3DGRUT 环境', available=self._has_env('3dgrut'),
-                               detail='完整场景资产生成需要 3dgrut 环境。' if not self._has_env('3dgrut') else '环境已安装。'),
-            CleanupRequirement(id='mesh_env', title='网格生成环境', available=self._has_env('hunyuan'),
-                               detail='完整 A 重建需要 hunyuan 环境。' if not self._has_env('hunyuan') else '环境已安装。'),
+            self._environment_requirement('da3_env', 'DA3 环境', 'da3'),
+            self._environment_requirement('nerfstudio_env', 'Nerfstudio 环境', 'nerfstudio_simfoundry'),
+            self._environment_requirement('3dgrut_env', '3DGRUT 环境', '3dgrut'),
+            self._environment_requirement('mesh_env', '网格生成环境', 'hunyuan'),
             CleanupRequirement(id='auto_bg_sources', title='AutoBG 源码', available=(auto_bg / 'run_auto_align.sh').is_file(),
                                detail='本地 checkout 未包含 AutoBG 入口。' if not (auto_bg / 'run_auto_align.sh').is_file() else 'SimFoundry AutoBG 入口已找到。'),
         ]
@@ -246,7 +296,11 @@ class BackgroundCleanups:
         raise KeyError(video_id)
 
     def _require(self, *, phase: str, proposal_backend: str = 'codex_external', propagation_model: str = 'sam3'):
-        catalog = self.catalog()
+        # Polling may reuse dependency discovery; starting work must recheck the
+        # current environment after an install, uninstall or repair.
+        with self.lock:
+            self.environment_probes.clear()
+            catalog = self.catalog()
         requirements = {item.id: item for item in catalog.requirements}
         required = ['video_tools', 'conda', 'simfoundry_env', 'sam2_checkpoint', 'auto_bg_sources']
         if propagation_model == 'sam3':
@@ -262,7 +316,8 @@ class BackgroundCleanups:
             required.append('gemini')
         if phase == 'build':
             required.extend(['da3_env', 'nerfstudio_env', '3dgrut_env', 'mesh_env'])
-        missing = [requirements[item].detail for item in required if not requirements[item].available]
+        missing = [requirements[item].detail if item in requirements else f'缺少运行依赖检查：{item}。'
+                   for item in required if item not in requirements or not requirements[item].available]
         if missing:
             raise CleanupUnavailable('；'.join(missing))
 
