@@ -2184,6 +2184,102 @@ dd {
   color: var(--blue);
   flex: none;
 }
+.studio-live-panel {
+  margin-top: 14px;
+  padding: 17px;
+}
+.studio-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  padding: 5px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.studio-live-badge.online {
+  border-color: #2d634e;
+  color: #82d8ad;
+  background: #17271f;
+}
+.studio-live-metrics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin: 14px 0;
+}
+.studio-live-metrics > div {
+  display: grid;
+  gap: 4px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+}
+.studio-live-metrics small,
+.studio-live-entity code,
+.studio-live-empty small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.studio-live-metrics strong {
+  color: #e8eef7;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.studio-live-entities {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 16px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+.studio-live-entity,
+.studio-live-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+.studio-live-entity {
+  padding: 5px 0;
+  font-size: 12px;
+}
+.studio-live-entity span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.studio-live-entity code {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+.studio-live-footer {
+  margin-top: 8px;
+  font-size: 11px;
+}
+.studio-live-footer .link-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--blue);
+}
+.studio-live-empty {
+  display: grid;
+  gap: 5px;
+  padding: 12px 0 2px;
+  color: var(--text);
+  font-size: 13px;
+}
+.studio-live-empty small {
+  line-height: 1.6;
+}
+.studio-live-empty code {
+  color: #c8d5e8;
+}
 .capability-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2246,6 +2342,19 @@ dd {
   }
   .capability-list {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .studio-live-panel {
+    padding: 14px;
+  }
+  .studio-live-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .studio-live-entities {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .studio-live-footer {
+    align-items: flex-start;
+    flex-direction: column;
   }
   .overview-run {
     gap: 7px;

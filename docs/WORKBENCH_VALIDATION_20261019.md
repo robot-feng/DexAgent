@@ -12,17 +12,19 @@
 
 | 检查 | 结果 | 覆盖范围 |
 | --- | --- | --- |
-| `python -m pytest -q workbench/tests` | 31 passed | 原有 27 项 + 场景目录边界、原生候选保存/冲突/代理、跨会话续编/父版本/哈希、来源损坏后历史恢复、独立环境和进程生命周期 |
+| `python -m pytest -q workbench/tests` | 33 passed | 原有 31 项 + RSS 只读 socket 状态映射、未配置状态和请求白名单 |
 | `npm run generate:api` | 通过 | 从当前 OpenAPI 生成 TypeScript；无手工放宽类型 |
 | `npm run build` | 通过 | TypeScript strict 检查和 Vite 生产构建 |
 | 背景与配色调整后的现有浏览器回归 | 10 passed，2.2 分钟 | 真实视频播放、刷新恢复、失败证据、工具详情、手机布局、键盘导航、两类原生曲线、两类真实 3D、跨运行预览隔离 |
 | 本轮独立 8766 入口的原生场景编辑 | 1 passed，3.9 分钟 | 官方房间纹理；背景/实体隔离；隐藏背景时保存仍保留实体；Leave / Stay / Discard；历史续编、位姿和父版本；源摘要不变；无 API mock |
 | 本轮移动端/键盘回归 | 2 passed；另有手机候选历史检查通过 | 390 px 页面无横向溢出，4 条真实候选可读；内网 8766 HTTP 200、浏览器错误 0；键盘导航与范围标签保留 |
-| 总览首页定向回归 | 2 passed，3.8 秒 | 真实 API 显示运行/场景/能力状态；真实场景索引配合会话状态 fixture 验证续接 URL；跳转到运行页和工具页；桌面与 390 px 宽度均无横向溢出 |
+| 总览首页定向回归 | 3 passed，4.9 秒 | 真实 API 显示运行/场景/能力状态；验证续接 URL、未配置提示、状态 fixture 的步数/时间/实体位姿显示、RSS Viewer 跳转；桌面与 390 px 宽度均无横向溢出 |
 | `npm audit --omit=dev` | 0 vulnerabilities | 本次锁定的生产依赖 |
 | `git diff --check`、文档本地链接 | 通过 | 无空白错误、实施方案及启动说明的本地链接存在 |
 
 真实浏览器使用 Chromium 151 / Playwright 1.62.1，适配本机 Ubuntu 20.04。浏览器测试读取现有文件和管理 API，没有拦截 API 后返回模拟成功数据。生命周期测试中的休眠子进程只证明监督行为，真实 3D 另由浏览器与人工截图检查验证。
+
+RSS live 状态桥通过临时 Unix socket fixture 验证协议与只读白名单；本机核验时没有活动 `ctl.sock`，因此真实 RoboSimStudio live 进程尚未连通验收。此功能不会启动或控制 RSS；配好 `WORKBENCH_RSS_RUN_DIR` 并启动原生 live 服务后需补一次真实连接核验。
 
 本轮首次续编浏览器测试因固定导航遮挡 iframe 内对话框而中断；已修复请求前的编辑器滚动定位。随后一次测试以内容哈希定位版本时遇到相同内容的两个文件，改为唯一候选文件名定位，再核对摘要后通过。未使用强制点击跳过遮挡。
 

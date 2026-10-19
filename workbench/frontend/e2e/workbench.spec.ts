@@ -41,6 +41,10 @@ test("workspace overview links to real runs, scenes, editor sessions and capabil
   await expect(page.locator(".overview-capabilities")).toContainText(
     studio.available ? "可用" : "尚未接入",
   );
+  await expect(page.locator(".studio-live-panel")).toContainText("未配置");
+  await expect(page.locator(".studio-live-panel")).toContainText(
+    "WORKBENCH_RSS_RUN_DIR",
+  );
   await page.getByRole("link", { name: /打开项目与运行/ }).click();
   await expect(page).toHaveURL(/\/projects$/);
   await expect(
@@ -57,6 +61,42 @@ test("workspace overview links to real runs, scenes, editor sessions and capabil
   await page.getByRole("link", { name: /工具库/ }).first().click();
   await expect(page).toHaveURL(/\/tools$/);
   expect(pageErrors).toEqual([]);
+});
+
+test("workspace overview shows live RSS state and links to its native viewer", async ({ page }) => {
+  await page.route(`**${prefix}/studio/live`, (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        configured: true,
+        connected: true,
+        checked_at: "2026-10-19T08:00:00+00:00",
+        run_dir: "/tmp/rss-run",
+        url: "http://localhost:8080",
+        step: 42,
+        sim_time: 1.25,
+        paused: false,
+        finite: true,
+        playing: 0,
+        generation: 1,
+        names: ["robot", "cube"],
+        cameras: ["overview"],
+        positions: { cube: [0.1, 0.2, 0.3] },
+        error: null,
+      }),
+    }),
+  );
+
+  await page.goto("/");
+  const panel = page.locator(".studio-live-panel");
+  await expect(panel).toContainText("已连接");
+  await expect(panel).toContainText("42");
+  await expect(panel).toContainText("1.250 s");
+  await expect(panel).toContainText("0.100, 0.200, 0.300");
+  await expect(panel.getByRole("link", { name: /打开 RSS 原生 Viewer/ })).toHaveAttribute(
+    "href",
+    "http://127.0.0.1:8080/",
+  );
 });
 
 test("workspace overview restores the scene and editor from an active session", async ({

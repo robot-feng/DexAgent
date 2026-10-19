@@ -11,6 +11,7 @@ export type Episode = components["schemas"]["Episode"];
 export type Capability = components["schemas"]["Capability"];
 export type Preview = components["schemas"]["Preview"];
 export type Health = components["schemas"]["Health"];
+export type StudioLiveStatus = components["schemas"]["StudioLiveStatus"];
 export type EditorSession = components["schemas"]["EditorSession"];
 export type SceneRevision = components["schemas"]["SceneRevision"];
 export const prefix = "/api/workbench/v1";
@@ -54,6 +55,7 @@ export const api = {
   stopEditor: (id: string) => request<EditorSession>(`/editors/${id}/stop`, {}),
   health: () => request<Health>("/health"),
   capabilities: () => request<Capability[]>("/capabilities"),
+  studioLive: () => request<StudioLiveStatus>("/studio/live"),
   runs: (search: string) =>
     request<components["schemas"]["RunPage"]>(`/runs?${search}`),
   run: (id: string) => request<RunDetail>(`/runs/${id}`),

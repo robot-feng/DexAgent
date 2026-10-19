@@ -38,6 +38,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workbench/v1/studio/live": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Studio Live
+         * @description Read the configured RSS live session status without controlling it.
+         */
+        get: operations["studio_live_api_workbench_v1_studio_live_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workbench/v1/projects": {
         parameters: {
             query?: never;
@@ -849,6 +869,47 @@ export interface components {
             /** Steps */
             steps: components["schemas"]["Report"][];
         };
+        /** StudioLiveStatus */
+        StudioLiveStatus: {
+            /**
+             * Configured
+             * @default false
+             */
+            configured: boolean;
+            /**
+             * Connected
+             * @default false
+             */
+            connected: boolean;
+            /** Checked At */
+            checked_at: string;
+            /** Run Dir */
+            run_dir: string | null;
+            /** Url */
+            url: string | null;
+            /** Step */
+            step: number | null;
+            /** Sim Time */
+            sim_time: number | null;
+            /** Paused */
+            paused: boolean | null;
+            /** Finite */
+            finite: boolean | null;
+            /** Playing */
+            playing: number | null;
+            /** Generation */
+            generation: number | null;
+            /** Names */
+            names: string[];
+            /** Cameras */
+            cameras: string[];
+            /** Positions */
+            positions: {
+                [key: string]: number[] | string;
+            };
+            /** Error */
+            error: string | null;
+        };
         /** Tool */
         Tool: {
             /** Name */
@@ -956,6 +1017,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Capability"][];
+                };
+            };
+        };
+    };
+    studio_live_api_workbench_v1_studio_live_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudioLiveStatus"];
                 };
             };
         };

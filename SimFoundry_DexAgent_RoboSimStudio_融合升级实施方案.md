@@ -602,6 +602,8 @@ state；导出后检查字段白名单。
 6.  **正式训练数据：**
     必须经过目标运行时执行验证，并保留可追踪的原始记录。
 
+**Workbench 当前接入边界：** 总览页可通过 RoboSimStudio live Unix socket 只读展示仿真步数、时钟、运行/暂停状态和实体位姿，并跳转 RSS 原生 Viewer。该桥只发送 `status` 请求，不驱动仿真、不判断物理成功，也不替代 RSS 的任务 gate 和 EpisodeStore。需要在 Workbench 启动时配置 `WORKBENCH_RSS_RUN_DIR`；实际会话连通性仍需在 RSS live 服务启动后验收。详见 [Workbench 配置与边界](workbench/README.md)。
+
 ### 第一轮实际工作
 
 1.  **P0 收尾：** 固定三个项目的干净 commit/差异、依赖、模型来源和 API-free 能力；补 SimFoundry baseline。现有工作区有未提交变更，不能只记录 HEAD SHA。

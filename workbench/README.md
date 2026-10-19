@@ -10,6 +10,7 @@
 - 原视频、仿真/合成视频、图片、日志及原生文件预览；视频支持 HTTP Range。
 - 原生 EpisodeStore 元信息、关节/action 曲线，以及 DexAgent 的 qpos/qvel/ctrl 曲线；保留各自记录时钟、坐标名称和缺失字段提示。
 - RSS 刚体记录与 DexAgent rigid_robot 轨迹的原生 Viser 3D 回放。生成过程使用现有 SharpaBridge / StateReplay，核对场景、资产、坐标身份和记录时钟，不执行物理。
+- RoboSimStudio live 会话只读状态卡片：显示真实仿真步数、时钟、暂停/运行、数值状态和实体位姿，并可跳转原生 Viewer；不启动、暂停或驱动仿真。
 - SimFoundry scene JSON 的原位布局编辑：保留原生房间网格、贴图与机器人；支持选中、变换、保存候选、跨会话历史与继续编辑，离开或续编时检查未保存修改。
 - 当前工作树中的工具库检索及输入输出声明；不会执行浏览器提交的 Python。
 
@@ -27,7 +28,16 @@ cd ../..
 .workbench/venv/bin/python run_workbench.py
 ```
 
-打开 `http://127.0.0.1:8765`。远程 IDE 使用端口转发或 SSH 隧道转发 8765；普通浏览、曲线和生成后的 3D 回放都通过这一入口访问。
+打开 `http://127.0.0.1:8765`。远程 IDE 使用端口转发或 SSH 隧道转发 8765；普通浏览、曲线和生成后的 3D 回放都通过这一入口访问。若同时查看 RSS 原生 Viewer，还需转发 RSS 自己监听的端口（默认 8080）。
+
+要接入一个正在运行的 RoboSimStudio live 页，在启动 Workbench 时设置它的 run 目录。RSS live 服务必须已经运行，且其 `ctl.sock` 对 Workbench 进程可访问：
+
+```bash
+WORKBENCH_RSS_RUN_DIR=/path/to/rss/run \
+  .workbench/venv/bin/python run_workbench.py
+```
+
+Workbench 每 2 秒通过 RSS Unix socket 请求一次 `status`，只读返回的运行信息；连接失败会显示具体状态，不会自动启动 RSS。页面上的“打开 RSS 原生 Viewer”链接指向 RSS 自己的 Viser 页面。实时控制和物理验收仍由 RSS 原生工具负责。
 
 在另一台电脑上直接访问服务器时，`127.0.0.1` 指向那台电脑，需要先转发端口。同一内网也可显式启动 IPv4 网络监听，再访问服务器的内网 IP：
 

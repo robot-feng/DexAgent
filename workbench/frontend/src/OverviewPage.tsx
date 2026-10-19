@@ -4,9 +4,12 @@ import {
   Boxes,
   CircleCheck,
   Database,
+  ExternalLink,
   FolderOpen,
   PlayCircle,
+  Radio,
   Settings2,
+  WifiOff,
   Wrench,
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -49,6 +52,7 @@ const capabilityLabels: Record<string, string> = {
   media: "视频与产物",
   episodes: "原生数据记录",
   recorded_3d: "记录式 3D 回放",
+  studio_feedback: "RSS 实时状态反馈",
   studio: "实时物理会话",
   scene_editor: "场景副本编辑",
   execution: "Pipeline 执行",
@@ -56,9 +60,23 @@ const capabilityLabels: Record<string, string> = {
 };
 
 const capabilityStatus = (level: string, available: boolean) => {
+  if (level === "configured") return "已配置";
   if (available) return level === "implemented" ? "已实现" : "环境可用";
   if (level === "not_verified") return "未验收";
   return level === "out_of_scope" ? "未接入此工作台" : "尚未接入";
+};
+
+const nativeViewerUrl = (value: string | null) => {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+    if (!["localhost", "127.0.0.1", "0.0.0.0", "::1"].includes(url.hostname)) return null;
+    url.hostname = window.location.hostname;
+    return url.toString();
+  } catch {
+    return null;
+  }
 };
 
 export function OverviewPage() {
@@ -73,6 +91,12 @@ export function OverviewPage() {
     queryFn: () => api.runs("limit=5&offset=0"),
   });
   const editors = useQuery({ queryKey: ["editors"], queryFn: api.editors });
+  const studioLive = useQuery({
+    queryKey: ["studio-live"],
+    queryFn: api.studioLive,
+    refetchInterval: 2000,
+    retry: false,
+  });
   const activeEditor = editors.data?.find((editor) =>
     ["starting", "ready", "unresponsive"].includes(editor.status),
   );
@@ -85,6 +109,7 @@ export function OverviewPage() {
         editor: activeEditor.id,
       }).toString()}`
     : undefined;
+  const studioViewerUrl = nativeViewerUrl(studioLive.data?.url ?? null);
   const availableCapabilities = capabilities.data?.filter(
     (item) => item.available,
   ).length;
@@ -269,6 +294,59 @@ export function OverviewPage() {
           </p>
         </section>
       </div>
+
+      <section className="panel studio-live-panel" aria-labelledby="studio-live-title">
+        <div className="section-heading">
+          <div>
+            <h2 id="studio-live-title">RoboSimStudio 实时状态</h2>
+            <p className="muted">直接读取仿真主线程状态，每 2 秒刷新；Workbench 不发送控制命令。</p>
+          </div>
+          <span className={`studio-live-badge ${studioLive.data?.connected ? "online" : "offline"}`}>
+            {studioLive.data?.connected ? <Radio size={14} /> : <WifiOff size={14} />}
+            {studioLive.data?.connected ? "已连接" : studioLive.data?.configured ? "未连接" : "未配置"}
+          </span>
+        </div>
+        {studioLive.isLoading ? (
+          <Loading />
+        ) : studioLive.error ? (
+          <ErrorNotice error={studioLive.error} />
+        ) : studioLive.data?.connected ? (
+          <>
+            <div className="studio-live-metrics">
+              <div><small>仿真步</small><strong>{studioLive.data.step ?? "—"}</strong></div>
+              <div><small>仿真时间</small><strong>{studioLive.data.sim_time?.toFixed(3) ?? "—"} s</strong></div>
+              <div><small>状态</small><strong>{studioLive.data.paused ? "已暂停" : "运行中"}</strong></div>
+              <div><small>数值状态</small><strong>{studioLive.data.finite ? "有限" : "需检查"}</strong></div>
+              <div><small>场景实体</small><strong>{studioLive.data.names.length}</strong></div>
+            </div>
+            {Object.keys(studioLive.data.positions).length > 0 && (
+              <div className="studio-live-entities">
+                {Object.entries(studioLive.data.positions).slice(0, 8).map(([name, position]) => (
+                  <div className="studio-live-entity" key={name}>
+                    <span>{name}</span>
+                    <code>{Array.isArray(position) ? position.map((value) => value.toFixed(3)).join(", ") : position}</code>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="studio-live-footer">
+              <span className="muted">最近读取 {formatTime(studioLive.data.checked_at)}</span>
+              {studioViewerUrl && (
+                <a className="link-button" href={studioViewerUrl} target="_blank" rel="noreferrer">
+                  打开 RSS 原生 Viewer <ExternalLink size={14} />
+                </a>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="studio-live-empty">
+            <p>{studioLive.data?.error ?? "当前没有已连接的 RSS live 会话。"}</p>
+            <small>
+              配置环境变量 <code>WORKBENCH_RSS_RUN_DIR</code>，指向运行 RSS live 服务时使用的 run 目录；连接后这里只读取状态，不会启动或驱动仿真。
+            </small>
+          </div>
+        )}
+      </section>
     </main>
   );
 }

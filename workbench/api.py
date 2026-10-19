@@ -14,10 +14,11 @@ from starlette.background import BackgroundTask
 from .index import Index, TEXT_EXTENSIONS
 from .models import (Artifact, ArtifactPage, Capability, EpisodePage, Health, ImportRequest,
                      LogChunk, Preview, PreviewRequest, Project, ProjectCreate, RunDetail, RunPage, Series, Tool, ToolPage,
-                     ScenePage, SceneRevisionPage, EditorSession, EditorCreate)
+                     ScenePage, SceneRevisionPage, EditorSession, EditorCreate, StudioLiveStatus)
 from .editors import Editors, EditorBusy
 from .previews import PreviewBusy, Previews
 from .reports import read_object
+from .rss_live import RssLiveInspector
 
 PREFIX = '/api/workbench/v1'
 LOGGER = logging.getLogger(__name__)
@@ -27,6 +28,7 @@ def create_app(repo: Path | None = None, *, runs_root: Path | None = None,
                state_dir: Path | None = None, artifact_roots: tuple[Path, ...] = (),
                scene_roots: tuple[Path, ...] = (), editor_python: Path | None = None,
                robot_assets: Path | None = None,
+               rss_run_dir: str | Path | None = None,
                frontend_dist: Path | None = None,
                refresh_interval: float = 5.0) -> FastAPI:
     repo = (repo or Path(__file__).resolve().parents[1]).resolve()
@@ -34,6 +36,7 @@ def create_app(repo: Path | None = None, *, runs_root: Path | None = None,
     previews = Previews(index, state_dir or repo / '.workbench')
     editors = Editors(repo, state_dir or repo / '.workbench', scene_roots=scene_roots,
                       python=editor_python, robot_assets=robot_assets)
+    rss_live = RssLiveInspector(repo, rss_run_dir)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -76,6 +79,7 @@ def create_app(repo: Path | None = None, *, runs_root: Path | None = None,
     app.state.index = index
     app.state.previews = previews
     app.state.editors = editors
+    app.state.rss_live = rss_live
     app.state.index_error = None
 
     @app.exception_handler(KeyError)
@@ -109,8 +113,12 @@ def create_app(repo: Path | None = None, *, runs_root: Path | None = None,
                        level='environment_detected' if replay_environment else 'missing_dependencies',
                        reason='对支持的 RSS / DexAgent 刚体记录生成交互式 Viser 回放；逐次核对场景与记录身份，不执行物理。'
                        if replay_environment else '需要已有 RSS/Newton、Viser、MuJoCo 环境；普通报告与视频浏览不受影响。'),
-            Capability(id='studio', title='实时物理会话', available=False, level='not_integrated',
-                       reason='RSS/Viser 的物理控制与命令桥尚未接入；场景离线布局编辑使用独立能力入口。'),
+            Capability(id='studio_feedback', title='RSS 实时状态反馈', available=rss_live.configured,
+                       level='configured' if rss_live.configured else 'not_configured',
+                       reason='只读连接 RoboSimStudio 状态 socket；环境、步数、时间和实体位姿可视化，不发控制命令。'
+                       if rss_live.configured else '设置 WORKBENCH_RSS_RUN_DIR 指向 RSS live 页面的 run 目录后启用。'),
+            Capability(id='studio', title='实时物理控制与验收', available=False, level='not_integrated',
+                       reason='Workbench 尚未接入仿真控制命令和正式物理验收；当前 RSS 接入仅提供只读状态反馈。'),
             Capability(id='scene_editor', title='原生场景布局编辑', available=editors.available,
                        level='environment_detected' if editors.available else 'missing_dependencies',
                        reason='使用独立 Light Editor 进程编辑场景副本并保存候选；逐次启动核对模型和代理，物理验收另行执行。'
@@ -120,6 +128,11 @@ def create_app(repo: Path | None = None, *, runs_root: Path | None = None,
             Capability(id='training_export', title='训练格式导出', available=False, level='not_verified',
                        reason='原生 episode 记录不等于 LeRobot/RLDS 格式已验收。'),
         ]
+
+    @app.get(f'{PREFIX}/studio/live', response_model=StudioLiveStatus)
+    def studio_live():
+        """Read the configured RSS live session status without controlling it."""
+        return StudioLiveStatus(**rss_live.read())
 
     @app.get(f'{PREFIX}/projects', response_model=list[Project])
     def projects():

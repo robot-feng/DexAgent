@@ -159,6 +159,24 @@ class Health(ReadModel):
     run_count: int
 
 
+class StudioLiveStatus(ReadModel):
+    configured: bool = False
+    connected: bool = False
+    checked_at: str
+    run_dir: str | None = None
+    url: str | None = None
+    step: int | None = None
+    sim_time: float | None = None
+    paused: bool | None = None
+    finite: bool | None = None
+    playing: int | None = None
+    generation: int | None = None
+    names: list[str] = Field(default_factory=list)
+    cameras: list[str] = Field(default_factory=list)
+    positions: dict[str, list[float] | str] = Field(default_factory=dict)
+    error: str | None = None
+
+
 class Capability(ReadModel):
     id: str
     title: str
