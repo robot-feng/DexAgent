@@ -295,6 +295,42 @@ def test_background_cleanup_build_preflight_reports_current_upstream_gemini_gap(
         manager._require(phase='build', proposal_backend='codex_external')
 
 
+def test_gemini_preflight_requires_vertex_adc_but_accepts_api_key(tmp_path, monkeypatch):
+    from workbench import background_cleanups
+
+    for key in ('GEMINI_API_KEY', 'GOOGLE_API_KEY', 'GCLOUD_PROJECT', 'GOOGLE_CLOUD_PROJECT',
+                'GOOGLE_APPLICATION_CREDENTIALS', 'CLOUDSDK_CONFIG'):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setenv('XDG_CONFIG_HOME', str(tmp_path / 'config'))
+    monkeypatch.setattr(background_cleanups.shutil, 'which', lambda _name: None)
+
+    monkeypatch.setenv('GCLOUD_PROJECT', 'example-project')
+    available, detail = background_cleanups._gemini_capability()
+    assert not available
+    assert 'ADC 凭据' in detail
+
+    adc = tmp_path / 'adc.json'
+    adc.write_text('{}')
+    monkeypatch.setenv('GOOGLE_APPLICATION_CREDENTIALS', str(adc))
+    available, detail = background_cleanups._gemini_capability()
+    assert not available
+
+    adc.write_text(json.dumps({
+        'type': 'service_account', 'client_email': 'test@example.invalid',
+        'private_key': 'test-only-placeholder', 'token_uri': 'https://oauth2.example.invalid/token',
+    }))
+    available, detail = background_cleanups._gemini_capability()
+    assert available
+    assert 'Vertex 项目和 ADC' in detail
+
+    monkeypatch.delenv('GCLOUD_PROJECT')
+    monkeypatch.delenv('GOOGLE_APPLICATION_CREDENTIALS')
+    monkeypatch.setenv('GEMINI_API_KEY', 'configured-test-key')
+    available, detail = background_cleanups._gemini_capability()
+    assert available
+    assert 'Gemini API key' in detail
+
+
 def test_background_cleanup_codex_proposal_does_not_require_gemini(tmp_path, monkeypatch):
     from workbench.background_cleanups import BackgroundCleanups
     from workbench.models import CleanupCatalog, CleanupRequirement

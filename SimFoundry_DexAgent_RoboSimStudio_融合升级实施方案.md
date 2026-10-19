@@ -301,7 +301,7 @@ DexAgent 已有统一入口 `run_dexagent.py`、阶段报告、交付校验、�
 
 DexAgent 不通过模型 API 调用 Codex。需要 Codex 判断的步骤使用现有 external 文件请求/响应流程：程序写出带输入哈希和 schema 版本的请求文件，Codex 读取并生成响应文件，程序校验响应后继续。SimFoundry 中的 Gemini/Vertex、GPT 图像或其它在线调用必须关闭、替换为本地模型，或改成上述文件交互；不能在正式流程中静默回退到在线服务。离线缓存只用于复现已有请求，不代表新输入可无 API 处理。
 
-**Gemini 是当前上游代码的一种实现，不是 EmbodiForge 的系统要求。** 每个需要语义判断/提案的阶段都应调用统一的 provider 能力契约，可按阶段选择 Codex external（复用 `agent/external.py` 的请求/响应协议）、本地模型、显式配置的远程 API，或人工提供结构化结果。阶段只检查本次所选 provider 和其输入/输出契约；不能把 `GCLOUD_PROJECT` 当成全流程能力门槛。当前某些 SimFoundry 阶段仍直接实例化 Gemini，因此升级期间可报告该上游兼容缺口并阻止无效的长任务；移除检查前必须先接好替代 provider，不能把失败推迟到昂贵阶段中。
+**Gemini 是当前上游代码的一种实现，不是 EmbodiForge 的系统要求。** 每个需要语义判断/提案的阶段都应调用统一的 provider 能力契约，可按阶段选择 Codex external（复用 `agent/external.py` 的请求/响应协议）、本地模型、显式配置的远程 API，或人工提供结构化结果。阶段只检查本次所选 provider 和其输入/输出契约；不能把 `GCLOUD_PROJECT` 当成全流程能力门槛。当前 Workbench 对仍未替换的全量 A 调用保留临时兼容预检：Gemini API 需检测到 API key，Vertex 需同时检测项目 ID 与带已识别类型/必填字段的 ADC JSON；预检不代表模型权限或配额已验证。当前某些 SimFoundry 阶段仍直接实例化 Gemini，因此升级期间可报告该上游兼容缺口并阻止无效的长任务；移除检查前必须先接好替代 provider，不能把失败推迟到昂贵阶段中。
 
 **已落地的 provider 替换：** Workbench 背景清理中的 AutoBG 对象提案默认调用 DexAgent external，发出带关键帧图像的隔离请求，要求 Agent 通过 `propose_objects` 返回对象文本提示，再交给 SimFoundry 既有 SAM mask 阶段；Gemini 与手动提示仍可选择。进入全量 A 构建时，已确认的对象类别会复用为 `s5_scene.force_categories`，Stage 5 使用 SAM3 分割而跳过重复的 Gemini 对象提案；关键帧选择也固定使用现成的几何/清晰度启发式。Gemini 仍用于独立的图像编辑及其它尚未接入 provider 的上游调用，因此当前全量构建预检继续检查 Gemini 能力，不能据此声称整个 A 流程已 API-free。
 

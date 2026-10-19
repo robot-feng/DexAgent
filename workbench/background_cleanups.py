@@ -19,6 +19,60 @@ VIDEO_SUFFIXES = {'.mp4', '.mov', '.mkv', '.webm'}
 ACTIVE = {'preparing', 'inpainting', 'building'}
 
 
+def _gemini_capability() -> tuple[bool, str]:
+    """Check configured Gemini auth without treating a Vertex project as credentials."""
+    for key in ('GEMINI_API_KEY', 'GOOGLE_API_KEY'):
+        if os.environ.get(key, '').strip():
+            return True, '检测到 Gemini API key；模型配额和权限仍需运行时验证。'
+
+    project = (os.environ.get('GCLOUD_PROJECT') or os.environ.get('GOOGLE_CLOUD_PROJECT') or '').strip()
+    if not project and shutil.which('gcloud'):
+        try:
+            result = subprocess.run(['gcloud', 'config', 'get-value', 'project'],
+                                    capture_output=True, text=True, timeout=3, check=True)
+            project = result.stdout.strip()
+            if project == '(unset)':
+                project = ''
+        except (OSError, subprocess.SubprocessError):
+            pass
+
+    credential_paths = []
+    application_credentials = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
+    if application_credentials:
+        credential_paths.append(Path(application_credentials).expanduser())
+    cloudsdk_config = os.environ.get('CLOUDSDK_CONFIG')
+    if cloudsdk_config:
+        credential_paths.append(Path(cloudsdk_config).expanduser() / 'application_default_credentials.json')
+    config_home = Path(os.environ.get('XDG_CONFIG_HOME', Path.home() / '.config')).expanduser()
+    credential_paths.append(config_home / 'gcloud/application_default_credentials.json')
+    has_adc_file = any(_is_adc_credential_file(path) for path in credential_paths)
+
+    if project and has_adc_file:
+        return True, '检测到 Vertex 项目和 ADC 凭据文件；模型权限仍需运行时验证。'
+    if not project:
+        return False, '缺少 Gemini API key；Vertex AI 还需要项目 ID 和 ADC 凭据。'
+    return False, '检测到 Vertex 项目，但未找到 ADC 凭据文件；请配置 GOOGLE_APPLICATION_CREDENTIALS 或 gcloud ADC。'
+
+
+def _is_adc_credential_file(path: Path) -> bool:
+    """Recognize common ADC JSON formats without exposing credential contents."""
+    formats = {
+        'service_account': ('client_email', 'private_key', 'token_uri'),
+        'authorized_user': ('client_id', 'client_secret', 'refresh_token'),
+        'external_account': ('audience', 'subject_token_type', 'token_url', 'credential_source'),
+        'external_account_authorized_user': ('audience', 'subject_token_type', 'token_url', 'refresh_token'),
+        'impersonated_service_account': ('service_account_impersonation_url', 'source_credentials'),
+    }
+    try:
+        credentials = json.loads(path.read_text())
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return False
+    if not isinstance(credentials, dict):
+        return False
+    required = formats.get(credentials.get('type'))
+    return bool(required and all(credentials.get(key) for key in required))
+
+
 class CleanupBusy(RuntimeError):
     pass
 
@@ -76,15 +130,7 @@ class BackgroundCleanups:
         has_void = ((void_root / 'inference/cogvideox_fun/inference_with_pass1_warped_noise.py').is_file()
                     and (void_root / 'void_pass1.safetensors').is_file()
                     and (void_root / 'void_pass2.safetensors').is_file())
-        has_gemini_auth = bool(os.environ.get('GEMINI_API_KEY') or os.environ.get('GOOGLE_API_KEY')
-                               or os.environ.get('GCLOUD_PROJECT'))
-        if not has_gemini_auth and shutil.which('gcloud'):
-            try:
-                result = subprocess.run(['gcloud', 'config', 'get-value', 'project'],
-                                        capture_output=True, text=True, timeout=3, check=True)
-                has_gemini_auth = bool(result.stdout.strip() and result.stdout.strip() != '(unset)')
-            except (OSError, subprocess.SubprocessError):
-                pass
+        has_gemini_auth, gemini_detail = _gemini_capability()
         values = [
             CleanupRequirement(id='video_tools', title='视频工具', available=bool(shutil.which('ffmpeg')),
                                detail='需要 ffmpeg 处理输入和预览视频。' if not shutil.which('ffmpeg') else 'ffmpeg 可用。'),
@@ -97,7 +143,8 @@ class BackgroundCleanups:
             CleanupRequirement(id='void_env', title='VOID 环境与权重', available=self._has_env('void') and has_void,
                                detail='需要 void 环境、VOID 源码和 pass1/pass2 权重。' if not (self._has_env('void') and has_void) else 'VOID 环境与权重已找到。'),
             CleanupRequirement(id='gemini', title='上游 Gemini 后端（兼容项）', available=has_gemini_auth,
-                               detail='当前 SimFoundry 全量构建仍直接调用 Gemini；可配置 Gemini API key/Vertex 项目，或后续切换到已接入的 provider adapter。' if not has_gemini_auth else '检测到 Gemini API key 或 Vertex 项目。'),
+                               detail=(f'当前全量 A 仍有对象图像编辑、模型分类等 Gemini 调用。{gemini_detail}'
+                                       if not has_gemini_auth else gemini_detail)),
             CleanupRequirement(id='da3_env', title='DA3 环境', available=self._has_env('da3'),
                                detail='完整 3D 场景生成需要 da3 环境。' if not self._has_env('da3') else '环境已安装。'),
             CleanupRequirement(id='nerfstudio_env', title='Nerfstudio 环境', available=self._has_env('nerfstudio_simfoundry'),
