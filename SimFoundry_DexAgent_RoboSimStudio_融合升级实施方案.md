@@ -291,6 +291,8 @@ DexAgent 已有统一入口 `run_dexagent.py`、阶段报告、交付校验、�
 
 用户已选择尽量保持一个环境和一个主流程。本机 DexAgent 与 RoboSimStudio 已共用 `/data/miniconda3/envs/dexagent`。因此先在该环境核对 SimFoundry 所需模块和小型 smoke；不要预先规划四套项目/集成环境。
 
+本轮使用该解释器（Python 3.12.14）实测 `robosimstudio`、Newton、Warp、MuJoCo、Viser、Trimesh 均可导入，确认 DexAgent 与 RoboSimStudio 可继续共用现有环境；RoboSimStudio 的 `uv` 环境不是强制条件。当前解释器没有 `pxr`，因此 USD/USDZ 场景导入仍未验证；SimFoundry 的 GLB/OBJ 网格可以优先沿 RSS 现有 `AssetSpec`/`StaticSpec` 导入路径验收，背景 USDZ 则需等实际资产和 USD importer 依赖就绪后测试。
+
 -   优先复用主环境中已存在的依赖和 `/data` 上的模型缓存。
 -   只有记录到明确的版本/ABI 冲突，并且无法用延迟导入或子进程规避时，才为冲突阶段使用现有的专用环境；不复制整套集成环境。
 -   SimFoundry 的 Isaac Sim/OmniGibson 与图像生成阶段可能有额外依赖；逐阶段检查后再决定，不以“依赖隔离”为由增加暂时用不到的环境。
