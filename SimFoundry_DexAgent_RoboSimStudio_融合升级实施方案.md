@@ -169,7 +169,7 @@ SimFoundry 自动背景支路在本机的实际顺序为：从关键帧提出需
 | 能力 | 本机实现与作用 | 替换判断 |
 | --- | --- | --- |
 | 单帧文本分割 | SimFoundry Stage 5 使用 SAM3；DexAgent Stage 4 已通过 `segment(image, prompt) -> masks/boxes/scores` 适配 SAM3-LiteText（[论文](https://arxiv.org/abs/2602.12173)） | 可先让 LiteText 接管文本提示分割；它替换的是文本编码器，SAM3 图像编码器仍保留，因此不是完整轻量视觉模型。SimFoundry 的点提示回退仍需保留或单独适配，也不能把它当作视频跟踪器 |
-| 视频 mask 传播 | SimFoundry auto-bg 与 DexAgent Stage 4 分别用 SAM2 传播/处理视频 mask | 与单帧分割分开选型；SAM3-LiteText 当前适配接口不覆盖时序传播 |
+| 视频 mask 传播 | SimFoundry auto-bg 当前用 SAM2：输入关键帧索引和实例 mask，再向前、向后传播；DexAgent Stage 4 也有 SAM2 视频 mask 路径 | SAM3 上游同样支持视频分割/跟踪和视觉提示，且 tracker 基于 SAM2 架构；选 SAM2 是当前流程的接口成熟度决策，不表示 SAM3 做不到。仓库的 `SAM3.predict_video_segmentation` 适配器目前从第 0 帧文字提示开始并只向前传播，尚未接入任意关键帧 mask 与双向输出。两者不应仅凭模型名视为可直接互换；统一 `keyframe + instance masks -> per-frame instance masks` 契约后，用同一视频比较质量、耗时和显存。[SAM 3](https://github.com/facebookresearch/sam3) · [SAM 2](https://github.com/facebookresearch/sam2) |
 | 视频补洞 | SimFoundry auto-bg 使用 VOID 两遍视频修复；DexAgent Stage 4 可选 VOID 或静态镜头 LaMa | 统一“输入帧+mask → 清理帧/plate”产物契约，保留时序一致性与单帧方案的差异 |
 | 单图前景 alpha | SimFoundry Stage 6 的 `remove_background()` 通过 `rembg` 默认使用 `bria-rmbg` 生成透明 PNG；配置已接入 `s6_upsample.rembg_model`，并将模型身份、来源和许可状态写入阶段报告。Pixal3D 自身的 BRIA loader 则被本机替换成拒绝加载的 stub（[RMBG-2.0 模型卡](https://huggingface.co/briaai/RMBG-2.0)） | 这是对象图抠图，不负责视频补洞。允许本地通用 `rembg` 模型按同一 RGBA 输出契约切换；其它模型的权重许可标作未核验，`withoutbg` / `atlascloud` 云端模型名会被拒绝。替换后仍需用固定对象样本核对 alpha 边缘与物体完整性 |
 | 图像特征/3D 条件 | DINOv3 是 Pixal3D 的图像特征提取器，为像素对齐的 3D 回投提供密集 patch 特征；它不是分割或抠图模型。Pixal3D 是 Stage 7 可选 mesh backend（[Pixal3D 论文](https://arxiv.org/abs/2605.10922)），不是 SimFoundry 重建效果的唯一来源 | `timm` 可作为模型加载/特征提取实现候选，但不是换成了另一种开源权重：[timm ViT-L/16 模型卡](https://huggingface.co/timm/vit_large_patch16_dinov3.lvd1689m)同样标注 DINOv3 License；Meta 模型卡说明 ViT-L/16 是从 ViT-7B 蒸馏的，且输出 CLS、register、patch tokens（[DINOv3 模型卡](https://huggingface.co/facebook/dinov3-vitl16-pretrain-lvd1689m)）。使用 timm 不会免除权重条款。Pixal3D 当前特征提取器直接访问 Transformers 的 patch embeddings、RoPE 和各层输出；改用 timm 仍需适配同一预处理、token 切分与投影特征契约，再做固定样例特征和 mesh 回归。详见 [DINOv3 论文](https://arxiv.org/abs/2508.10104) |
@@ -305,7 +305,7 @@ DexAgent 不通过模型 API 调用 Codex。需要 Codex 判断的步骤使用�
 
 扫描时静止的机器人与物体，在后续任务中仍可能运动，不能靠运动检测决定哪些内容进入静态背景。场景需要分别保存：清理后的静态视觉环境、静态支撑/碰撞、独立对象实例和权威机器人。对象是否固定由任务定义；机器人底座固定不意味着可把整台机器人烘焙进环境。
 
-**第一版以现有系统接通为优先。** 用户在关键帧上确认“静态背景”和需要独立保留/从背景中移除的实体，列表优先取任务对象和已知机器人；运动变化只作提示。移动相机下不能用原始像素差直接决定对象身份。当前 SimFoundry 自动背景支路是 SAM3 关键帧 mask → SAM2 双向跨帧传播 → VOID 两遍视频补洞 → DA3 深度与高斯背景训练/对齐。传播后端必须是可替换能力：SAM3 也具备视频检测/跟踪能力，但本仓库当前视频封装从第 0 帧文本提示启动，没有接通这条支路产生的任意关键帧实例 mask。增加 SAM3 后端前，先统一“关键帧索引 + 实例 ID/mask → 逐帧实例 mask”的输入输出契约，验证所选模型构建实际支持的提示类型、双向传播、实例身份、帧数/分辨率和合并 mask；再用同一视频对比 SAM2/SAM3 的漏检、漂移、遮挡恢复及显存/耗时。未经这组验证，不将新后端标成可用或默认。先显示 mask 和清理前后预览，允许用户确认遗漏项；仍未被观测到的区域明确标成模型补全，不将其当作实测碰撞表面。一个固定场景、一个刚体任务通过后再扩大输入范围。
+**第一版以现有系统接通为优先。** 用户在关键帧上确认“静态背景”和需要独立保留/从背景中移除的实体，列表优先取任务对象和已知机器人；运动变化只作提示。移动相机下不能用原始像素差直接决定对象身份。当前 SimFoundry 自动背景支路是 SAM3 关键帧 mask → SAM2 双向跨帧传播 → VOID 两遍视频补洞 → DA3 深度与高斯背景训练/对齐。这里选 SAM2 是因为当前传播代码已能把任意关键帧实例 mask 注入并双向覆盖；这不代表 SAM3 不能做视频传播。SAM3 上游支持视频和视觉提示，但仓库当前视频封装从第 0 帧文字提示启动且只向前传播，尚未把关键帧实例 mask 接到同一流程。增加/切换后端前，先统一“关键帧索引 + 实例 ID/mask → 逐帧实例 mask”的输入输出契约，验证模型构建实际支持的提示类型、双向传播、实例身份、帧数/分辨率和合并 mask；再用同一视频对比 SAM2/SAM3 的漏检、漂移、遮挡恢复及显存/耗时。未经这组验证，不将后端标成可用或默认。先显示 mask 和清理前后预览，允许用户确认遗漏项；仍未被观测到的区域明确标成模型补全，不将其当成实测碰撞表面。一个固定场景、一个刚体任务通过后再扩大输入范围。
 
 本机源码可复用的部分：
 
