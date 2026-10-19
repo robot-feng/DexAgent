@@ -58,6 +58,125 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workbench/v1/background-cleanups/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Background Cleanup Catalog */
+        get: operations["background_cleanup_catalog_api_workbench_v1_background_cleanups_catalog_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workbench/v1/background-cleanups/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Background Cleanup Jobs */
+        get: operations["background_cleanup_jobs_api_workbench_v1_background_cleanups_jobs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workbench/v1/background-cleanups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Background Cleanup */
+        post: operations["create_background_cleanup_api_workbench_v1_background_cleanups_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workbench/v1/background-cleanups/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Background Cleanup */
+        get: operations["background_cleanup_api_workbench_v1_background_cleanups__job_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workbench/v1/background-cleanups/{job_id}/approve-mask": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve Background Mask */
+        post: operations["approve_background_mask_api_workbench_v1_background_cleanups__job_id__approve_mask_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workbench/v1/background-cleanups/{job_id}/build-scene": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Build Background Scene */
+        post: operations["build_background_scene_api_workbench_v1_background_cleanups__job_id__build_scene_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workbench/v1/background-cleanups/{job_id}/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stop Background Cleanup */
+        post: operations["stop_background_cleanup_api_workbench_v1_background_cleanups__job_id__stop_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workbench/v1/projects": {
         parameters: {
             query?: never;
@@ -280,6 +399,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workbench/v1/episode-catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Episode Catalog */
+        get: operations["episode_catalog_api_workbench_v1_episode_catalog_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workbench/v1/runs/{run_id}/logs": {
         parameters: {
             query?: never;
@@ -462,6 +598,135 @@ export interface components {
             /** Evidence */
             evidence: unknown;
         };
+        /** CleanupCatalog */
+        CleanupCatalog: {
+            /** Videos */
+            videos: components["schemas"]["CleanupVideo"][];
+            /** Requirements */
+            requirements: components["schemas"]["CleanupRequirement"][];
+            /** Preview Available */
+            preview_available: boolean;
+            /** Build Available */
+            build_available: boolean;
+        };
+        /** CleanupCreate */
+        CleanupCreate: {
+            /** Video Id */
+            video_id: string;
+            /**
+             * Capture Type
+             * @default unknown
+             * @enum {string}
+             */
+            capture_type: "scene_scan" | "operation_demo" | "unknown";
+            /**
+             * Floor Category
+             * @default desk
+             */
+            floor_category: string;
+            /** Include Objects */
+            include_objects?: string[];
+            /** Skip Objects */
+            skip_objects?: string[];
+            /**
+             * Propagation Model
+             * @default sam3
+             * @enum {string}
+             */
+            propagation_model: "sam2" | "sam3";
+            /**
+             * Use Gemini Proposal
+             * @default true
+             */
+            use_gemini_proposal: boolean;
+        };
+        /** CleanupJob */
+        CleanupJob: {
+            /** Id */
+            id: string;
+            /** Scene Name */
+            scene_name: string;
+            source_video: components["schemas"]["CleanupVideo"];
+            /**
+             * Capture Type
+             * @enum {string}
+             */
+            capture_type: "scene_scan" | "operation_demo" | "unknown";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "preparing" | "review_mask" | "inpainting" | "review_clean" | "building" | "ready" | "failed" | "stopped";
+            /** Current Step */
+            current_step: string;
+            /** Message */
+            message: string;
+            /** Include Objects */
+            include_objects: string[];
+            /** Skip Objects */
+            skip_objects: string[];
+            /**
+             * Propagation Model
+             * @default sam3
+             * @enum {string}
+             */
+            propagation_model: "sam2" | "sam3";
+            /** Detected Objects */
+            detected_objects: string[];
+            /** Mask Preview Url */
+            mask_preview_url: string | null;
+            /** Mask Video Url */
+            mask_video_url: string | null;
+            /** Source Video Url */
+            source_video_url: string;
+            /** Cleaned Video Url */
+            cleaned_video_url: string | null;
+            /** Scene Path */
+            scene_path: string | null;
+            /**
+             * Can Build Scene
+             * @default false
+             */
+            can_build_scene: boolean;
+            /** Log Url */
+            log_url: string;
+            /** Updated At */
+            updated_at: string;
+        };
+        /** CleanupRequirement */
+        CleanupRequirement: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Available */
+            available: boolean;
+            /** Detail */
+            detail: string;
+        };
+        /** CleanupVideo */
+        CleanupVideo: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Path */
+            path: string;
+            /** Size */
+            size: number;
+            /** Duration S */
+            duration_s: number | null;
+            /** Width */
+            width: number | null;
+            /** Height */
+            height: number | null;
+            /**
+             * Capture Type
+             * @default unknown
+             * @enum {string}
+             */
+            capture_type: "scene_scan" | "operation_demo" | "unknown";
+        };
         /** EditorCreate */
         EditorCreate: {
             /** Scene Id */
@@ -520,6 +785,46 @@ export interface components {
             missing_fields: string[];
             /** Issues */
             issues: components["schemas"]["Issue"][];
+        };
+        /** EpisodeCatalogItem */
+        EpisodeCatalogItem: {
+            /** Id */
+            id: string;
+            /** Run Id */
+            run_id: string;
+            /** Name */
+            name: string;
+            /** Task */
+            task: string | null;
+            /** Embodiment */
+            embodiment: string | null;
+            /** Success */
+            success: boolean | null;
+            /** Sim S */
+            sim_s: number | null;
+            /** Recorded Steps */
+            recorded_steps: number | null;
+            meta: components["schemas"]["Artifact"];
+            steps: components["schemas"]["Artifact"] | null;
+            /** Videos */
+            videos: components["schemas"]["Artifact"][];
+            /** Missing Fields */
+            missing_fields: string[];
+            /** Issues */
+            issues: components["schemas"]["Issue"][];
+            /** Run Name */
+            run_name: string;
+            /** Project Id */
+            project_id: string;
+            /** Project Name */
+            project_name: string;
+        };
+        /** EpisodeCatalogPage */
+        EpisodeCatalogPage: {
+            /** Items */
+            items: components["schemas"]["EpisodeCatalogItem"][];
+            /** Total */
+            total: number;
         };
         /** EpisodePage */
         EpisodePage: {
@@ -1041,6 +1346,203 @@ export interface operations {
             };
         };
     };
+    background_cleanup_catalog_api_workbench_v1_background_cleanups_catalog_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CleanupCatalog"];
+                };
+            };
+        };
+    };
+    background_cleanup_jobs_api_workbench_v1_background_cleanups_jobs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CleanupJob"][];
+                };
+            };
+        };
+    };
+    create_background_cleanup_api_workbench_v1_background_cleanups_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CleanupCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CleanupJob"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    background_cleanup_api_workbench_v1_background_cleanups__job_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CleanupJob"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    approve_background_mask_api_workbench_v1_background_cleanups__job_id__approve_mask_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CleanupJob"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    build_background_scene_api_workbench_v1_background_cleanups__job_id__build_scene_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CleanupJob"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stop_background_cleanup_api_workbench_v1_background_cleanups__job_id__stop_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CleanupJob"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     projects_api_workbench_v1_projects_get: {
         parameters: {
             query?: never;
@@ -1467,6 +1969,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EpisodePage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    episode_catalog_api_workbench_v1_episode_catalog_get: {
+        parameters: {
+            query?: {
+                q?: string;
+                project_id?: string | null;
+                run_id?: string | null;
+                success?: ("passed" | "failed" | "unknown") | null;
+                metadata?: ("complete" | "incomplete") | null;
+                offset?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EpisodeCatalogPage"];
                 };
             };
             /** @description Validation Error */

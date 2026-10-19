@@ -4,6 +4,26 @@ const prefix = "/api/workbench/v1";
 const standard = "e2e_reference_layout_20261016";
 const failed = "rss_reference_raw_blocking_final_20261016";
 
+test("background cleanup exposes SAM3 and the SimFoundry comparison with truthful preflight", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/background-cleanup");
+  await expect(page.getByRole("heading", { name: "背景清理", exact: true })).toBeVisible();
+  const video = page.getByLabel("输入视频");
+  await expect(video).toHaveValue(/.+/);
+  await expect(video.locator("option:checked")).toContainText("ThrowAwayTrash.mp4");
+  await expect(page.getByText("操作演示只用于 mask/补洞冒烟测试", { exact: false })).toBeVisible();
+  const model = page.getByLabel("视频分割模型");
+  await expect(model.locator("option")).toContainText([
+    "SAM3 单模型（文字分割 + 跨帧跟踪）",
+    "SimFoundry 原流程（SAM3 mask + SAM2 传播）",
+  ]);
+  await model.selectOption("sam3");
+  await expect(page.getByRole("button", { name: "生成 mask 预览" })).toBeDisabled();
+  await expect(page.getByText("需要 simfoundry 环境运行抽帧、SAM3 和场景流程。", { exact: true })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
 test("workspace overview links to real runs, scenes, editor sessions and capability status", async ({
   page,
   request,
@@ -328,6 +348,54 @@ test("native episode charts read the real simulation clock", async ({
   await expect(page.locator(".series-chart canvas")).toBeVisible();
   await page.getByLabel("轨迹字段", { exact: true }).selectOption("action");
   await expect(page.locator(".series-chart canvas")).toBeVisible();
+});
+
+test("the dataset page filters native episodes across runs and returns to source context", async ({
+  page,
+  request,
+}) => {
+  const response = await request.get(`${prefix}/episode-catalog?limit=100`);
+  expect(response.ok()).toBeTruthy();
+  const catalog = await response.json();
+  test.skip(!catalog.total, "no native EpisodeStore records are available");
+  const episode = catalog.items[0];
+
+  await page.goto("/datasets");
+  await expect(
+    page.getByRole("heading", { name: "数据与回放", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".dataset-summary")).toContainText(
+    `${catalog.total} 条原生 Episode 记录`,
+  );
+
+  await page.getByLabel("搜索数据记录").fill(episode.run_name);
+  await page.getByRole("button", { name: "筛选", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`/datasets\\?.*q=${encodeURIComponent(episode.run_name)}`));
+  await page.getByLabel("按项目筛选").selectOption(episode.project_id);
+  await page.getByLabel("按 Episode 结果筛选").selectOption(
+    episode.success === null ? "unknown" : episode.success ? "passed" : "failed",
+  );
+  await page.getByLabel("按元信息完整度筛选").selectOption(
+    episode.missing_fields.length || episode.issues.length ? "incomplete" : "complete",
+  );
+
+  const card = page
+    .locator(".episode-card")
+    .filter({ hasText: `EPISODE ${episode.name}` })
+    .first();
+  await expect(card).toContainText(episode.run_name);
+  const source = card.getByRole("link", { name: "查看来源运行 ↗" });
+  await expect(source).toHaveAttribute(
+    "href",
+    `/runs/${episode.run_id}?view=trajectory`,
+  );
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(390);
+  await expect(page.getByLabel("按 Episode 结果筛选")).toBeVisible();
+  await source.click();
+  await expect(page).toHaveURL(new RegExp(`/runs/${episode.run_id}\\?view=trajectory`));
 });
 
 test("DexAgent curves retain native coordinate and control dimensions", async ({

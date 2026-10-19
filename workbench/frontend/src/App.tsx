@@ -13,6 +13,7 @@ import {
   Boxes,
   ChevronRight,
   Database,
+  Film,
   FolderOpen,
   LayoutDashboard,
   Layers3,
@@ -23,6 +24,7 @@ import {
 import { api } from "./api";
 import { ErrorNotice } from "./components";
 import { EnvironmentPage, LibraryPage, ProjectsPage, ToolsPage } from "./pages";
+import { BackgroundCleanupPage } from "./BackgroundCleanupPage";
 import { OverviewPage } from "./OverviewPage";
 import { RunWorkbench } from "./RunWorkbench";
 
@@ -49,6 +51,7 @@ function Shell() {
       : []),
     { path: "/scenes", title: "场景与资产", icon: Boxes },
     { path: "/datasets", title: "数据与回放", icon: Database },
+    { path: "/background-cleanup", title: "背景清理", icon: Film },
     { path: "/tools", title: "工具库", icon: Wrench },
     { path: "/settings/environment", title: "环境与能力", icon: Settings2 },
   ];
@@ -148,6 +151,7 @@ export const router = createBrowserRouter(
       <Route path="/runs/:runId" element={<RunWorkbench />} />
       <Route path="/scenes" element={<LibraryPage mode="scenes" />} />
       <Route path="/datasets" element={<LibraryPage mode="episodes" />} />
+      <Route path="/background-cleanup" element={<BackgroundCleanupPage />} />
       <Route path="/tools" element={<ToolsPage />} />
       <Route path="/settings/environment" element={<EnvironmentPage />} />
       <Route

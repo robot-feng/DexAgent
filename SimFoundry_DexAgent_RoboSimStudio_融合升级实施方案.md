@@ -160,7 +160,7 @@ RoboSimStudio 的目标运行时重新检查与执行。
 | [DexAgent 论文](https://arxiv.org/abs/2609.35318) | 将人类演示变成带物理验证的机器人任务和数据 | Stage 1 语义与子目标，Stage 2 对象/场景重建，Stage 3 轨迹优化和失败诊断，Stage 4 状态随机化、重放、渲染与视频合成；工具库和 verifier 允许按任务修复 | 当前 Stage 2/3 的 MJCF/MuJoCo 物理结果不能直接当作 RoboSimStudio 目标运行时的验收结果；人类视频里的 2D 动作也不能直接当作机器人关节标签 |
 | [RoboSimStudio 论文](https://arxiv.org/abs/2610.18835) | 让人和编码 Agent 能检查、调节并迭代修正接触丰富的 Real2Sim | Newton 场景、solver/contact/material 调节、状态/力反馈、失败后改场景再重跑、Episode 记录 | 它是目标仿真与物理验收核心，不替代视频分割、网格生成或视频补洞 |
 
-SimFoundry 自动背景支路在本机的实际顺序为：从关键帧提出需要移除的前景对象，SAM3 生成关键帧 mask，SAM2 将 mask 向前/向后传播，VOID 两遍修复视频，再对干净帧跑 DA3、训练高斯背景并与对象场景对齐。这个支路才承担“对象移走后补出后方视觉背景”的工作；背景 mesh/高斯仍是视觉层，碰撞支撑需另外建模。它默认对象提案可能漏掉拍摄时静止的机器人，因此机器人/人手要进入明确的排除清单并检查掩码预览。
+SimFoundry 自动背景支路在本机的实际默认顺序为：从关键帧提出需要移除的前景对象，SAM3 生成关键帧 mask，SAM2 将 mask 向前/向后传播，VOID 两遍修复视频，再对干净帧跑 DA3、训练高斯背景并与对象场景对齐。SAM3 本身也能按文本 prompt 处理视频并跨帧传播；工作台新增可选 SAM3 单模型模式，以关键帧文本 prompt 做双向视频分割。两种方式共享预览和人工复核，不预设 SAM3 单模型质量优于原组合。AutoBG 支路承担“对象移走后补出后方视觉背景”；背景 mesh/高斯仍是视觉层，碰撞支撑需另外建模。它默认对象提案可能漏掉拍摄时静止的机器人，因此机器人/人手要进入明确的移除对象提示词并检查掩码预览。
 
 ### 2.5 模型职责与可替换边界
 
@@ -169,7 +169,7 @@ SimFoundry 自动背景支路在本机的实际顺序为：从关键帧提出需
 | 能力 | 本机实现与作用 | 替换判断 |
 | --- | --- | --- |
 | 单帧文本分割 | SimFoundry Stage 5 使用 SAM3；DexAgent Stage 4 已通过 `segment(image, prompt) -> masks/boxes/scores` 适配 SAM3-LiteText（[论文](https://arxiv.org/abs/2602.12173)） | 可先让 LiteText 接管文本提示分割；它替换的是文本编码器，SAM3 图像编码器仍保留，因此不是完整轻量视觉模型。SimFoundry 的点提示回退仍需保留或单独适配，也不能把它当作视频跟踪器 |
-| 视频 mask 传播 | SimFoundry auto-bg 当前用 SAM2：输入关键帧索引和实例 mask，再向前、向后传播；DexAgent Stage 4 也有 SAM2 视频 mask 路径 | SAM3 上游同样支持视频分割/跟踪和视觉提示，且 tracker 基于 SAM2 架构；选 SAM2 是当前流程的接口成熟度决策，不表示 SAM3 做不到。仓库的 `SAM3.predict_video_segmentation` 适配器目前从第 0 帧文字提示开始并只向前传播，尚未接入任意关键帧 mask 与双向输出。两者不应仅凭模型名视为可直接互换；统一 `keyframe + instance masks -> per-frame instance masks` 契约后，用同一视频比较质量、耗时和显存。[SAM 3](https://github.com/facebookresearch/sam3) · [SAM 2](https://github.com/facebookresearch/sam2) |
+| 视频 mask 传播 | SimFoundry auto-bg 默认使用 SAM3 关键帧 mask + SAM2 双向传播；SAM3 视频 predictor 也支持文字 prompt 后的视频传播 | Workbench 提供 `sam3` 与 `sam2` 两个传播选项。SAM3 使用关键帧文字提示并输出逐帧实例 mask；SAM2 接收 SAM3 图像 mask。需用同一输入比对 mask 质量、实例身份、耗时和显存，并在真实权重推理通过后确定生产默认。[SAM 3](https://github.com/facebookresearch/sam3) · [SAM 2](https://github.com/facebookresearch/sam2) |
 | 视频补洞 | SimFoundry auto-bg 使用 VOID 两遍视频修复；DexAgent Stage 4 可选 VOID 或静态镜头 LaMa | 统一“输入帧+mask → 清理帧/plate”产物契约，保留时序一致性与单帧方案的差异 |
 | 单图前景 alpha | SimFoundry Stage 6 的 `remove_background()` 通过 `rembg` 默认使用 `bria-rmbg` 生成透明 PNG；配置已接入 `s6_upsample.rembg_model`，并将模型身份、来源和许可状态写入阶段报告。Pixal3D 自身的 BRIA loader 则被本机替换成拒绝加载的 stub（[RMBG-2.0 模型卡](https://huggingface.co/briaai/RMBG-2.0)） | 这是对象图抠图，不负责视频补洞。允许本地通用 `rembg` 模型按同一 RGBA 输出契约切换；其它模型的权重许可标作未核验，`withoutbg` / `atlascloud` 云端模型名会被拒绝。替换后仍需用固定对象样本核对 alpha 边缘与物体完整性 |
 | 图像特征/3D 条件 | DINOv3 是 Pixal3D 的图像特征提取器，为像素对齐的 3D 回投提供密集 patch 特征；它不是分割或抠图模型。Pixal3D 是 Stage 7 可选 mesh backend（[Pixal3D 论文](https://arxiv.org/abs/2605.10922)），不是 SimFoundry 重建效果的唯一来源 | `timm` 可作为模型加载/特征提取实现候选，但不是换成了另一种开源权重：[timm ViT-L/16 模型卡](https://huggingface.co/timm/vit_large_patch16_dinov3.lvd1689m)同样标注 DINOv3 License；Meta 模型卡说明 ViT-L/16 是从 ViT-7B 蒸馏的，且输出 CLS、register、patch tokens（[DINOv3 模型卡](https://huggingface.co/facebook/dinov3-vitl16-pretrain-lvd1689m)）。使用 timm 不会免除权重条款。Pixal3D 当前特征提取器直接访问 Transformers 的 patch embeddings、RoPE 和各层输出；改用 timm 仍需适配同一预处理、token 切分与投影特征契约，再做固定样例特征和 mesh 回归。详见 [DINOv3 论文](https://arxiv.org/abs/2508.10104) |
@@ -184,7 +184,7 @@ DA3 默认 Nested 权重标注 CC BY-NC 4.0；许可证允许与否必须作为�
 
 SimFoundry 论文和当前代码把场景构建拆成“可交互前景实体”和“静态背景”两条分支。标准 A reconstruction 会从代表帧提取对象 RGB-D、生成对象网格并估计位姿/物理属性；若还要得到干净的房间/桌面背景，需额外运行 [auto-background 支路](SimFoundry/scripts/pipeline/A_reconstruction/stages/auto_bg_reconstruction/README.md)。只运行标准重建或普通 Stage 2c 高斯训练，不等价于完成对象去除、视频补洞和背景对齐。
 
-代码中的自动背景顺序是：同一源视频关键帧由 Gemini 列出前景类别 → SAM3 生成各类 mask（失败时可用 Gemini 框中心做点提示）→ SAM2 向前/向后传播到全部帧 → VOID 分两遍、分块修复 → DA3 在修复帧估深度，并复用原视频 DA3 相机轨迹 → 深度监督 Gaussian Splat 训练 → 将背景刚性桥接到重建场景坐标 → 与场景资产合并。这样修复帧提供“对象后面可能是什么”的视觉推断，而实体几何/碰撞仍单独从前景分支生成；补全纹理不应充当已实测碰撞表面。论文报告自动补洞分支单 GPU 约 90 分钟/场景，适合与对象生成并行。
+代码中的自动背景顺序是：同一源视频关键帧由可替换的对象提案 provider 列出前景类别 → SAM3 生成各类 mask（可选利用 provider 返回的框做点提示）→ SAM3 单模型传播或 SAM2 双向传播 → VOID 分两遍、分块修复 → DA3 在修复帧估深度，并复用原视频 DA3 相机轨迹 → 深度监督 Gaussian Splat 训练 → 将背景刚性桥接到重建场景坐标 → 与场景资产合并。当前上游默认提案实现是 Gemini；EmbodiForge 的目标是让 Codex external、本地 VLM 或其它显式配置后端提供同一结构化提案契约。这样修复帧提供“对象后面可能是什么”的视觉推断，而实体几何/碰撞仍单独从前景分支生成；补全纹理不应充当已实测碰撞表面。论文报告自动补洞分支单 GPU 约 90 分钟/场景，适合与对象生成并行。
 
 DINOv3 不参与上述背景分支。它只在可选 Pixal3D 单图网格生成后端里提取 global 与 patch 特征，并把 patch 特征按相机参数回投到 3D 网格条件中；BRIA 则只负责 Stage 6 物体图的前景 alpha。复现完整自动数据生成器还需接上 SimFoundry B/C（对象、布局、任务变体与运行时采集/评估）、DexAgent 的演示语义和阶段修复、RoboSimStudio 的目标运行时物理验收及权威 episode 记录；EmbodiForge Studio 提供统一 run/场景/证据入口，不再建立第二套权威数据格式。
 
@@ -301,11 +301,13 @@ DexAgent 已有统一入口 `run_dexagent.py`、阶段报告、交付校验、�
 
 DexAgent 不通过模型 API 调用 Codex。需要 Codex 判断的步骤使用现有 external 文件请求/响应流程：程序写出带输入哈希和 schema 版本的请求文件，Codex 读取并生成响应文件，程序校验响应后继续。SimFoundry 中的 Gemini/Vertex、GPT 图像或其它在线调用必须关闭、替换为本地模型，或改成上述文件交互；不能在正式流程中静默回退到在线服务。离线缓存只用于复现已有请求，不代表新输入可无 API 处理。
 
+**Gemini 是当前上游代码的一种实现，不是 EmbodiForge 的系统要求。** 每个需要语义判断/提案的阶段都应调用统一的 provider 能力契约，可按阶段选择 Codex external（复用 `agent/external.py` 的请求/响应协议）、本地模型、显式配置的远程 API，或人工提供结构化结果。阶段只检查本次所选 provider 和其输入/输出契约；不能把 `GCLOUD_PROJECT` 当成全流程能力门槛。当前某些 SimFoundry 阶段仍直接实例化 Gemini，因此升级期间可报告该上游兼容缺口并阻止无效的长任务；移除检查前必须先接好替代 provider，不能把失败推迟到昂贵阶段中。
+
 ### 5.5 静态环境与操作实体必须分离
 
 扫描时静止的机器人与物体，在后续任务中仍可能运动，不能靠运动检测决定哪些内容进入静态背景。场景需要分别保存：清理后的静态视觉环境、静态支撑/碰撞、独立对象实例和权威机器人。对象是否固定由任务定义；机器人底座固定不意味着可把整台机器人烘焙进环境。
 
-**第一版以现有系统接通为优先。** 用户在关键帧上确认“静态背景”和需要独立保留/从背景中移除的实体，列表优先取任务对象和已知机器人；运动变化只作提示。移动相机下不能用原始像素差直接决定对象身份。当前 SimFoundry 自动背景支路是 SAM3 关键帧 mask → SAM2 双向跨帧传播 → VOID 两遍视频补洞 → DA3 深度与高斯背景训练/对齐。这里选 SAM2 是因为当前传播代码已能把任意关键帧实例 mask 注入并双向覆盖；这不代表 SAM3 不能做视频传播。SAM3 上游支持视频和视觉提示，但仓库当前视频封装从第 0 帧文字提示启动且只向前传播，尚未把关键帧实例 mask 接到同一流程。增加/切换后端前，先统一“关键帧索引 + 实例 ID/mask → 逐帧实例 mask”的输入输出契约，验证模型构建实际支持的提示类型、双向传播、实例身份、帧数/分辨率和合并 mask；再用同一视频对比 SAM2/SAM3 的漏检、漂移、遮挡恢复及显存/耗时。未经这组验证，不将后端标成可用或默认。先显示 mask 和清理前后预览，允许用户确认遗漏项；仍未被观测到的区域明确标成模型补全，不将其当成实测碰撞表面。一个固定场景、一个刚体任务通过后再扩大输入范围。
+**第一版以现有系统接通为优先。** 用户输入需移除对象（尤其机器人和手），检查关键帧/跨帧 mask 后才能运行 VOID；补洞结果再次人工复核。移动相机下不能用原始像素差直接决定对象身份。当前默认仍复现 SAM3 关键帧 mask → SAM2 双向传播 → VOID → DA3/高斯对齐；WorkBench 已加 SAM3 视频单模型选项，使用关键帧文本 prompt 生成逐帧 mask，不再硬编码第 0 帧与单向跟踪。两种方式共用 mask 结果契约和预览界面，但真实推理质量尚未在本机权重环境验收。用同一操作演示比较漏检、漂移、遮挡恢复、帧数/分辨率、显存和耗时后再选择生产默认。仍未被观测到的区域明确标成模型补全，不将其当成实测碰撞表面。一个固定扫描场景、一个刚体任务通过后再扩大输入范围。
 
 本机源码可复用的部分：
 

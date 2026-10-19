@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { FormEvent } from "react";
 import {
   ArrowDownToLine,
   ArrowRight,
@@ -14,6 +15,7 @@ import {
 import { api, contentUrl } from "./api";
 import SceneEditor from "./SceneEditor";
 import type { Artifact, Tool } from "./api";
+import type { Episode, EpisodeCatalogItem } from "./api";
 import {
   ArtifactDialog,
   Badge,
@@ -403,9 +405,8 @@ export function EpisodeList({ runId }: { runId: string }) {
     queryKey: ["episodes", runId],
     queryFn: () => api.episodes(runId),
   });
-  const [selected, setSelected] = useState<Artifact | null>(null);
-  const [series, setSeries] = useState<Artifact | null>(null);
   const trajectory = episodes.data?.recorded_trajectory;
+  const [trajectorySeries, setTrajectorySeries] = useState<Artifact | null>(null);
   return (
     <div>
       <ErrorNotice error={episodes.error} />
@@ -423,7 +424,7 @@ export function EpisodeList({ runId }: { runId: string }) {
             ctrl，不重新执行动作。坐标含位置、旋转和关节等不同语义，保留原生数值。
           </p>
           <div className="actions">
-            <button className="button" onClick={() => setSeries(trajectory)}>
+            <button className="button" onClick={() => setTrajectorySeries(trajectory)}>
               查看轨迹
             </button>
             <a className="button" href={contentUrl(trajectory, true)}>
@@ -440,79 +441,100 @@ export function EpisodeList({ runId }: { runId: string }) {
           detail="DexAgent 轨迹和合成视频可在产物中查看；不会将它们自动标为训练数据集。"
         />
       ) : (
-        <div className="episode-grid">
-          {episodes.data?.items.map((episode) => (
-            <article className="episode-card" key={episode.id}>
-              <div className="section-heading">
-                <span className="eyebrow">EPISODE {episode.name}</span>
-                <Badge
-                  value={
-                    episode.success === null
-                      ? "not_evaluated"
-                      : episode.success
-                        ? "passed"
-                        : "failed"
-                  }
-                />
-              </div>
-              <h3>{episode.task ?? "任务名称未记录"}</h3>
-              {episode.issues.map((issue, index) => (
-                <div className="notice danger" role="alert" key={index}>
-                  元信息读取异常：{issue.message}
-                </div>
-              ))}
-              <dl>
-                <dt>机器人</dt>
-                <dd>{episode.embodiment ?? "未知"}</dd>
-                <dt>仿真时长</dt>
-                <dd>
-                  {episode.sim_s == null
-                    ? "未知"
-                    : `${episode.sim_s.toFixed(2)} s`}
-                </dd>
-                <dt>记录步数</dt>
-                <dd>{episode.recorded_steps ?? "未知"}</dd>
-              </dl>
-              {episode.missing_fields.length > 0 && (
-                <p className="small amber">
-                  缺少：{episode.missing_fields.join("、")}
-                </p>
-              )}
-              <div className="actions">
-                <button
-                  className="button"
-                  onClick={() => setSelected(episode.meta)}
-                >
-                  元信息
-                </button>
-                {episode.steps && (
-                  <button
-                    className="button"
-                    onClick={() => setSeries(episode.steps)}
-                  >
-                    查看轨迹
-                  </button>
-                )}
-                {episode.steps && (
-                  <a className="button" href={contentUrl(episode.steps, true)}>
-                    原生 NPZ
-                  </a>
-                )}
-                {episode.videos.map((v) => (
-                  <button
-                    key={v.id}
-                    className="button"
-                    onClick={() => setSelected(v)}
-                  >
-                    <Film size={14} />
-                    {v.name}
-                  </button>
-                ))}
-              </div>
-            </article>
-          ))}
-        </div>
+        <EpisodeCards items={episodes.data?.items ?? []} />
       )}
+      {trajectorySeries && (
+        <Suspense fallback={<Loading />}>
+          <SeriesPlot artifact={trajectorySeries} key={trajectorySeries.id} />
+        </Suspense>
+      )}
+    </div>
+  );
+}
+
+function EpisodeCards({
+  items,
+}: {
+  items: Array<Episode | EpisodeCatalogItem>;
+}) {
+  const [selected, setSelected] = useState<Artifact | null>(null);
+  const [series, setSeries] = useState<Artifact | null>(null);
+  return (
+    <>
+      <div className="episode-grid">
+        {items.map((episode) => (
+          <article className="episode-card" key={episode.id}>
+            <div className="section-heading">
+              <span className="eyebrow">EPISODE {episode.name}</span>
+              <Badge
+                value={
+                  episode.success === null
+                    ? "not_evaluated"
+                    : episode.success
+                      ? "passed"
+                      : "failed"
+                }
+              />
+            </div>
+            {"run_name" in episode && (
+              <div className="episode-source">
+                <span>{episode.project_name} · {episode.run_name}</span>
+                <Link to={`/runs/${episode.run_id}?view=trajectory`}>
+                  查看来源运行 ↗
+                </Link>
+              </div>
+            )}
+            <h3>{episode.task ?? "任务名称未记录"}</h3>
+            {episode.issues.map((issue, index) => (
+              <div className="notice danger" role="alert" key={index}>
+                元信息读取异常：{issue.message}
+              </div>
+            ))}
+            <dl>
+              <dt>机器人</dt>
+              <dd>{episode.embodiment ?? "未知"}</dd>
+              <dt>仿真时长</dt>
+              <dd>
+                {episode.sim_s == null
+                  ? "未知"
+                  : `${episode.sim_s.toFixed(2)} s`}
+              </dd>
+              <dt>记录步数</dt>
+              <dd>{episode.recorded_steps ?? "未知"}</dd>
+            </dl>
+            {episode.missing_fields.length > 0 && (
+              <p className="small amber">
+                元信息不完整：{episode.missing_fields.join("、")}
+              </p>
+            )}
+            <div className="actions">
+              <button className="button" onClick={() => setSelected(episode.meta)}>
+                元信息
+              </button>
+              {episode.steps && (
+                <button className="button" onClick={() => setSeries(episode.steps!)}>
+                  查看轨迹
+                </button>
+              )}
+              {episode.steps && (
+                <a className="button" href={contentUrl(episode.steps, true)}>
+                  原生 NPZ
+                </a>
+              )}
+              {episode.videos.map((video) => (
+                <button
+                  key={video.id}
+                  className="button"
+                  onClick={() => setSelected(video)}
+                >
+                  <Film size={14} />
+                  {video.name}
+                </button>
+              ))}
+            </div>
+          </article>
+        ))}
+      </div>
       {series && (
         <Suspense fallback={<Loading />}>
           <SeriesPlot artifact={series} key={series.id} />
@@ -521,7 +543,138 @@ export function EpisodeList({ runId }: { runId: string }) {
       {selected && (
         <ArtifactDialog artifact={selected} close={() => setSelected(null)} />
       )}
-    </div>
+    </>
+  );
+}
+
+function DatasetBrowser() {
+  const [params, setParams] = useSearchParams();
+  const [search, setSearch] = useState(params.get("q") ?? "");
+  const pageSize = 24;
+  const query = new URLSearchParams(params);
+  query.set("limit", String(pageSize));
+  const episodes = useQuery({
+    queryKey: ["episode-catalog", query.toString()],
+    queryFn: () => api.episodeCatalog(query.toString()),
+    refetchInterval: 30_000,
+  });
+  const projects = useQuery({ queryKey: ["projects"], queryFn: api.projects });
+  useEffect(() => setSearch(params.get("q") ?? ""), [params]);
+  const update = (key: string, value: string) => {
+    const next = new URLSearchParams(params);
+    value ? next.set(key, value) : next.delete(key);
+    if (key !== "offset") next.delete("offset");
+    setParams(next);
+  };
+  const offset = Math.max(0, Number(params.get("offset") || 0));
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    update("q", search.trim());
+  };
+  return (
+    <>
+      <section className="panel dataset-browser">
+        <form className="dataset-filters" onSubmit={submit}>
+          <label className="dataset-search">
+            <span>搜索任务、Episode 或机器人</span>
+            <div className="search">
+              <Search size={16} />
+              <input
+                aria-label="搜索数据记录"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="输入关键词"
+              />
+            </div>
+          </label>
+          <label>
+            项目
+            <select
+              aria-label="按项目筛选"
+              value={params.get("project_id") ?? ""}
+              onChange={(event) => update("project_id", event.target.value)}
+            >
+              <option value="">全部项目</option>
+              {projects.data?.map((project) => (
+                <option value={project.id} key={project.id}>{project.name}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Episode 结果
+            <select
+              aria-label="按 Episode 结果筛选"
+              value={params.get("success") ?? ""}
+              onChange={(event) => update("success", event.target.value)}
+            >
+              <option value="">全部结果</option>
+              <option value="passed">原始记录为成功</option>
+              <option value="failed">原始记录为失败</option>
+              <option value="unknown">未记录结果</option>
+            </select>
+          </label>
+          <label>
+            元信息
+            <select
+              aria-label="按元信息完整度筛选"
+              value={params.get("metadata") ?? ""}
+              onChange={(event) => update("metadata", event.target.value)}
+            >
+              <option value="">全部元信息</option>
+              <option value="complete">字段完整</option>
+              <option value="incomplete">缺失或异常</option>
+            </select>
+          </label>
+          <div className="actions">
+            <button className="button primary" type="submit">筛选</button>
+            <button
+              className="button"
+              type="button"
+              onClick={() => {
+                setSearch("");
+                setParams({});
+              }}
+            >
+              清除
+            </button>
+          </div>
+        </form>
+        <div className="dataset-summary">
+          <strong>{episodes.data?.total ?? "—"} 条原生 Episode 记录</strong>
+          <span>按原始元信息筛选；不代表通过物理验收或具备训练集发布资格。</span>
+        </div>
+      </section>
+      <ErrorNotice error={episodes.error ?? projects.error} />
+      {episodes.isLoading ? (
+        <Loading />
+      ) : episodes.data?.items.length ? (
+        <EpisodeCards items={episodes.data.items} />
+      ) : (
+        <Empty
+          title={episodes.data?.total ? "当前页没有记录" : "没有匹配的原生 Episode"}
+          detail="可调整关键词或筛选条件；未生成的 Episode 不会由轨迹或视频推断补造。"
+        />
+      )}
+      {episodes.data && episodes.data.total > pageSize && (
+        <div className="pagination">
+          <button
+            className="button"
+            disabled={offset === 0}
+            onClick={() => update("offset", String(Math.max(0, offset - pageSize)))}
+          >
+            上一页
+          </button>
+          <span>{offset + 1}–{Math.min(offset + pageSize, episodes.data.total)} / {episodes.data.total}</span>
+          <button
+            className="button"
+            disabled={offset + pageSize >= episodes.data.total}
+            onClick={() => update("offset", String(offset + pageSize))}
+          >
+            下一页
+          </button>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -537,6 +690,7 @@ export function LibraryPage({ mode }: { mode: "scenes" | "episodes" }) {
   const runs = useQuery({
     queryKey: ["runs", "limit=200"],
     queryFn: () => api.runs("limit=200"),
+    enabled: mode === "scenes",
   });
   const selected =
     params.get("run") ??
@@ -550,7 +704,11 @@ export function LibraryPage({ mode }: { mode: "scenes" | "episodes" }) {
             {mode === "scenes" ? "SCENES / ASSETS" : "DATA / REPLAY"}
           </p>
           <h1>{mode === "scenes" ? "场景与资产" : "数据与回放"}</h1>
-          <p className="muted">从同一份运行记录，追溯模型、数据和验收依据。</p>
+          <p className="muted">
+            {mode === "scenes"
+              ? "从同一份运行记录，追溯场景、资产和验收依据。"
+              : "跨项目查看原生 Episode 记录，并回到来源运行检查上下文。"}
+          </p>
         </div>
       </div>
       {mode === "scenes" && editorCapability && (
@@ -559,6 +717,10 @@ export function LibraryPage({ mode }: { mode: "scenes" | "episodes" }) {
           reason={editorCapability.reason}
         />
       )}
+      {mode === "episodes" ? (
+        <DatasetBrowser />
+      ) : (
+        <>
       <div className="context-bar">
         <label>
           关联运行{" "}
@@ -601,11 +763,11 @@ export function LibraryPage({ mode }: { mode: "scenes" | "episodes" }) {
                 </div>
                 <ArtifactList runId={selected} key={selected} kind="model" />
               </>
-            ) : (
-              <EpisodeList runId={selected} key={selected} />
-            )}
+            ) : null}
           </section>
         )
+      )}
+        </>
       )}
     </main>
   );

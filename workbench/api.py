@@ -12,13 +12,14 @@ from fastapi.responses import FileResponse, StreamingResponse
 from starlette.background import BackgroundTask
 
 from .index import Index, TEXT_EXTENSIONS
-from .models import (Artifact, ArtifactPage, Capability, EpisodePage, Health, ImportRequest,
+from .models import (Artifact, ArtifactPage, Capability, CleanupCatalog, CleanupCreate, CleanupJob, EpisodeCatalogPage, EpisodePage, Health, ImportRequest,
                      LogChunk, Preview, PreviewRequest, Project, ProjectCreate, RunDetail, RunPage, Series, Tool, ToolPage,
                      ScenePage, SceneRevisionPage, EditorSession, EditorCreate, StudioLiveStatus)
 from .editors import Editors, EditorBusy
 from .previews import PreviewBusy, Previews
 from .reports import read_object
 from .rss_live import RssLiveInspector
+from .background_cleanups import BackgroundCleanups, CleanupBusy, CleanupUnavailable
 
 PREFIX = '/api/workbench/v1'
 LOGGER = logging.getLogger(__name__)
@@ -29,6 +30,7 @@ def create_app(repo: Path | None = None, *, runs_root: Path | None = None,
                scene_roots: tuple[Path, ...] = (), editor_python: Path | None = None,
                robot_assets: Path | None = None,
                rss_run_dir: str | Path | None = None,
+               cleanup_video_roots: tuple[Path, ...] = (),
                frontend_dist: Path | None = None,
                refresh_interval: float = 5.0) -> FastAPI:
     repo = (repo or Path(__file__).resolve().parents[1]).resolve()
@@ -37,6 +39,7 @@ def create_app(repo: Path | None = None, *, runs_root: Path | None = None,
     editors = Editors(repo, state_dir or repo / '.workbench', scene_roots=scene_roots,
                       python=editor_python, robot_assets=robot_assets)
     rss_live = RssLiveInspector(repo, rss_run_dir)
+    cleanups = BackgroundCleanups(repo, state_dir or repo / '.workbench', source_roots=cleanup_video_roots)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -59,6 +62,7 @@ def create_app(repo: Path | None = None, *, runs_root: Path | None = None,
                 await refresh()
                 await asyncio.to_thread(previews.poll)
                 await asyncio.to_thread(editors.poll)
+                await asyncio.to_thread(cleanups.poll)
 
         await refresh(force=True)
         watcher = asyncio.create_task(watch()) if refresh_interval > 0 else None
@@ -73,6 +77,7 @@ def create_app(repo: Path | None = None, *, runs_root: Path | None = None,
                     pass
             await asyncio.to_thread(previews.close)
             await asyncio.to_thread(editors.close)
+            await asyncio.to_thread(cleanups.close)
             await proxy.aclose()
 
     app = FastAPI(title='EmbodiForge Studio', version='0.1.0', lifespan=lifespan)
@@ -80,6 +85,7 @@ def create_app(repo: Path | None = None, *, runs_root: Path | None = None,
     app.state.previews = previews
     app.state.editors = editors
     app.state.rss_live = rss_live
+    app.state.background_cleanups = cleanups
     app.state.index_error = None
 
     @app.exception_handler(KeyError)
@@ -107,6 +113,8 @@ def create_app(repo: Path | None = None, *, runs_root: Path | None = None,
                        reason='读取本机原生报告；不改变 pipeline 的执行和验收结果。'),
             Capability(id='media', title='视频与产物', available=True, level='implemented',
                        reason='按文件 ID 预览现有图片、视频、日志和报告。'),
+            Capability(id='background_cleanup', title='背景 mask 与视频补洞', available=True, level='integrated',
+                       reason='显式启动 SimFoundry Stage 1b、SAM3/SAM2 mask 和 VOID 两遍补洞；具体环境与权重状态见背景清理页预检。'),
             Capability(id='episodes', title='原生 Episode', available=True, level='implemented',
                        reason='兼容历史元信息缺失；未接入训练格式转换。'),
             Capability(id='recorded_3d', title='原生 3D 回放', available=replay_environment,
@@ -133,6 +141,63 @@ def create_app(repo: Path | None = None, *, runs_root: Path | None = None,
     def studio_live():
         """Read the configured RSS live session status without controlling it."""
         return StudioLiveStatus(**rss_live.read())
+
+    @app.get(f'{PREFIX}/background-cleanups/catalog', response_model=CleanupCatalog)
+    def background_cleanup_catalog():
+        return cleanups.catalog()
+
+    @app.get(f'{PREFIX}/background-cleanups/jobs', response_model=list[CleanupJob])
+    def background_cleanup_jobs():
+        cleanups.poll()
+        return cleanups.jobs()
+
+    @app.post(f'{PREFIX}/background-cleanups', response_model=CleanupJob, status_code=202)
+    def create_background_cleanup(body: CleanupCreate):
+        try:
+            return cleanups.start(body)
+        except CleanupBusy as exc:
+            raise HTTPException(409, str(exc))
+        except CleanupUnavailable as exc:
+            raise HTTPException(503, str(exc))
+
+    @app.get(f'{PREFIX}/background-cleanups/{{job_id}}', response_model=CleanupJob)
+    def background_cleanup(job_id: str):
+        cleanups.poll()
+        return cleanups.job(job_id)
+
+    @app.post(f'{PREFIX}/background-cleanups/{{job_id}}/approve-mask', response_model=CleanupJob)
+    def approve_background_mask(job_id: str):
+        try:
+            return cleanups.approve_mask(job_id)
+        except CleanupBusy as exc:
+            raise HTTPException(409, str(exc))
+        except CleanupUnavailable as exc:
+            raise HTTPException(503, str(exc))
+
+    @app.post(f'{PREFIX}/background-cleanups/{{job_id}}/build-scene', response_model=CleanupJob)
+    def build_background_scene(job_id: str):
+        try:
+            return cleanups.build_scene(job_id)
+        except CleanupBusy as exc:
+            raise HTTPException(409, str(exc))
+        except CleanupUnavailable as exc:
+            raise HTTPException(503, str(exc))
+
+    @app.post(f'{PREFIX}/background-cleanups/{{job_id}}/stop', response_model=CleanupJob)
+    def stop_background_cleanup(job_id: str):
+        return cleanups.stop(job_id)
+
+    @app.get(f'{PREFIX}/background-cleanups/{{job_id}}/media/{{name}}', include_in_schema=False)
+    def background_cleanup_media(job_id: str, name: str):
+        path = cleanups.media(job_id, name)
+        return FileResponse(path, media_type='video/mp4' if path.suffix.lower() == '.mp4' else None,
+                            headers={'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff'})
+
+    @app.get(f'{PREFIX}/background-cleanups/{{job_id}}/log', include_in_schema=False)
+    def background_cleanup_log(job_id: str):
+        path = cleanups.log_path(job_id)
+        return FileResponse(path, media_type='text/plain; charset=utf-8', filename='background-cleanup.log',
+                            headers={'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff'})
 
     @app.get(f'{PREFIX}/projects', response_model=list[Project])
     def projects():
@@ -273,6 +338,15 @@ def create_app(repo: Path | None = None, *, runs_root: Path | None = None,
         trajectory = directory / 'stage3/stage4_task/trajectory.npz'
         return EpisodePage(items=values, total=len(values),
                            recorded_trajectory=index.artifact(trajectory, run_id) if trajectory.is_file() else None)
+
+    @app.get(f'{PREFIX}/episode-catalog', response_model=EpisodeCatalogPage)
+    def episode_catalog(q: str = '', project_id: str | None = None, run_id: str | None = None,
+                        success: Literal['passed', 'failed', 'unknown'] | None = None,
+                        metadata: Literal['complete', 'incomplete'] | None = None,
+                        offset: int = Query(0, ge=0), limit: int = Query(24, ge=1, le=100)):
+        values = index.episode_catalog(query=q, project_id=project_id, run_id=run_id,
+                                       success=success, metadata=metadata)
+        return EpisodeCatalogPage(items=values[offset:offset + limit], total=len(values))
 
     @app.get(f'{PREFIX}/runs/{{run_id}}/logs', response_model=ArtifactPage)
     def logs(run_id: str):

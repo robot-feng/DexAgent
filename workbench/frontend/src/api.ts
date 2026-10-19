@@ -8,12 +8,16 @@ export type Stage = components["schemas"]["Stage"];
 export type Project = components["schemas"]["Project"];
 export type Tool = components["schemas"]["Tool"];
 export type Episode = components["schemas"]["Episode"];
+export type EpisodeCatalogItem = components["schemas"]["EpisodeCatalogItem"];
 export type Capability = components["schemas"]["Capability"];
 export type Preview = components["schemas"]["Preview"];
 export type Health = components["schemas"]["Health"];
 export type StudioLiveStatus = components["schemas"]["StudioLiveStatus"];
 export type EditorSession = components["schemas"]["EditorSession"];
 export type SceneRevision = components["schemas"]["SceneRevision"];
+export type CleanupCatalog = components["schemas"]["CleanupCatalog"];
+export type CleanupCreate = components["schemas"]["CleanupCreate"];
+export type CleanupJob = components["schemas"]["CleanupJob"];
 export const prefix = "/api/workbench/v1";
 
 export async function request<T>(path: string, body?: unknown): Promise<T> {
@@ -56,6 +60,13 @@ export const api = {
   health: () => request<Health>("/health"),
   capabilities: () => request<Capability[]>("/capabilities"),
   studioLive: () => request<StudioLiveStatus>("/studio/live"),
+  cleanupCatalog: () => request<CleanupCatalog>("/background-cleanups/catalog"),
+  cleanupJobs: () => request<CleanupJob[]>("/background-cleanups/jobs"),
+  createCleanup: (body: CleanupCreate) => request<CleanupJob>("/background-cleanups", body),
+  cleanupJob: (id: string) => request<CleanupJob>(`/background-cleanups/${id}`),
+  approveCleanupMask: (id: string) => request<CleanupJob>(`/background-cleanups/${id}/approve-mask`, {}),
+  buildCleanupScene: (id: string) => request<CleanupJob>(`/background-cleanups/${id}/build-scene`, {}),
+  stopCleanup: (id: string) => request<CleanupJob>(`/background-cleanups/${id}/stop`, {}),
   runs: (search: string) =>
     request<components["schemas"]["RunPage"]>(`/runs?${search}`),
   run: (id: string) => request<RunDetail>(`/runs/${id}`),
@@ -72,6 +83,8 @@ export const api = {
     ),
   episodes: (run: string) =>
     request<components["schemas"]["EpisodePage"]>(`/runs/${run}/episodes`),
+  episodeCatalog: (search: string) =>
+    request<components["schemas"]["EpisodeCatalogPage"]>(`/episode-catalog?${search}`),
   logs: (run: string) =>
     request<components["schemas"]["ArtifactPage"]>(`/runs/${run}/logs`),
   tools: (search: string) =>

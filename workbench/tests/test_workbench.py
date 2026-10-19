@@ -162,6 +162,61 @@ def test_legacy_episode_missing_metadata_is_browsable(client, workspace):
     assert set(episode['missing_fields']) == {'task', 'embodiment', 'run_meta'}
 
 
+def test_cross_run_episode_catalog_filters_native_metadata_and_keeps_source_links(client, workspace):
+    repo, first_run = workspace
+    write(first_run / 'episodes/0000/meta.json', {
+        'schema': 'robosimstudio.episode.v1', 'task': 'pour cup', 'embodiment': 'Franka',
+        'success': True, 'sim_s': 1.25, 'recorded_steps': 50,
+    })
+    write(first_run / 'episodes/0001/meta.json', {
+        'schema': 'robosimstudio.episode.v1', 'task': 'place cup',
+        'success': False, 'sim_s': 2.0, 'recorded_steps': 80,
+    })
+    write(first_run / 'episodes/run_meta.json', {'schema': 'robosimstudio.run.v1'})
+    external_episode = write(repo / 'outside/0002/meta.json', {
+        'schema': 'robosimstudio.episode.v1', 'task': 'must not leak',
+    })
+    (first_run / 'episodes/0002').symlink_to(external_episode.parent, target_is_directory=True)
+
+    second_run = repo / 'runs/second'
+    write(second_run / 'run_summary.json', {
+        'run': 'second', 'status': 'scope_completed', 'ok': True,
+        'requested_stages': ['stage1'],
+    })
+    stage_report(second_run / 'stage1/stage_report.json')
+    write(second_run / 'episodes/0000/meta.json', {
+        'schema': 'robosimstudio.episode.v1', 'task': 'sort blocks', 'embodiment': 'Panda',
+        'success': None, 'sim_s': 3.5, 'recorded_steps': 90,
+    })
+    client.post(PREFIX + '/refresh')
+
+    project = client.post(PREFIX + '/projects', json={'name': 'Catalog test'}).json()
+    imported = client.post(PREFIX + '/imports', json={
+        'directory': 'second', 'project_id': project['id'],
+    })
+    assert imported.status_code == 200
+
+    all_items = client.get(PREFIX + '/episode-catalog', params={'limit': 10}).json()
+    assert all_items['total'] == 3
+    assert {item['run_name'] for item in all_items['items']} == {'sample', 'second'}
+    assert all(item['project_name'] for item in all_items['items'])
+
+    passed = client.get(PREFIX + '/episode-catalog', params={'success': 'passed'}).json()
+    assert passed['total'] == 1 and passed['items'][0]['task'] == 'pour cup'
+    unknown = client.get(PREFIX + '/episode-catalog', params={'success': 'unknown'}).json()
+    assert unknown['total'] == 1 and unknown['items'][0]['run_name'] == 'second'
+    incomplete = client.get(PREFIX + '/episode-catalog', params={'metadata': 'incomplete'}).json()
+    assert incomplete['total'] == 2
+    searched = client.get(PREFIX + '/episode-catalog', params={'q': 'place'}).json()
+    assert searched['total'] == 1 and searched['items'][0]['success'] is False
+    filtered = client.get(PREFIX + '/episode-catalog', params={
+        'project_id': project['id'], 'run_id': imported.json()['id'],
+    }).json()
+    assert filtered['total'] == 1 and filtered['items'][0]['project_id'] == project['id']
+    page = client.get(PREFIX + '/episode-catalog', params={'limit': 1, 'offset': 1}).json()
+    assert page['total'] == 3 and len(page['items']) == 1
+
+
 @pytest.mark.parametrize('payload', ['{broken', '{}', '{"success": true, "sim_s": "yesterday"}'])
 def test_invalid_or_empty_episode_metadata_remains_visible(client, workspace, payload):
     path = workspace[1] / 'episodes/0000/meta.json'
@@ -192,6 +247,84 @@ def test_file_ids_ranges_and_symlink_replacement(client, workspace):
     assert result.status_code == 422 and b'private' not in result.content
     assert client.get(PREFIX + '/artifacts/arbitrary-path/content').status_code == 404
     assert client.post(PREFIX + '/imports', json={'directory': '../../', 'project_id': 'imported'}).status_code == 422
+
+
+def test_background_cleanup_lists_local_video_and_reports_missing_pipeline_env(tmp_path):
+    from workbench.api import create_app
+    videos = tmp_path / 'SimFoundry/docs/assets/example_videos'
+    source = videos / 'ThrowAwayTrash.mp4'
+    source.parent.mkdir(parents=True)
+    source.write_bytes(b'smoke input placeholder')
+    state = tmp_path / 'isolated-state'
+    with TestClient(create_app(tmp_path, state_dir=state, refresh_interval=0)) as test:
+        catalog = test.get(PREFIX + '/background-cleanups/catalog')
+        assert catalog.status_code == 200
+        video = next(item for item in catalog.json()['videos'] if item['name'] == 'ThrowAwayTrash.mp4')
+        assert video['capture_type'] == 'operation_demo'
+        assert video['path'].endswith('ThrowAwayTrash.mp4')
+        rejected = test.post(PREFIX + '/background-cleanups', json={
+            'video_id': video['id'], 'capture_type': 'scene_scan', 'use_gemini_proposal': False,
+            'include_objects': ['robot arm'], 'propagation_model': 'sam3',
+        })
+        assert rejected.status_code == 422
+        assert '不能标记为相机扫描' in rejected.json()['detail']
+        unavailable = test.post(PREFIX + '/background-cleanups', json={
+            'video_id': video['id'], 'capture_type': 'operation_demo', 'use_gemini_proposal': False,
+            'include_objects': ['robot arm'], 'propagation_model': 'sam3',
+        })
+        assert unavailable.status_code == 503
+        assert 'simfoundry 环境' in unavailable.json()['detail']
+        assert not list((state / 'background_cleanups/jobs').glob('*/job.json'))
+
+
+def test_background_cleanup_build_preflight_reports_current_upstream_gemini_gap(tmp_path, monkeypatch):
+    from workbench.background_cleanups import BackgroundCleanups, CleanupUnavailable
+    from workbench.models import CleanupCatalog, CleanupRequirement
+
+    requirements = [CleanupRequirement(id=name, title=name, available=True, detail='ready') for name in (
+        'video_tools', 'conda', 'simfoundry_env', 'sam2_checkpoint', 'void_env',
+        'da3_env', 'nerfstudio_env', '3dgrut_env', 'mesh_env', 'auto_bg_sources',
+    )]
+    requirements.append(CleanupRequirement(id='gemini', title='Gemini', available=False,
+                                            detail='GCP project is missing'))
+    manager = BackgroundCleanups(tmp_path, tmp_path / 'state')
+    monkeypatch.setattr(manager, 'catalog', lambda: CleanupCatalog(
+        videos=[], requirements=requirements, preview_available=True, build_available=False))
+
+    with pytest.raises(CleanupUnavailable, match='GCP project is missing'):
+        manager._require(phase='build', use_gemini=False)
+
+
+def test_background_cleanup_build_does_not_pass_auto_bg_key_to_canonical_hydra(tmp_path, monkeypatch):
+    from workbench import background_cleanup_worker as worker
+
+    repo = tmp_path
+    scene = 'cleanup_scan'
+    job_dir = tmp_path / 'state/jobs/0123456789abcdef01234567'
+    job_dir.mkdir(parents=True)
+    source = job_dir / 'source.mp4'
+    source.write_bytes(b'smoke')
+    job = {
+        'scene_name': scene, 'source_copy': str(source), 'floor_category': 'desk',
+        'propagation_model': 'sam3',
+    }
+    write(job_dir / 'job.json', job)
+    commands = []
+
+    def record_run(_job_dir, command, *, cwd, env):
+        commands.append(command)
+        if len(commands) == 2:
+            output = repo / 'SimFoundry/assets/scenes' / scene / f'{scene}_scene_state_auto_bg.json'
+            output.parent.mkdir(parents=True)
+            output.write_text('{}')
+
+    monkeypatch.setattr(worker, '_run', record_run)
+    worker._build_phase(repo, Path('/usr/bin/conda'), job_dir, {}, job)
+
+    assert len(commands) == 2
+    assert commands[0][0] == 'bash'
+    assert not any(arg.startswith('s1_quadmask.') for arg in commands[0])
+    assert json.loads((job_dir / 'job.json').read_text())['status'] == 'ready'
 
 
 def test_bad_source_symlink_does_not_disable_other_runs(client, workspace):

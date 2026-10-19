@@ -11,7 +11,7 @@ import sqlite3
 import threading
 import uuid
 
-from .models import Artifact, Episode, Issue, Project, RunDetail, RunSummary, Scope, Stage
+from .models import Artifact, Episode, EpisodeCatalogItem, Issue, Project, RunDetail, RunSummary, Scope, Stage
 from .reports import STAGE_TITLES, merge_validation, parse_report, read_object
 
 IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.webp'}
@@ -376,14 +376,33 @@ class Index:
     def episodes(self, run_id: str) -> list[Episode]:
         directory, _ = self.run_path(run_id)
         episodes = []
-        for path in sorted((directory / 'episodes').glob('*/meta.json')):
+        episode_root = directory / 'episodes'
+        if episode_root.is_symlink():
+            return episodes
+        for path in sorted(episode_root.glob('*/meta.json')):
+            # Never follow source symlinks into an unconfigured artifact root.
+            if path.is_symlink() or path.parent.is_symlink():
+                continue
             issues: list[Issue] = []
             data = read_object(self.permitted(path), issues) or {}
             episode_id = identity(str(path.resolve()))
             steps = path.parent / 'steps.npz'
+            step_artifact = None
+            if steps.is_file():
+                try:
+                    step_artifact = self.artifact(steps, run_id)
+                except (OSError, ValueError) as exc:
+                    issues.append(Issue(path=self.label(steps), message=f'cannot access episode steps: {exc}'))
+            videos = []
+            for video in sorted((path.parent / 'cameras').glob('*.mp4')):
+                if video.is_symlink():
+                    continue
+                try:
+                    videos.append(self.artifact(video, run_id))
+                except (OSError, ValueError) as exc:
+                    issues.append(Issue(path=self.label(video), message=f'cannot access episode video: {exc}'))
             files = dict(id=episode_id, run_id=run_id, name=path.parent.name,
-                meta=self.artifact(path, run_id), steps=self.artifact(steps, run_id) if steps.is_file() else None,
-                videos=[self.artifact(p, run_id) for p in sorted((path.parent / 'cameras').glob('*.mp4'))],
+                meta=self.artifact(path, run_id), steps=step_artifact, videos=videos,
                 missing_fields=[key for key in ('task', 'embodiment') if not data.get(key)]
                                + ([] if (path.parent.parent / 'run_meta.json').is_file() else ['run_meta']))
             try:
@@ -397,6 +416,44 @@ class Index:
                 episode = Episode(**files, issues=issues)
             episodes.append(episode)
         return episodes
+
+    def episode_catalog(self, *, query: str = '', project_id: str | None = None,
+                        run_id: str | None = None, success: str | None = None,
+                        metadata: str | None = None) -> list[EpisodeCatalogItem]:
+        """Build a cross-run view from native EpisodeStore metadata without changing it."""
+        projects = {project.id: project.name for project in self.projects()}
+        runs = self.runs(project_id=project_id)
+        if run_id:
+            runs = [run for run in runs if run.id == run_id]
+        needle = query.casefold().strip()
+        values: list[EpisodeCatalogItem] = []
+        for run in runs:
+            try:
+                episodes = self.episodes(run.id)
+            except (KeyError, OSError, ValueError):
+                # A source directory may disappear between refresh and this read.
+                continue
+            for episode in episodes:
+                if success == 'passed' and episode.success is not True:
+                    continue
+                if success == 'failed' and episode.success is not False:
+                    continue
+                if success == 'unknown' and episode.success is not None:
+                    continue
+                has_metadata = not episode.missing_fields and not episode.issues
+                if metadata == 'complete' and not has_metadata:
+                    continue
+                if metadata == 'incomplete' and has_metadata:
+                    continue
+                if needle and not needle in ' '.join(filter(None, (
+                    episode.name, episode.task, episode.embodiment, run.name
+                ))).casefold():
+                    continue
+                values.append(EpisodeCatalogItem(
+                    **episode.model_dump(), run_name=run.name, project_id=run.project_id,
+                    project_name=projects.get(run.project_id, '未知项目'),
+                ))
+        return values
 
     def projects(self) -> list[Project]:
         with self.connection() as db:

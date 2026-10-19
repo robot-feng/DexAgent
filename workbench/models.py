@@ -129,6 +129,17 @@ class EpisodePage(ReadModel):
     recorded_trajectory: Artifact | None = None
 
 
+class EpisodeCatalogItem(Episode):
+    run_name: str
+    project_id: str
+    project_name: str
+
+
+class EpisodeCatalogPage(ReadModel):
+    items: list[EpisodeCatalogItem]
+    total: int
+
+
 class Project(ReadModel):
     id: str
     name: str
@@ -183,6 +194,64 @@ class Capability(ReadModel):
     available: bool
     level: str
     reason: str
+
+
+class CleanupRequirement(ReadModel):
+    id: str
+    title: str
+    available: bool
+    detail: str
+
+
+class CleanupVideo(ReadModel):
+    id: str
+    name: str
+    path: str
+    size: int
+    duration_s: float | None = None
+    width: int | None = None
+    height: int | None = None
+    capture_type: Literal['scene_scan', 'operation_demo', 'unknown'] = 'unknown'
+
+
+class CleanupCatalog(ReadModel):
+    videos: list[CleanupVideo]
+    requirements: list[CleanupRequirement]
+    preview_available: bool
+    build_available: bool
+
+
+class CleanupCreate(BaseModel):
+    video_id: str
+    capture_type: Literal['scene_scan', 'operation_demo', 'unknown'] = 'unknown'
+    floor_category: str = Field(default='desk', min_length=1, max_length=120)
+    include_objects: list[str] = Field(default_factory=list, max_length=20)
+    skip_objects: list[str] = Field(default_factory=list, max_length=50)
+    propagation_model: Literal['sam2', 'sam3'] = 'sam3'
+    use_gemini_proposal: bool = True
+
+
+class CleanupJob(ReadModel):
+    id: str
+    scene_name: str
+    source_video: CleanupVideo
+    capture_type: Literal['scene_scan', 'operation_demo', 'unknown']
+    status: Literal['preparing', 'review_mask', 'inpainting', 'review_clean', 'building',
+                    'ready', 'failed', 'stopped']
+    current_step: str
+    message: str
+    include_objects: list[str] = Field(default_factory=list)
+    skip_objects: list[str] = Field(default_factory=list)
+    propagation_model: Literal['sam2', 'sam3'] = 'sam3'
+    detected_objects: list[str] = Field(default_factory=list)
+    mask_preview_url: str | None = None
+    mask_video_url: str | None = None
+    source_video_url: str
+    cleaned_video_url: str | None = None
+    scene_path: str | None = None
+    can_build_scene: bool = False
+    log_url: str
+    updated_at: str
 
 
 class Tool(ReadModel):

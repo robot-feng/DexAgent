@@ -12,11 +12,14 @@
 
 | 检查 | 结果 | 覆盖范围 |
 | --- | --- | --- |
-| `python -m pytest -q workbench/tests` | 33 passed | 原有 31 项 + RSS 只读 socket 状态映射、未配置状态和请求白名单 |
+| `python -m pytest -q workbench/tests` | 37 passed | 覆盖原有工作台契约、背景清理 API/状态流转、当前上游 VLM 兼容预检，以及 AutoBG 专属配置不会泄漏到 canonical Hydra 配置的回归 |
 | `npm run generate:api` | 通过 | 从当前 OpenAPI 生成 TypeScript；无手工放宽类型 |
 | `npm run build` | 通过 | TypeScript strict 检查和 Vite 生产构建 |
 | 背景与配色调整后的现有浏览器回归 | 10 passed，2.2 分钟 | 真实视频播放、刷新恢复、失败证据、工具详情、手机布局、键盘导航、两类原生曲线、两类真实 3D、跨运行预览隔离 |
 | 本轮独立 8766 入口的原生场景编辑 | 1 passed，3.9 分钟 | 官方房间纹理；背景/实体隔离；隐藏背景时保存仍保留实体；Leave / Stay / Discard；历史续编、位姿和父版本；源摘要不变；无 API mock |
+| 跨运行 Episode 目录 | API 契约和 Playwright 定向用例通过 | 真实原生记录跨 run 搜索；按项目、原始 success 和字段完整度过滤；分页及返回来源 run；可疑 episode 符号链接不会被目录读取 |
+| 本轮完整 Playwright 回归 | 15 passed、1 skipped，7.3 分钟 | 包括真实场景编辑、全局 Episode 目录、移动布局、曲线和两类原生 3D；真实 RSS 会话因未配置而按条件跳过 |
+| Episode 目录实际工作区响应 | 35 条记录；暖请求 86–146 ms | 对当前 55 个已索引运行读取原生 EpisodeStore，覆盖无筛选、关键词和成功状态过滤；这是本机同步端点测量，不构成大规模数据集基准 |
 | 本轮移动端/键盘回归 | 2 passed；另有手机候选历史检查通过 | 390 px 页面无横向溢出，4 条真实候选可读；内网 8766 HTTP 200、浏览器错误 0；键盘导航与范围标签保留 |
 | 总览首页定向回归（无 RSS 配置） | 3 passed，1 skipped，5.0 秒 | 真实 API 显示运行/场景/能力状态；验证续接 URL、未配置提示、状态 fixture 的步数/时间/实体位姿显示、RSS Viewer 跳转；未配置真实 RSS 时自动跳过真实会话用例 |
 | RSS live 真实 socket 集成 | 1 passed | 在独立端口 8768 启动 RoboSimStudio 原生 live 服务和暂停的 Newton 刚体场景；EmbodiForge Studio API 实际读到 `status_probe`、位置 `[0, 0, 0.1]`、step 0、finite=true、paused=true |
@@ -55,6 +58,8 @@ RSS live 状态桥先通过临时 Unix socket fixture 验证协议与只读白�
 
 本机临时证据保存在 `.workbench/validation_evidence.json` 和 `.workbench/previews/*-v2.png`，均不提交为源代码。
 
+`/datasets` 目录聚合配置工作区内可读取的原生 EpisodeStore 元信息，不改写源记录。它只复用记录中的 `success` 值和已有元信息缺失/异常诊断；不代表目标运行时物理验收、数据集审核或训练发布资格。
+
 ## 页面与背景改进
 
 新增 `/` 总览首页，复用现有 health/scenes/capabilities/runs API 显示真实状态并链接已有页面；现在也会读取受管编辑会话，存在未关闭的场景副本时提供“继续场景编辑”入口，直接恢复原 scene/editor 上下文。桌面与手机布局截图为 `.workbench/previews/overview-dashboard-desktop.png`、`.workbench/previews/overview-dashboard-mobile.png`；不创建第二套任务状态，也不启用未接入的生成能力。
@@ -81,6 +86,14 @@ RSS live 状态桥先通过临时 Unix socket fixture 验证协议与只读白�
 新增三个分层检查按钮，使用原生 `hiddenForView`，不删除物体或改变保存内容。SimFoundry 可选 auto-background 有 SAM3/SAM2、VOID、DA3/高斯流程，但常规 Stage 2c 与当前样本不具备同一套已验收的清理证据。背景清理、机器人/实例排除、静态支撑与碰撞分离已补入两份方案；仍需 pipeline 侧实际生成并在目标运行时验收。
 
 为保留 8765 上现有编辑会话，本轮新构建用 `--frontend-dist .workbench/staging-dist` 在独立 8766 服务验证，管理数据位于 `.workbench/staging`；两个入口读取相同原始运行，场景副本各自保存。正式入口升级应在旧会话保存/停止后进行，未强制中断当前用户会话。
+
+## AutoBG 背景清理接入
+
+工作台新增 `/background-cleanup`，串起本机视频目录、环境预检、分割模型选择、mask 复核、VOID 补洞复核，以及扫描视频的可选 3D 构建。视频分割默认选择 SAM3 单模型（从关键帧文字提示启动视频会话并双向传播）；SAM3 关键帧 mask + SAM2 双向传播保留为 SimFoundry 原生对照路线。SAM3 可以承担分割与跟踪，SAM2 不是硬性依赖；VOID 仍负责 mask 区域的视频内容补全。两种传播方式都必须先检查 mask，补洞后再检查清理视频。
+
+用户选定 `SimFoundry/docs/assets/example_videos/ThrowAwayTrash.mp4` 作为冒烟输入。系统把示例视频归类为操作演示，仅用于 mask/补洞，不允许进入相机扫描的 3D 重建。该示例不能替代当前带机器人残影场景的原始扫描视频。本机目录扫描到 6 个示例视频；实际预检发现缺少 SimFoundry 环境、SAM2 checkpoint、VOID 环境/权重和 DA3/重建环境。SAM3 与 VOID 因此没有执行真实权重推理，界面禁用启动操作并显示缺失项；没有把未运行的流程报告成成功。
+
+背景清理页面曾在独立 `8767` 完成早期冒烟检查，随后已停止；最终版本运行在用户指定的默认端口 `8765`。经用户确认关闭当前无未保存更改的场景编辑会话后，服务按原默认配置重启到 `http://127.0.0.1:8765/background-cleanup`；同一个服务的健康检查为 `ok`，页面和 catalog API 均返回 200。最新验证结果：`.workbench/venv/bin/python -m pytest -q workbench/tests` 为 37 passed；背景清理页面 Playwright 定向检查在默认 8765 上 1 passed；前端 TypeScript/Vite 构建、Python 编译、SimFoundry 脚本语法检查通过。官方 SAM3 predictor 接口明确支持 `both`、`forward`、`backward` 传播方向及指定起始帧；本次核对接口并完成代码/页面接线，尚未在缺失模型环境的主机上实测质量、速度或显存。
 
 ## 剩余限制
 

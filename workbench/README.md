@@ -1,6 +1,6 @@
 # EmbodiForge Studio
 
-EmbodiForge Studio 统一查看 DexAgent 与 RoboSimStudio 的真实运行、场景、轨迹和验收证据，并通过原生 SimFoundry 编辑器布置场景副本。当前实现保留在 `workbench/` 目录和 `run_workbench.py` 入口中；管理界面不会启动或修改生成 pipeline，项目归属和可视化缓存单独保存。
+EmbodiForge Studio 统一查看 DexAgent 与 RoboSimStudio 的真实运行、场景、轨迹和验收证据，并通过原生 SimFoundry 编辑器布置场景副本。一般生成 pipeline 仍独立运行；“背景清理”页只在用户显式启动后调用 SimFoundry 的帧准备、mask、VOID 补洞和可选场景重建。项目归属、清理任务与可视化缓存单独保存。
 
 当前可用：
 
@@ -9,9 +9,11 @@ EmbodiForge Studio 统一查看 DexAgent 与 RoboSimStudio 的真实运行、场
 - 阶段与历史报告、Stage 4 子步骤、必需检查、阈值、警告和失败证据。
 - 原视频、仿真/合成视频、图片、日志及原生文件预览；视频支持 HTTP Range。
 - 原生 EpisodeStore 元信息、关节/action 曲线，以及 DexAgent 的 qpos/qvel/ctrl 曲线；保留各自记录时钟、坐标名称和缺失字段提示。
+- “数据与回放”提供跨项目原生 Episode 目录，可按关键词、项目、记录结果和元信息完整度筛选、分页，并跳回来源运行；仍以原始 EpisodeStore 记录为准。
 - RSS 刚体记录与 DexAgent rigid_robot 轨迹的原生 Viser 3D 回放。生成过程使用现有 SharpaBridge / StateReplay，核对场景、资产、坐标身份和记录时钟，不执行物理。
 - RoboSimStudio live 会话只读状态卡片：显示真实仿真步数、时钟、暂停/运行、数值状态和实体位姿，并可跳转原生 Viewer；不启动、暂停或驱动仿真。
 - SimFoundry scene JSON 的原位布局编辑：保留原生房间网格、贴图与机器人；支持选中、变换、保存候选、跨会话历史与继续编辑，离开或续编时检查未保存修改。
+- 背景清理：浏览 SimFoundry 示例与本地视频；选择 SAM3 单模型视频跟踪或原流程 SAM3 mask + SAM2 传播；确认关键帧/跨帧 mask 后再运行 VOID，并复核补洞视频。相机扫描可继续进入原生 A 重建与 AutoBG 对齐；操作演示仅用于清理冒烟测试。
 - 当前工作树中的工具库检索及输入输出声明；不会执行浏览器提交的 Python。
 
 ## 启动
@@ -54,6 +56,9 @@ Node 环境已在 22.23.2 验证。服务不自动安装或启动 RSS；3D 生�
 
 # 显式允许额外输入媒体目录，浏览器仍通过 artifact ID 访问文件
 .workbench/venv/bin/python run_workbench.py --artifact-root /path/to/input-videos
+
+# 让“背景清理”页浏览自定义视频目录
+.workbench/venv/bin/python run_workbench.py --cleanup-video-root /path/to/input-videos
 ```
 
 不要对外网直接开放未配置认证的本机服务。默认仅监听 127.0.0.1。
@@ -67,7 +72,7 @@ Node 环境已在 22.23.2 验证。服务不自动安装或启动 RSS；3D 生�
 5. “轨迹与回放”中选择原生记录。RSS 支持 `joint_q / joint_qd / action / reward`；DexAgent 支持 `qpos / qvel / ctrl`，按 `time_s` 绘制，并在记录提供时显示坐标/执行器名称。未记录单位映射时明确提示，不推断所有通道均为角度或力矩。
 6. 底部日志支持查看开头/末尾、暂停跟随和完整下载；向上阅读时暂停自动跟随。
 
-总览只汇集已有 API 状态，不启动新的运行。执行范围、机器验收和发布资格分别显示。`scope_completed` 不等于单次 Stage 1–4 完成；缺失报告、未知 schema、损坏 JSON、未绑定的跨调用汇总均不能产生绿色通过。
+总览只汇集已有 API 状态，不启动新的 DexAgent/RSS 运行。执行范围、机器验收和发布资格分别显示。`scope_completed` 不等于单次 Stage 1–4 完成；缺失报告、未知 schema、损坏 JSON、未绑定的跨调用汇总均不能产生绿色通过。视频背景清理是独立入口，运行前展示当前 SimFoundry/VOID 环境状态。
 
 ### 场景布局编辑
 
@@ -168,6 +173,8 @@ WORKBENCH_URL=http://127.0.0.1:8766 npm --prefix workbench/frontend run test:e2e
 单元/契约测试使用临时目录，覆盖身份损坏、缺失报告、路径越界、文件替换、日志轮换、可视化任务幂等、超时和进程释放。真实 3D 由独立浏览器验收证明，进程生命周期 stub 不用来宣称真实渲染通过。
 
 损坏或类型错误的 episode 元信息保留在列表并显示原因，原文件可直接查看；元信息异常不当成“无记录”，也不认证为成功。
+
+跨运行目录是只读浏览视图，不创建或改写数据集，也不把原始 `success` 标记解释为物理验收、审核通过或训练发布资格。字段完整度仅按当前可读取的原生元信息判定；数据集收集、质量门禁和训练格式导出仍未接入。
 
 本次实际验证结果与限制见 [可视化验证记录](../docs/WORKBENCH_VALIDATION_20261019.md)。
 

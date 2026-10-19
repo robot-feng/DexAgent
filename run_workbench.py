@@ -15,6 +15,8 @@ def main(argv=None):
     parser.add_argument('--scene-root', type=Path, action='append', default=[])
     parser.add_argument('--editor-python', type=Path)
     parser.add_argument('--robot-assets', type=Path)
+    parser.add_argument('--cleanup-video-root', type=Path, action='append', default=[],
+                        help='additional local directories to browse for background-cleanup videos')
     parser.add_argument('--frontend-dist', type=Path, help='serve a separate frontend build for isolated previews')
     parser.add_argument('--openapi', type=Path, help='write the API schema and exit')
     args = parser.parse_args(argv)
@@ -25,7 +27,8 @@ def main(argv=None):
         parser.exit(2, f'EmbodiForge Studio dependency missing: {exc}. Install requirements-workbench.txt.\n')
     app = create_app(runs_root=args.runs_root, state_dir=args.state_dir,
                      artifact_roots=tuple(args.artifact_root), scene_roots=tuple(args.scene_root),
-                     editor_python=args.editor_python, robot_assets=args.robot_assets, frontend_dist=args.frontend_dist)
+                     editor_python=args.editor_python, robot_assets=args.robot_assets,
+                     cleanup_video_roots=tuple(args.cleanup_video_root), frontend_dist=args.frontend_dist)
     if args.openapi:
         import json
         args.openapi.write_text(json.dumps(app.openapi(), ensure_ascii=False, indent=2) + '\n')
