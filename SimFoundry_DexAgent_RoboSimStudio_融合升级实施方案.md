@@ -287,15 +287,13 @@ DexAgent 已有统一入口 `run_dexagent.py`、阶段报告、交付校验、�
 -   跨项目元数据：只增加轻量 `manifest.json`。
 -   训练数据：以原生 EpisodeStore 为标准记录，再按需转换。
 
-### 5.3 环境策略：默认沿用当前主环境
+### 5.3 环境策略：一条工作流，按上游工具链隔离
 
-用户已选择尽量保持一个环境和一个主流程。本机 DexAgent 与 RoboSimStudio 已共用 `/data/miniconda3/envs/dexagent`。因此先在该环境核对 SimFoundry 所需模块和小型 smoke；不要预先规划四套项目/集成环境。
+“统一系统”指统一任务流、产物契约与运行记录，不要求所有模型共用一个 Python 解释器。DexAgent 与 RoboSimStudio 已共用 `/data/miniconda3/envs/dexagent`（Python 3.12）；本轮用该解释器实测 `robosimstudio`、Newton、Warp、MuJoCo、Viser、Trimesh 可导入，RSS 的 `requirements-robosimstudio.txt` 也明确以现有 DexAgent 环境为目标。RoboSimStudio 的 `uv` 环境不是强制条件。
 
-本轮使用该解释器（Python 3.12.14）实测 `robosimstudio`、Newton、Warp、MuJoCo、Viser、Trimesh 均可导入，确认 DexAgent 与 RoboSimStudio 可继续共用现有环境；RoboSimStudio 的 `uv` 环境不是强制条件。当前解释器没有 `pxr`，因此 USD/USDZ 场景导入仍未验证；SimFoundry 的 GLB/OBJ 网格可以优先沿 RSS 现有 `AssetSpec`/`StaticSpec` 导入路径验收，背景 USDZ 则需等实际资产和 USD importer 依赖就绪后测试。
+SimFoundry 官方 `install_everything.sh` 明确按上游阶段建立七个工具环境（主流程、Hunyuan、Any6D、DA3、VOID、Nerfstudio、3DGRUT），不是一个可直接导入 DexAgent 的 Python 包。已确认主 SimFoundry 安装使用 Python 3.11、PyTorch 2.7；RSS/DexAgent 主环境约束 Python 3.12、PyTorch 2.5.1。正在进行的官方安装也已进入主环境 PyTorch 2.7 安装阶段。因此保持 DexAgent + RSS 为统一控制/目标仿真环境，SimFoundry 按其上游环境运行；跨环境只通过明确的文件产物和 manifest 交接，不跨环境导入 Python 模块，也不为整合再复制一套环境。
 
--   优先复用主环境中已存在的依赖和 `/data` 上的模型缓存。
--   只有记录到明确的版本/ABI 冲突，并且无法用延迟导入或子进程规避时，才为冲突阶段使用现有的专用环境；不复制整套集成环境。
--   SimFoundry 的 Isaac Sim/OmniGibson 与图像生成阶段可能有额外依赖；逐阶段检查后再决定，不以“依赖隔离”为由增加暂时用不到的环境。
+本机 DexAgent 环境当前没有 `pxr`，因此 USD/USDZ 场景导入仍未验证；SimFoundry 的 GLB/OBJ 网格优先沿 RSS 现有 `AssetSpec`/`StaticSpec` 导入路径验收，背景 USDZ 则需等实际资产和 USD importer 依赖就绪后测试。模型缓存优先复用 `/data` 上已有权重；缺失权重或凭据必须作为阶段状态报告，不能通过静默降级掩盖。
 
 第一版不需要微服务、消息总线或分布式调度器。
 
