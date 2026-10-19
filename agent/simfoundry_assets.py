@@ -14,7 +14,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Literal
 
-Collision = Literal["convex_hull", "bounding_box"]
+Collision = Literal["stage11", "convex_hull", "bounding_box"]
 
 
 def _read_json(path: Path) -> dict:
@@ -81,6 +81,123 @@ def _single_link_mass(urdf_path: Path) -> float:
     return mass
 
 
+def _urdf_vector(
+    text: str | None,
+    *,
+    size: int,
+    default: tuple[float, ...],
+    path: Path,
+    field: str,
+    positive: bool = False,
+) -> tuple[float, ...]:
+    try:
+        values = tuple(float(value) for value in text.split()) if text else default
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{path}: invalid URDF {field}") from exc
+    if (
+        len(values) != size
+        or not all(math.isfinite(value) for value in values)
+        or (positive and any(value <= 0 for value in values))
+    ):
+        constraint = "positive finite" if positive else "finite"
+        raise ValueError(
+            f"{path}: URDF {field} must contain {size} {constraint} values"
+        )
+    return values
+
+
+def _stage11_collision_paths(
+    urdf_path: Path, *, name: str, asset_scale: float, output_dir: Path
+) -> tuple[str, ...]:
+    """Bake Stage 11 URDF proxy transforms for RSS's shared uniform asset scale.
+
+    SimFoundry stores each proxy with its own URDF scale and origin. RSS applies
+    ``AssetSpec.scale`` to both visual and collision meshes, so divide each
+    proxy's authored transform by the residual visual scale before exporting it.
+    The runtime then restores the Stage 11 coordinates with the shared scale.
+    """
+    try:
+        root = ET.parse(urdf_path).getroot()
+    except (OSError, ET.ParseError) as exc:
+        raise ValueError(
+            f"cannot read SimFoundry rigid URDF {urdf_path}: {exc}"
+        ) from exc
+    links = root.findall("link")
+    if len(links) != 1:
+        raise ValueError(f"{urdf_path}: expected one rigid link, found {len(links)}")
+
+    # Import only when this collision backend is selected.
+    import trimesh
+
+    model_root = urdf_path.parent.parent.resolve()
+    output_dir = output_dir.resolve() / name
+    output_dir.mkdir(parents=True, exist_ok=True)
+    paths = []
+    for index, collision in enumerate(links[0].findall("collision")):
+        geometry = collision.find("geometry")
+        mesh_node = geometry.find("mesh") if geometry is not None else None
+        if mesh_node is None:
+            raise ValueError(
+                f"{urdf_path}: Stage 11 collision {index} is not a mesh proxy"
+            )
+        filename = mesh_node.get("filename", "")
+        if not filename or filename.startswith("package://"):
+            raise ValueError(
+                f"{urdf_path}: unsupported Stage 11 collision mesh path {filename!r}"
+            )
+        source = Path(filename)
+        if not source.is_absolute():
+            source = urdf_path.parent / source
+        source = source.resolve()
+        try:
+            source.relative_to(model_root)
+        except ValueError as exc:
+            raise ValueError(
+                f"{urdf_path}: collision mesh escapes its SimFoundry asset directory"
+            ) from exc
+        if not source.is_file():
+            raise FileNotFoundError(
+                f"{urdf_path}: missing Stage 11 collision proxy {source}"
+            )
+
+        mesh_scale = _urdf_vector(
+            mesh_node.get("scale"),
+            size=3,
+            default=(1.0, 1.0, 1.0),
+            path=urdf_path,
+            field=f"collision[{index}].mesh.scale",
+            positive=True,
+        )
+        origin = collision.find("origin")
+        xyz = _urdf_vector(
+            origin.get("xyz") if origin is not None else None,
+            size=3,
+            default=(0.0, 0.0, 0.0),
+            path=urdf_path,
+            field=f"collision[{index}].origin.xyz",
+        )
+        rpy = _urdf_vector(
+            origin.get("rpy") if origin is not None else None,
+            size=3,
+            default=(0.0, 0.0, 0.0),
+            path=urdf_path,
+            field=f"collision[{index}].origin.rpy",
+        )
+
+        proxy = trimesh.load(str(source), force="mesh", process=False)
+        proxy.apply_scale(tuple(component / asset_scale for component in mesh_scale))
+        transform = trimesh.transformations.euler_matrix(*rpy, axes="sxyz")
+        transform[:3, 3] = tuple(component / asset_scale for component in xyz)
+        proxy.apply_transform(transform)
+        target = output_dir / f"{index:03d}_{source.stem}.obj"
+        proxy.export(target, file_type="obj")
+        paths.append(str(target))
+
+    if not paths:
+        raise ValueError(f"{urdf_path}: Stage 11 has no collision mesh proxies")
+    return tuple(paths)
+
+
 def simfoundry_rigid_specs(
     *,
     canonical_mesh_dir: str | Path,
@@ -88,6 +205,7 @@ def simfoundry_rigid_specs(
     stage11_dir: str | Path,
     stage12_dir: str | Path,
     collision: Collision,
+    derived_asset_dir: str | Path | None = None,
 ) -> list:
     """Build RSS ``ObjectSpec`` values from one SimFoundry rigid reconstruction.
 
@@ -99,13 +217,17 @@ def simfoundry_rigid_specs(
     or convert the world poses to the chosen cell's work-surface frame.
 
     The Stage 8 pre-scale is baked into the canonical GLB, so only the residual
-    ``z_up.scale`` is applied. RSS computes inertia from the imported mesh and
-    stated mass; SimFoundry's URDF collision proxies and inertial frame are not
-    copied by this first adapter. ``collision`` is required to make that choice
-    explicit; the resulting scene still needs RSS physics acceptance.
+    ``z_up.scale`` is applied. ``collision="stage11"`` carries the Stage 11
+    URDF's compound mesh proxies into RSS's existing ``AssetSpec.collision_paths``;
+    provide ``derived_asset_dir`` for the small scale/origin-baked proxy files.
+    The alternative collider approximations remain explicit choices. RSS
+    computes inertia from the visual mesh and stated mass; the Stage 11
+    inertial frame is not represented by ``ObjectSpec`` and still needs review.
     """
-    if collision not in {"convex_hull", "bounding_box"}:
+    if collision not in {"stage11", "convex_hull", "bounding_box"}:
         raise ValueError(f"unsupported RSS collision approximation: {collision!r}")
+    if collision == "stage11" and derived_asset_dir is None:
+        raise ValueError("derived_asset_dir is required when collision='stage11'")
 
     mesh_root = Path(canonical_mesh_dir).resolve()
     pose_root = Path(pose_info_dir).resolve()
@@ -192,16 +314,30 @@ def simfoundry_rigid_specs(
                 f"{objects_path}: {name!r} friction must be finite and non-negative"
             )
 
+        scale = _scale_from_pose(pose_path)
+        collision_paths = ()
+        collider = collision
+        if collision == "stage11":
+            collision_paths = _stage11_collision_paths(
+                urdf_path,
+                name=name,
+                asset_scale=scale,
+                output_dir=Path(derived_asset_dir),
+            )
+            collider = ""
+
         specs.append(
             ObjectSpec(
                 name=name,
                 category=category,
-                asset=AssetSpec(path=str(mesh_path), scale=_scale_from_pose(pose_path)),
+                asset=AssetSpec(
+                    path=str(mesh_path), scale=scale, collision_paths=collision_paths
+                ),
                 pose=xyz,
                 quat=quat,
                 mass=_single_link_mass(urdf_path),
                 friction=friction,
-                collider=collision,
+                collider=collider,
             )
         )
     return specs

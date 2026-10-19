@@ -19,6 +19,7 @@ class SimFoundryRigidAdapterTests(unittest.TestCase):
 
         self.tmp = tempfile.TemporaryDirectory(prefix="simfoundry-rss-adapter-")
         root = Path(self.tmp.name)
+        self.root = root
         self.mesh_dir = root / "s8/canonical_mesh"
         self.pose_dir = root / "s8/info"
         self.stage11_dir = root / "s11"
@@ -45,11 +46,19 @@ class SimFoundryRigidAdapterTests(unittest.TestCase):
                 }
             )
         )
+        collision_dir = self.stage11_dir / "objects/cup/abcdef/urdf/meshes/collision"
+        collision_dir.mkdir(parents=True)
+        trimesh.creation.box(extents=(1, 1, 1)).export(collision_dir / "hull_a.obj")
+        trimesh.creation.box(extents=(1, 1, 1)).export(collision_dir / "hull_b.obj")
         (self.stage11_dir / "objects/cup/abcdef/urdf/abcdef.urdf").write_text(
             '<robot name="cup"><link name="base_link">'
             '<inertial><mass value="0.31"/><inertia ixx="1" ixy="0" ixz="0" '
             'iyy="1" iyz="0" izz="1"/></inertial>'
-            '<collision><geometry><mesh filename="../meshes/cup.obj"/></geometry></collision>'
+            '<collision><origin xyz="0.01 0 0" rpy="0 0 1.5707963267948966"/>'
+            '<geometry><mesh filename="meshes/collision/hull_a.obj" scale="0.12 0.06 0.03"/>'
+            "</geometry></collision>"
+            '<collision><geometry><mesh filename="meshes/collision/hull_b.obj" '
+            'scale="0.04 0.04 0.04"/></geometry></collision>'
             "</link></robot>"
         )
         (self.stage12_dir / "pb_scene_poses.json").write_text(
@@ -92,6 +101,47 @@ class SimFoundryRigidAdapterTests(unittest.TestCase):
         self.assertEqual(0.31, spec.mass)
         self.assertEqual(0.42, spec.friction)
         self.assertEqual("convex_hull", spec.collider)
+
+    def test_preserves_stage11_compound_collision_meshes_and_transforms(self):
+        import numpy as np
+        import trimesh
+
+        [spec] = self._load(
+            collision="stage11", derived_asset_dir=self.root / "rss-assets"
+        )
+        self.assertEqual("", spec.collider)
+        self.assertEqual(2, len(spec.asset.collision_paths))
+
+        first = trimesh.load(spec.asset.collision_paths[0], force="mesh", process=False)
+        np.testing.assert_allclose(
+            first.extents * spec.asset.scale, (0.06, 0.12, 0.03), atol=1e-6
+        )
+        np.testing.assert_allclose(
+            first.centroid * spec.asset.scale, (0.01, 0.0, 0.0), atol=1e-6
+        )
+        second = trimesh.load(
+            spec.asset.collision_paths[1], force="mesh", process=False
+        )
+        np.testing.assert_allclose(
+            second.extents * spec.asset.scale, (0.04, 0.04, 0.04), atol=1e-6
+        )
+
+    def test_stage11_collision_requires_a_derived_asset_directory(self):
+        with self.assertRaisesRegex(ValueError, "derived_asset_dir is required"):
+            self._load(collision="stage11")
+
+    def test_rejects_stage11_collision_paths_outside_the_model_directory(self):
+        urdf_path = self.stage11_dir / "objects/cup/abcdef/urdf/abcdef.urdf"
+        urdf_path.write_text(
+            '<robot name="cup"><link name="base_link">'
+            '<inertial><mass value="0.31"/></inertial>'
+            '<collision><geometry><mesh filename="../../../../outside.obj"/>'
+            "</geometry></collision></link></robot>"
+        )
+        with self.assertRaisesRegex(
+            ValueError, "escapes its SimFoundry asset directory"
+        ):
+            self._load(collision="stage11", derived_asset_dir=self.root / "rss-assets")
 
     def test_rejects_anisotropic_scale(self):
         (self.pose_dir / "iter_0.json").write_text(

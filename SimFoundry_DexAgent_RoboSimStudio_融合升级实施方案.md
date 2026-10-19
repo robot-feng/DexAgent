@@ -355,7 +355,7 @@ test；区分通过、失败和环境阻塞；维护 `baseline_report.json`。�
 
 **已核实的刚体输入契约：** 使用 Stage 8 的 `canonical_mesh/iter_*.glb` 作为几何输入；其 `pre_scale_factor` 已烘焙进网格，Stage 11 记录的 `z_up.scale` 是后续额外缩放，不能重复乘预缩放。初始位姿优先取 Stage 12 的 `pb_scene_poses.json`：位置是 PyBullet 地面坐标系中的米制世界坐标，四元数为 XYZW；这是经过布局稳定化后的姿态。若从 Stage 8 的 `info/*.json` 重建位姿，则还必须组合 `s4_frame/image_<idx>_cam2world.npy`，因为其中 `z_up` 仍是相机帧位姿。质量从 Stage 11 导出的单 link URDF 惯性项读取，摩擦从 `scene_objects_info.json` 读取；它们是估计/配置值，仍要在 RSS 中复核。
 
-当前 [`agent/simfoundry_assets.py`](agent/simfoundry_assets.py) 已将上述输入映射为 RSS `AssetSpec`/`ObjectSpec`，显式要求选择 RSS 的 `convex_hull` 或 `bounding_box` 碰撞近似；它严格拒绝非均匀缩放和多 link 刚体。首版从 GLB 几何重算质心/惯量，不直接复制 SimFoundry URDF 的惯性坐标或 CoACD 碰撞网格，因此这些属性必须在目标运行时对照，不代表保真转换。当前用合成 GLB/JSON/URDF fixture 验证了 3 个解析/拒绝用例，并在 RSS 的 `void` 场景实际构建和步进 5 步；证明的是 RSS 资产路径可用，不是 SimFoundry 真实产物的 P2 验收。真实 SimFoundry 产物还未生成，P2 仍未通过。`pb_scene_poses` 给出世界位姿，使用时将 RSS 场景的 work-surface frame 设为 world origin（例如 `cell="void"`），或先转换到所选 cell frame。
+当前 [`agent/simfoundry_assets.py`](agent/simfoundry_assets.py) 已将 Stage 8/11/12 几何、尺度、世界位姿、质量和摩擦映射为 RSS `AssetSpec`/`ObjectSpec`。碰撞可显式选择保留 Stage 11 URDF 多网格代理、RSS 凸包或包围盒；Stage 11 代理的网格缩放与原点被烘焙进调用方指定的派生目录，以复用 RSS `AssetSpec.collision_paths`，不改写 SimFoundry 原始资产。适配器仍严格拒绝非均匀缩放和多 link 刚体，并由 GLB 几何计算惯量，不传递 Stage 11 的质心/惯性坐标系；这些边界必须在目标运行时对照，不能视作保真转换。7 项适配器测试通过，覆盖尺度/坐标、路径逃逸拒绝和复合碰撞代理；合成 GLB/URDF 在 RSS `void` 场景加载两个代理并实际步进 5 步通过。该结果证明的是适配器契约与 RSS 导入路径，不是 SimFoundry 真实产物的 P2 验收。真实 SimFoundry 产物尚未生成，P2 仍未通过。`pb_scene_poses` 给出世界位姿，使用时将 RSS 场景的 work-surface frame 设为 world origin（例如 `cell="void"`），或先转换到所选 cell frame。
 
 **通过条件：** - 无缺失网格、纹理或外部引用； -
 坐标轴、四元数顺序、单位和缩放符合已知合成测试值； - 关节、碰撞和关键物理属性明确； -
