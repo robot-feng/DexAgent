@@ -46,6 +46,23 @@ def _runner_command(manager: Path, env_name: str, script: Path, *overrides: str)
     return [str(manager), 'run', '-n', env_name, 'python', str(script), *overrides]
 
 
+def _build_object_categories(job: dict) -> list[str]:
+    """Reuse reviewed cleanup labels as Stage 5 categories instead of proposing twice."""
+    candidates = (job.get('include_objects') or job.get('proposed_objects')
+                  or job.get('detected_objects') or [])
+    skipped = {str(value).strip().casefold() for value in job.get('skip_objects', []) if str(value).strip()}
+    categories, seen = [], set()
+    for value in candidates:
+        if not isinstance(value, str):
+            continue
+        name = ' '.join(value.split())
+        key = name.casefold()
+        if name and key not in skipped and key not in seen:
+            categories.append(name)
+            seen.add(key)
+    return categories
+
+
 def _agent_object_proposal(job_dir: Path, keyframe: Path, job: dict) -> list[str]:
     """Ask the existing DexAgent external-model transport for typed object labels."""
     from agent.external import ExternalLLM
@@ -200,8 +217,11 @@ def _build_phase(repo: Path, manager: Path, job_dir: Path, env: dict[str, str], 
     sim = repo / 'SimFoundry'
     scene = job['scene_name']
     source = Path(job['source_copy']).resolve()
+    object_categories = _build_object_categories(job)
+    proposal_note = (f'复用已确认的 {len(object_categories)} 个对象类别，跳过 Stage 5 Gemini 对象提案。'
+                    if object_categories else '没有可复用的对象类别，Stage 5 将使用上游默认提案流程。')
     _set_phase(job_dir, 'building', 'SimFoundry 场景重建',
-               '先运行原生 A 重建，再复用已检查的 mask/补洞结果训练并桥接背景高斯。')
+               f'先运行原生 A 重建（{proposal_note}），再复用已检查的 mask/补洞结果训练并桥接背景高斯。')
     run_a = sim / 'scripts/pipeline/A_reconstruction/run.sh'
     canonical = [
         'bash', str(run_a), '--scene-name', scene, '--root-dir', str(sim / 'Data'),
@@ -211,7 +231,11 @@ def _build_phase(repo: Path, manager: Path, job_dir: Path, env: dict[str, str], 
         's1_video.n_subsampled_frames=400', 's1_video.splat_prep=true',
         's1_video.mp4_fps=12', 's1_video.target_w=672', 's1_video.target_h=384',
         's2_depth.backend=da3', 's14_og.interactive=false', 's14_og.headless=true',
+        's3_ground.frame_selection.mode=heuristic',
+        f's3_ground.floor_categories={json.dumps([job["floor_category"]], ensure_ascii=False)}',
     ]
+    if object_categories:
+        canonical.append(f's5_scene.force_categories={json.dumps(object_categories, ensure_ascii=False)}')
     env = dict(env, OMNIGIBSON_HEADLESS='1')
     _run(job_dir, canonical, cwd=sim, env=env)
 

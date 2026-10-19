@@ -376,7 +376,8 @@ def test_background_cleanup_build_does_not_pass_auto_bg_key_to_canonical_hydra(t
     source.write_bytes(b'smoke')
     job = {
         'scene_name': scene, 'source_copy': str(source), 'floor_category': 'desk',
-        'propagation_model': 'sam3',
+        'propagation_model': 'sam3', 'include_objects': ['robot arm', 'gripper'],
+        'proposed_objects': ['gripper'], 'skip_objects': ['table'],
     }
     write(job_dir / 'job.json', job)
     commands = []
@@ -394,6 +395,9 @@ def test_background_cleanup_build_does_not_pass_auto_bg_key_to_canonical_hydra(t
     assert len(commands) == 2
     assert commands[0][0] == 'bash'
     assert not any(arg.startswith('s1_quadmask.') for arg in commands[0])
+    assert 's3_ground.frame_selection.mode=heuristic' in commands[0]
+    assert 's3_ground.floor_categories=["desk"]' in commands[0]
+    assert 's5_scene.force_categories=["robot arm", "gripper"]' in commands[0]
     assert json.loads((job_dir / 'job.json').read_text())['status'] == 'ready'
 
 
