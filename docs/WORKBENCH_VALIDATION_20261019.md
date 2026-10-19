@@ -1,4 +1,4 @@
-# RobotSim Workbench 可视化验证记录
+# EmbodiForge Studio 可视化验证记录
 
 验证时间：2026-10-19，Asia/Shanghai。范围为可视化工作台，不重新运行或认证生成 pipeline。
 
@@ -18,13 +18,17 @@
 | 背景与配色调整后的现有浏览器回归 | 10 passed，2.2 分钟 | 真实视频播放、刷新恢复、失败证据、工具详情、手机布局、键盘导航、两类原生曲线、两类真实 3D、跨运行预览隔离 |
 | 本轮独立 8766 入口的原生场景编辑 | 1 passed，3.9 分钟 | 官方房间纹理；背景/实体隔离；隐藏背景时保存仍保留实体；Leave / Stay / Discard；历史续编、位姿和父版本；源摘要不变；无 API mock |
 | 本轮移动端/键盘回归 | 2 passed；另有手机候选历史检查通过 | 390 px 页面无横向溢出，4 条真实候选可读；内网 8766 HTTP 200、浏览器错误 0；键盘导航与范围标签保留 |
-| 总览首页定向回归 | 3 passed，4.9 秒 | 真实 API 显示运行/场景/能力状态；验证续接 URL、未配置提示、状态 fixture 的步数/时间/实体位姿显示、RSS Viewer 跳转；桌面与 390 px 宽度均无横向溢出 |
+| 总览首页定向回归（无 RSS 配置） | 3 passed，1 skipped，5.0 秒 | 真实 API 显示运行/场景/能力状态；验证续接 URL、未配置提示、状态 fixture 的步数/时间/实体位姿显示、RSS Viewer 跳转；未配置真实 RSS 时自动跳过真实会话用例 |
+| RSS live 真实 socket 集成 | 1 passed | 在独立端口 8768 启动 RoboSimStudio 原生 live 服务和暂停的 Newton 刚体场景；EmbodiForge Studio API 实际读到 `status_probe`、位置 `[0, 0, 0.1]`、step 0、finite=true、paused=true |
+| RSS live 真实页面端到端 | 1 passed，2.5 秒 | EmbodiForge Studio 连接上述 RSS 进程；浏览器实际显示已连接、步数/时间、暂停状态、实体名和位姿 |
 | `npm audit --omit=dev` | 0 vulnerabilities | 本次锁定的生产依赖 |
 | `git diff --check`、文档本地链接 | 通过 | 无空白错误、实施方案及启动说明的本地链接存在 |
 
 真实浏览器使用 Chromium 151 / Playwright 1.62.1，适配本机 Ubuntu 20.04。浏览器测试读取现有文件和管理 API，没有拦截 API 后返回模拟成功数据。生命周期测试中的休眠子进程只证明监督行为，真实 3D 另由浏览器与人工截图检查验证。
 
-RSS live 状态桥通过临时 Unix socket fixture 验证协议与只读白名单；本机核验时没有活动 `ctl.sock`，因此真实 RoboSimStudio live 进程尚未连通验收。此功能不会启动或控制 RSS；配好 `WORKBENCH_RSS_RUN_DIR` 并启动原生 live 服务后需补一次真实连接核验。
+RSS live 状态桥先通过临时 Unix socket fixture 验证协议与只读白名单，随后连接真实 RoboSimStudio live 进程完成 API 和浏览器端到端 smoke test。测试场景放在 `/tmp/embodiforge-rss-live-20261019/`，仿真保持暂停；状态由 RSS 原生 `cmd_status` 提供。截图是来自该真实会话的只读状态面板；此功能不会启动或控制 RSS，正式运行仍需配置 `WORKBENCH_RSS_RUN_DIR`。
+
+![EmbodiForge Studio connected to a live RoboSimStudio session](images/embodiforge_studio_rss_live_20261019.png)
 
 本轮首次续编浏览器测试因固定导航遮挡 iframe 内对话框而中断；已修复请求前的编辑器滚动定位。随后一次测试以内容哈希定位版本时遇到相同内容的两个文件，改为唯一候选文件名定位，再核对摘要后通过。未使用强制点击跳过遮挡。
 

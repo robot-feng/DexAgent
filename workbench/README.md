@@ -1,6 +1,6 @@
-# RobotSim Workbench
+# EmbodiForge Studio
 
-统一查看 DexAgent 与 RoboSimStudio 的真实运行、场景、轨迹和验收证据，并通过原生 SimFoundry 编辑器布置场景副本。管理界面不会启动或修改生成 pipeline；项目归属和可视化缓存单独保存。
+EmbodiForge Studio 统一查看 DexAgent 与 RoboSimStudio 的真实运行、场景、轨迹和验收证据，并通过原生 SimFoundry 编辑器布置场景副本。当前实现保留在 `workbench/` 目录和 `run_workbench.py` 入口中；管理界面不会启动或修改生成 pipeline，项目归属和可视化缓存单独保存。
 
 当前可用：
 
@@ -37,7 +37,7 @@ WORKBENCH_RSS_RUN_DIR=/path/to/rss/run \
   .workbench/venv/bin/python run_workbench.py
 ```
 
-Workbench 每 2 秒通过 RSS Unix socket 请求一次 `status`，只读返回的运行信息；连接失败会显示具体状态，不会自动启动 RSS。页面上的“打开 RSS 原生 Viewer”链接指向 RSS 自己的 Viser 页面。实时控制和物理验收仍由 RSS 原生工具负责。
+EmbodiForge Studio 每 2 秒通过 RSS Unix socket 请求一次 `status`，只读返回的运行信息；连接失败会显示具体状态，不会自动启动 RSS。页面上的“打开 RSS 原生 Viewer”链接指向 RSS 自己的 Viser 页面。实时控制和物理验收仍由 RSS 原生工具负责。
 
 在另一台电脑上直接访问服务器时，`127.0.0.1` 指向那台电脑，需要先转发端口。同一内网也可显式启动 IPv4 网络监听，再访问服务器的内网 IP：
 

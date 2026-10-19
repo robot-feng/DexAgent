@@ -55,13 +55,13 @@ function Shell() {
   return (
     <div className="app-shell">
       <aside className="global-sidebar">
-        <NavLink to="/" className="brand" aria-label="RobotSim 总览">
+        <NavLink to="/" className="brand" aria-label="EmbodiForge Studio 总览">
           <span className="brand-mark">
             <Box size={25} />
           </span>
           <span>
-            <strong>ROBOTSIM</strong>
-            <small>WORKBENCH</small>
+            <strong>EMBODIFORGE</strong>
+            <small>STUDIO</small>
           </span>
         </NavLink>
         <div className="workspace-label">

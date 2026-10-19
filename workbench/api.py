@@ -75,7 +75,7 @@ def create_app(repo: Path | None = None, *, runs_root: Path | None = None,
             await asyncio.to_thread(editors.close)
             await proxy.aclose()
 
-    app = FastAPI(title='RobotSim Workbench', version='0.1.0', lifespan=lifespan)
+    app = FastAPI(title='EmbodiForge Studio', version='0.1.0', lifespan=lifespan)
     app.state.index = index
     app.state.previews = previews
     app.state.editors = editors

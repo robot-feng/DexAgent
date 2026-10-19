@@ -1,4 +1,4 @@
-"""Start the optional local visualization service without starting a pipeline."""
+"""Start EmbodiForge Studio locally without starting a generation pipeline."""
 from __future__ import annotations
 
 import argparse
@@ -22,7 +22,7 @@ def main(argv=None):
         from workbench.api import create_app
         import uvicorn
     except ImportError as exc:
-        parser.exit(2, f'Workbench dependency missing: {exc}. Install requirements-workbench.txt.\n')
+        parser.exit(2, f'EmbodiForge Studio dependency missing: {exc}. Install requirements-workbench.txt.\n')
     app = create_app(runs_root=args.runs_root, state_dir=args.state_dir,
                      artifact_roots=tuple(args.artifact_root), scene_roots=tuple(args.scene_root),
                      editor_python=args.editor_python, robot_assets=args.robot_assets, frontend_dist=args.frontend_dist)

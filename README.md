@@ -17,7 +17,7 @@ DexAgent keeps every skill and verifier it develops in a self-evolving tool libr
 
 ## Quick start
 
-For a unified local view of runs, videos, stage checks, native episode curves and recorded 3D scenes, see the **[RobotSim Workbench](workbench/README.md)**. Start it with `python run_workbench.py` after installing its optional dependencies and building the frontend. The workbench reads existing outputs without starting the generation pipeline.
+For a unified local view of runs, videos, stage checks, native episode curves and recorded 3D scenes, see **[EmbodiForge Studio](workbench/README.md)** (implemented under the existing `workbench/` path). Start it with `python run_workbench.py` after installing its optional dependencies and building the frontend. It reads existing outputs without starting the generation pipeline.
 
 ### 0. ⚠️ Cost and run time
 

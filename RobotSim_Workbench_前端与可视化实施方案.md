@@ -1,15 +1,15 @@
-# RobotSim Workbench：统一系统与前端改造实施方案
+# EmbodiForge Studio：统一系统与前端实施方案
 
-> 版本：v2.6 · 2026-10-19（Asia/Shanghai）<br>
+> 版本：v2.7 · 2026-10-19（Asia/Shanghai）<br>
 > 范围：当前 DexAgent 工作区中的 DexAgent + RoboSimStudio + SimFoundry<br>
 > 依据：本机源码、已有运行报告与实际文件结构；替代 v1.0 中按公开仓库推测的部分。<br>
-> 状态：已实现真实运行工作台、媒体/报告/工具浏览、两类原生曲线、记录式 3D 回放、SimFoundry 原生场景副本编辑、RSS live 只读状态反馈和总览续接编辑会话；实时物理控制、物理验收、候选发布和执行调度仍待接入。当前可运行范围和启动方法见 [workbench/README.md](workbench/README.md)，实际验收见 [可视化验证记录](docs/WORKBENCH_VALIDATION_20261019.md)。
+> 状态：产品入口命名为 EmbodiForge Studio（现有实现路径仍为 `workbench/`）；已实现真实运行浏览、媒体/报告/工具、两类原生曲线、记录式 3D 回放、SimFoundry 场景副本编辑、RSS live 只读状态反馈和总览续接编辑会话；实时物理控制、物理验收、候选发布和执行调度仍待接入。当前可运行范围和启动方法见 [workbench/README.md](workbench/README.md)，实际验收见 [可视化验证记录](docs/WORKBENCH_VALIDATION_20261019.md)。
 > 当前分工：本工作流优先实现可视化功能，再改进布局、配色与交互；pipeline 算法和执行优化由另一个工作流处理。
 > **备注：** 当前方案仍可改进；实施前应根据本机源码、运行结果和用户目标持续修订
 
 ## 0. 改造结论
 
-**建议直接建设一个项目驱动的 RobotSim Workbench，把输入、生成过程、场景、仿真、验收和数据放在同一个工作空间。**
+**建议将 EmbodiForge Studio 建设为项目驱动的统一工作空间，把输入、生成过程、场景、仿真、验收和数据放在同一个入口中。**
 
 当前主要问题是入口分散、运行状态口径不同、证据和操作脱节。只给现有页面换颜色，或加一个展示多个系统链接的首页，都不足以形成统一系统。
 

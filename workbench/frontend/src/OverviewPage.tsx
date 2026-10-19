@@ -118,7 +118,7 @@ export function OverviewPage() {
     <main className="page overview-page">
       <div className="page-title">
         <div>
-          <p className="eyebrow">ROBOTSIM WORKSPACE</p>
+          <p className="eyebrow">EMBODIFORGE STUDIO</p>
           <h1>工作空间总览</h1>
           <p className="muted">
             从一个入口查看现有运行、场景和数据；各页面读取原生项目产物。
@@ -299,7 +299,7 @@ export function OverviewPage() {
         <div className="section-heading">
           <div>
             <h2 id="studio-live-title">RoboSimStudio 实时状态</h2>
-            <p className="muted">直接读取仿真主线程状态，每 2 秒刷新；Workbench 不发送控制命令。</p>
+            <p className="muted">直接读取仿真主线程状态，每 2 秒刷新；EmbodiForge Studio 不发送控制命令。</p>
           </div>
           <span className={`studio-live-badge ${studioLive.data?.connected ? "online" : "offline"}`}>
             {studioLive.data?.connected ? <Radio size={14} /> : <WifiOff size={14} />}

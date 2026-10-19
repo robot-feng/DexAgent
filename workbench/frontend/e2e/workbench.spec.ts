@@ -14,6 +14,10 @@ test("workspace overview links to real runs, scenes, editor sessions and capabil
   const capabilities = await (await request.get(`${prefix}/capabilities`)).json();
   const editors = await (await request.get(`${prefix}/editors`)).json();
   await page.goto("/");
+  await expect(page).toHaveTitle("EmbodiForge Studio");
+  await expect(
+    page.getByRole("link", { name: "EmbodiForge Studio 总览" }),
+  ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "工作空间总览", exact: true }),
   ).toBeVisible();
@@ -97,6 +101,20 @@ test("workspace overview shows live RSS state and links to its native viewer", a
     "href",
     "http://127.0.0.1:8080/",
   );
+});
+
+test("workspace overview renders a connected RSS live session", async ({ page, request }) => {
+  const response = await request.get(`${prefix}/studio/live`);
+  test.skip(!response.ok(), "the target Workbench server does not expose the RSS live bridge");
+  const status = await response.json();
+  test.skip(!status.connected, "no configured live RSS session is available on the target server");
+
+  await page.goto("/");
+  const panel = page.locator(".studio-live-panel");
+  await expect(panel).toContainText("已连接");
+  await expect(panel).toContainText(String(status.step));
+  await expect(panel).toContainText(status.paused ? "已暂停" : "运行中");
+  await expect(panel).toContainText(status.names[0]);
 });
 
 test("workspace overview restores the scene and editor from an active session", async ({

@@ -1,4 +1,4 @@
-# SimFoundry、DexAgent 与 RoboSimStudio 融合升级实施方案
+# EmbodiForge：SimFoundry、DexAgent 与 RoboSimStudio 融合升级实施方案
 
 > **文档类型：** 源码审查后的工程规划与实施验收方案\
 > **规划日期：** 2026-10-19\
@@ -44,7 +44,7 @@
 - 正式数据绑定目标运行时的任务与数据完整性检查，失败数据保留诊断且不进入已验收集合。
 - 导出在干净路径由独立 loader 回读；观测、动作、时间戳、相机、机器人与来源保持一致。
 
-统一入口由 [RobotSim Workbench 方案](RobotSim_Workbench_前端与可视化实施方案.md)实施。总览首页汇总现有运行数、场景数、最近运行和能力状态，并链接到项目/运行、场景、数据回放与工具库。当前已验证的范围是报告/媒体/轨迹、记录式 3D 与 SimFoundry 离线场景副本；候选版本支持来源追踪与继续编辑。实时物理、跨后端资产验收及自动执行/导出仍按 P2–P5 单独验收，具体证据见[可视化验证记录](docs/WORKBENCH_VALIDATION_20261019.md)。
+统一入口由 [EmbodiForge Studio 实施方案](RobotSim_Workbench_前端与可视化实施方案.md)实施。总览首页汇总现有运行数、场景数、最近运行和能力状态，并链接到项目/运行、场景、数据回放与工具库。当前已验证的范围是报告/媒体/轨迹、记录式 3D 与 SimFoundry 离线场景副本；候选版本支持来源追踪与继续编辑。实时物理、跨后端资产验收及自动执行/导出仍按 P2–P5 单独验收，具体证据见[可视化验证记录](docs/WORKBENCH_VALIDATION_20261019.md)。
 
 ### 1.1 最高原则
 
@@ -186,7 +186,7 @@ SimFoundry 论文和当前代码把场景构建拆成“可交互前景实体”
 
 代码中的自动背景顺序是：同一源视频关键帧由 Gemini 列出前景类别 → SAM3 生成各类 mask（失败时可用 Gemini 框中心做点提示）→ SAM2 向前/向后传播到全部帧 → VOID 分两遍、分块修复 → DA3 在修复帧估深度，并复用原视频 DA3 相机轨迹 → 深度监督 Gaussian Splat 训练 → 将背景刚性桥接到重建场景坐标 → 与场景资产合并。这样修复帧提供“对象后面可能是什么”的视觉推断，而实体几何/碰撞仍单独从前景分支生成；补全纹理不应充当已实测碰撞表面。论文报告自动补洞分支单 GPU 约 90 分钟/场景，适合与对象生成并行。
 
-DINOv3 不参与上述背景分支。它只在可选 Pixal3D 单图网格生成后端里提取 global 与 patch 特征，并把 patch 特征按相机参数回投到 3D 网格条件中；BRIA 则只负责 Stage 6 物体图的前景 alpha。复现完整自动数据生成器还需接上 SimFoundry B/C（对象、布局、任务变体与运行时采集/评估）、DexAgent 的演示语义和阶段修复、RoboSimStudio 的目标运行时物理验收及权威 episode 记录；Workbench 做同一 run/场景/证据入口，不再建立第二套权威数据格式。
+DINOv3 不参与上述背景分支。它只在可选 Pixal3D 单图网格生成后端里提取 global 与 patch 特征，并把 patch 特征按相机参数回投到 3D 网格条件中；BRIA 则只负责 Stage 6 物体图的前景 alpha。复现完整自动数据生成器还需接上 SimFoundry B/C（对象、布局、任务变体与运行时采集/评估）、DexAgent 的演示语义和阶段修复、RoboSimStudio 的目标运行时物理验收及权威 episode 记录；EmbodiForge Studio 提供统一 run/场景/证据入口，不再建立第二套权威数据格式。
 
 ## 3. 输入路由：不同视频不能走同一条强制流程
 
@@ -602,7 +602,7 @@ state；导出后检查字段白名单。
 6.  **正式训练数据：**
     必须经过目标运行时执行验证，并保留可追踪的原始记录。
 
-**Workbench 当前接入边界：** 总览页可通过 RoboSimStudio live Unix socket 只读展示仿真步数、时钟、运行/暂停状态和实体位姿，并跳转 RSS 原生 Viewer。该桥只发送 `status` 请求，不驱动仿真、不判断物理成功，也不替代 RSS 的任务 gate 和 EpisodeStore。需要在 Workbench 启动时配置 `WORKBENCH_RSS_RUN_DIR`；实际会话连通性仍需在 RSS live 服务启动后验收。详见 [Workbench 配置与边界](workbench/README.md)。
+**EmbodiForge Studio 当前接入边界：** 总览页可通过 RoboSimStudio live Unix socket 只读展示仿真步数、时钟、运行/暂停状态和实体位姿，并跳转 RSS 原生 Viewer。该桥只发送 `status` 请求，不驱动仿真、不判断物理成功，也不替代 RSS 的任务 gate 和 EpisodeStore。独立 RoboSimStudio live 服务已用真实 Newton 刚体场景验证 API 连通；实际使用需在 Studio 启动时配置 `WORKBENCH_RSS_RUN_DIR`。现有实现路径暂时保留为 `workbench/`。详见 [Studio 配置与边界](workbench/README.md)。
 
 ### 第一轮实际工作
 
