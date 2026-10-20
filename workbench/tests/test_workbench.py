@@ -68,6 +68,43 @@ def test_resume_scope_and_release_stay_separate(client, workspace):
     assert before == {p: hashlib.sha256(p.read_bytes()).hexdigest() for p in before}
 
 
+@pytest.mark.parametrize('fields', [
+    {'scope': 'embodiment_import_qualification', 'task_success_evaluated': False},
+    {'metrics': {'scope': 'embodiment_import_qualification', 'task_success_evaluated': False}},
+])
+def test_import_report_preserves_scope_without_claiming_task_success(client, workspace, fields):
+    path = workspace[1] / 'stage_report.json'
+    report = stage_report(path, checks=[{'id': 'joint_identity', 'required': True, 'status': 'passed'}])
+    report.update(fields)
+    write(path, report)
+    original = path.read_bytes()
+    detail = run_detail(client)
+    backend = next(stage['report'] for stage in detail['stages'] if stage['id'] == 'backend')
+    assert backend['evaluation_scope'] == 'embodiment_import_qualification'
+    assert backend['task_success_evaluated'] is False
+    assert backend['validation'] == 'passed'  # Only the source checks passed.
+    assert detail['release'] == 'not_evaluated'
+    assert path.read_bytes() == original
+
+
+@pytest.mark.parametrize('fields', [
+    {},
+    {'scope': {}, 'task_success_evaluated': 'false'},
+    {'metrics': {'scope': [], 'task_success_evaluated': 1}},
+    {'metrics': []},
+    {'scope': None, 'task_success_evaluated': None,
+     'metrics': {'scope': 'conflicting', 'task_success_evaluated': True}},
+])
+def test_unknown_task_evaluation_is_not_coerced(client, workspace, fields):
+    path = workspace[1] / 'stage_report.json'
+    report = stage_report(path)
+    report.update(fields)
+    write(path, report)
+    backend = next(stage['report'] for stage in run_detail(client)['stages'] if stage['id'] == 'backend')
+    assert backend['evaluation_scope'] is None
+    assert backend['task_success_evaluated'] is None
+
+
 @pytest.mark.parametrize(('status', 'checks', 'expected'), [
     ('warning', [{'id': 'paths', 'required': False, 'status': 'warning'}], 'warning'),
     ('failed', [{'id': 'goal', 'required': True, 'status': 'failed'}], 'failed'),

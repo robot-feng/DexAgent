@@ -72,6 +72,10 @@ def report_validation(data: dict) -> Validation:
 
 def parse_report(path: Path, register: Callable[[Path], Artifact]) -> Report:
     data, payload = load_object(path)
+    metrics = data.get('metrics')
+    metrics = metrics if isinstance(metrics, dict) else {}
+    scope = data.get('scope', metrics.get('scope'))
+    task_evaluated = data.get('task_success_evaluated', metrics.get('task_success_evaluated'))
     checks = []
     for item in data.get('checks', []) if isinstance(data.get('checks'), list) else []:
         if not isinstance(item, dict):
@@ -82,6 +86,8 @@ def parse_report(path: Path, register: Callable[[Path], Artifact]) -> Report:
                             evidence=item.get('evidence')))
     return Report(artifact=register(path), schema_id=data.get('schema'),
                   source_status=data.get('status'), validation=report_validation(data), checks=checks,
+                  evaluation_scope=scope if isinstance(scope, str) else None,
+                  task_success_evaluated=task_evaluated if isinstance(task_evaluated, bool) else None,
                   elapsed_s=data.get('elapsed_s'), failure=data.get('failure'),
                   next_action=data.get('next_action'), attempt_id=data.get('attempt_id'),
                   sha256=hashlib.sha256(payload).hexdigest())

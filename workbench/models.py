@@ -41,6 +41,8 @@ class Report(ReadModel):
     artifact: Artifact
     schema_id: str | None = None
     source_status: str | None = None
+    evaluation_scope: str | None = None
+    task_success_evaluated: bool | None = None
     validation: Validation
     checks: list[Check] = Field(default_factory=list)
     elapsed_s: float | None = None

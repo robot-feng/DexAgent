@@ -1432,6 +1432,10 @@ export interface components {
             schema_id: string | null;
             /** Source Status */
             source_status: string | null;
+            /** Evaluation Scope */
+            evaluation_scope: string | null;
+            /** Task Success Evaluated */
+            task_success_evaluated: boolean | null;
             /**
              * Validation
              * @enum {string}

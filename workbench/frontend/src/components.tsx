@@ -219,6 +219,24 @@ export function GateReport({
         </div>
         <Badge value={report.validation} />
       </div>
+      {report.evaluation_scope === "embodiment_import_qualification" ? (
+        <div className="notice">
+          本体导入检查：此报告仅用于检查模型接入，不能作为三本体 demo 通过证据。
+          {report.task_success_evaluated === false && " 任务成功未评估。"}
+        </div>
+      ) : (
+        (report.evaluation_scope ||
+          report.task_success_evaluated === false) && (
+          <div className="notice">
+            {report.evaluation_scope && (
+              <span>检查范围：{report.evaluation_scope}。</span>
+            )}
+            {report.task_success_evaluated === false && (
+              <span> 任务成功未评估；检查通过不代表任务完成。</span>
+            )}
+          </div>
+        )
+      )}
       {report.failure && <div className="notice danger">{report.failure}</div>}
       {report.next_action && (
         <div className="notice">下一步：{report.next_action}</div>
