@@ -137,6 +137,8 @@ models:                                # checkouts and weights; a tool call that
   hf_home: /data/miniconda3/hf_cache  # shared Hugging Face cache on the data drive
   segmentation_backend: sam3-litetext-s0 # baseline backend; alternative adapters can be registered via entry points
   sam3_litetext_dir: /data/tzq/datasets/starVLA/playground/Pretrained_models/sam3-litetext-s0
+  sam3_litetext_source: /data/tzq/DexAgent/.workbench/resources/efficientsam3-litetext/sam3 # sam3_litetext branch checkout
+  sam3_video_checkpoint: /data/taizun/suxiaotong/sam3/sam3.pt # local SAM3 checkpoint includes detector + video tracker
   lama_checkpoint: /data/tzq/datasets/starVLA/playground/Pretrained_models/lama-big/big-lama.pt
   void_dir: null                       # VOID checkout (Stage 4 clean plates)
   hamer_root: null                     # HaMeR checkout with _DATA/ (hand meshes)
@@ -153,6 +155,7 @@ models:                                # checkouts and weights; a tool call that
 environments:                          # Python interpreters for tools whose packages live in another environment; null = this interpreter
   pipeline: /data/miniconda3/envs/dexagent/bin/python  # run_dexagent.py re-execs into this environment for consistent MuJoCo/tool versions
   sam3: /data/miniconda3/envs/dexagent/bin/python  # transformers/accelerate/torch and local SAM3-LiteText weights
+  sam3_litetext_video: /data/miniconda3/envs/sam3/bin/python # native SAM3 LiteText video tracker runtime
   sam2: null                           # track_objects
   hamer: null                          # extract_hand_meshes
   sam3d: null                          # reconstruct_object_meshes (SAM 3D Objects)

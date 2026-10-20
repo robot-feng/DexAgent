@@ -6,6 +6,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import traceback
@@ -125,6 +126,9 @@ def _mask_phase(repo: Path, manager: Path, job_dir: Path, env: dict[str, str], j
 
     _set_phase(job_dir, 'preparing', '抽帧与统一尺寸', '使用 SimFoundry Stage 1b 生成同源帧集，供所选视频分割模型处理。')
     video_stage = sim / 'scripts/pipeline/A_reconstruction/stages/1b_process_raw_video.py'
+    lite = job['propagation_model'] == 'litetext'
+    if lite:
+        env = dict(env, PYTHONPATH=os.pathsep.join((str(sim), str(repo), env.get('PYTHONPATH', ''))))
     overrides = [
         f'root_dir={_hydra_string(str(data_root))}',
         f'scene_name={scene}',
@@ -135,7 +139,11 @@ def _mask_phase(repo: Path, manager: Path, job_dir: Path, env: dict[str, str], j
         's1_video.target_w=672',
         's1_video.target_h=384',
     ]
-    _run(job_dir, _runner_command(manager, 'simfoundry', video_stage, *overrides), cwd=sim, env=env)
+    # These are SimFoundry Hydra stages, so always run them in its configured
+    # environment. The Workbench venv intentionally stays lightweight and does
+    # not carry Hydra or the SimFoundry runtime dependencies.
+    video_command = _runner_command(manager, 'simfoundry', video_stage, *overrides)
+    _run(job_dir, video_command, cwd=sim, env=env)
 
     scene_data = data_root / scene
     frames = scene_data / 's1_video/frames_subsampled_400'
@@ -163,20 +171,27 @@ def _mask_phase(repo: Path, manager: Path, job_dir: Path, env: dict[str, str], j
                    message=f'Codex external 提议 {len(proposed)} 个对象：{", ".join(proposed)}。正在生成并传播 SAM mask。')
         _save(job_dir, job)
 
-    model_name = ('SAM3 单模型双向跟踪' if job['propagation_model'] == 'sam3'
-                  else 'SAM3 关键帧分割 + SAM2 双向传播')
+    model_name = ('SAM3 单模型双向跟踪' if job['propagation_model'] == 'sam3' and not lite
+                  else 'SAM3 LiteText 原生双向视频跟踪' if lite else 'SAM3 关键帧分割 + SAM2 双向传播')
     _set_phase(job_dir, 'preparing', model_name,
                f'正在使用 {model_name} 处理全部抽样帧。')
     mask_stage = sim / 'scripts/pipeline/A_reconstruction/stages/auto_bg_reconstruction/1_generate_quadmask_for_void.py'
     override_values = [
+        f'root_dir={_hydra_string(str(data_root))}',
         f'scene_name={scene}',
         f'floor_category={_hydra_string(job["floor_category"])}',
         f's1_quadmask.use_gemini_proposal={str(job.get("proposal_backend") == "gemini").lower()}',
         's1_quadmask.include_objects=' + json.dumps(job['include_objects'], ensure_ascii=False),
         's1_quadmask.skip=' + json.dumps(job['skip_objects'], ensure_ascii=False),
-        f's1_quadmask.propagation_model={job["propagation_model"]}',
+        f's1_quadmask.propagation_model={"sam3" if lite else job["propagation_model"]}',
     ]
-    _run(job_dir, _runner_command(manager, 'simfoundry', mask_stage, *override_values), cwd=sim, env=env)
+    if lite:
+        mask_command = [str(manager), 'run', '-n', 'simfoundry', 'python', '-m',
+                        'workbench.cleanup_segmentation', '--stage', str(mask_stage),
+                        '--runtime', str(job_dir / 'segmentation_runtime.json'), *override_values]
+    else:
+        mask_command = _runner_command(manager, 'simfoundry', mask_stage, *override_values)
+    _run(job_dir, mask_command, cwd=sim, env=env)
     overlay = void_input / 'keyframe_masks_debug/all_objects_overlay.png'
     quadmask = void_input / 'quadmask_0.mp4'
     metadata = void_input / 'quadmask_meta.json'
@@ -187,7 +202,7 @@ def _mask_phase(repo: Path, manager: Path, job_dir: Path, env: dict[str, str], j
         raise RuntimeError('SAM3 没有为任何对象生成 mask；请调整对象名称后重试。')
     job = _load(job_dir)
     job.update(status='review_mask', current_step=f'检查 {job["propagation_model"].upper()} mask 与跨帧传播结果',
-               message=f'已生成 {len(meta["objects"])} 个对象的 mask。检查 overlay 和黑白 mask 视频后再确认补洞。',
+               message=f'已生成 {len(meta["objects"])} 个对象的全视频 mask。检查 overlay 和黑白 mask 视频后再确认补洞。',
                detected_objects=meta['objects'])
     _save(job_dir, job)
 
@@ -218,8 +233,9 @@ def _build_phase(repo: Path, manager: Path, job_dir: Path, env: dict[str, str], 
     scene = job['scene_name']
     source = Path(job['source_copy']).resolve()
     object_categories = _build_object_categories(job)
-    proposal_note = (f'复用已确认的 {len(object_categories)} 个对象类别，跳过 Stage 5 Gemini 对象提案。'
-                    if object_categories else '没有可复用的对象类别，Stage 5 将使用上游默认提案流程。')
+    if not object_categories:
+        raise RuntimeError('全量构建没有可复用的已确认对象类别；请在 mask 检查阶段至少保留一个移除对象，避免静默退回上游 Gemini 提案。')
+    proposal_note = f'复用已确认的 {len(object_categories)} 个对象类别，跳过 Stage 5 重复提案。'
     _set_phase(job_dir, 'building', 'SimFoundry 场景重建',
                f'先运行原生 A 重建（{proposal_note}），再复用已检查的 mask/补洞结果训练并桥接背景高斯。')
     run_a = sim / 'scripts/pipeline/A_reconstruction/run.sh'
@@ -267,6 +283,11 @@ def main(argv=None) -> int:
         raise RuntimeError('SIMFOUNDRY_ENV_RUNNER is not configured')
     manager = Path(manager_value)
     env = dict(os.environ, PYTHONUNBUFFERED='1')
+    ffmpeg = shutil.which('ffmpeg')
+    if ffmpeg:
+        # `conda run` can drop the base Conda bin directory from PATH even
+        # though the Workbench preflight found its ffmpeg executable.
+        env['PATH'] = os.pathsep.join((str(Path(ffmpeg).resolve().parent), env.get('PATH', '')))
     try:
         if args.phase == 'mask':
             _mask_phase(repo, manager, job_dir, env, job)

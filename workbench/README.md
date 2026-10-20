@@ -14,7 +14,7 @@ EmbodiForge Studio 统一管理 DexAgent 与 RoboSimStudio 的运行、场景、
 - RSS 刚体记录与 DexAgent rigid_robot 轨迹的原生 Viser 3D 回放。生成过程使用现有 SharpaBridge / StateReplay，核对场景、资产、坐标身份和记录时钟，不执行物理。
 - RoboSimStudio live 会话只读状态卡片：显示真实仿真步数、时钟、暂停/运行、数值状态和实体位姿，并可跳转原生 Viewer；不启动、暂停或驱动仿真。
 - SimFoundry scene JSON 的原位布局编辑：保留原生房间网格、贴图与机器人；支持选中、变换、保存候选、跨会话历史与继续编辑，离开或续编时检查未保存修改。
-- 背景清理：浏览 SimFoundry 示例与本地视频；对象提案可选 DexAgent/Codex external、Gemini API/Vertex 或手动提示词；SAM3 单模型视频跟踪与原流程 SAM3 mask + SAM2 传播共用同一 mask 契约。确认关键帧/跨帧 mask 后再运行 VOID，并复核补洞视频。相机扫描可继续进入原生 A 重建与 AutoBG 对齐；操作演示仅用于清理冒烟测试。
+- 背景清理：浏览 SimFoundry 示例与本地视频；对象提案可选 DexAgent/Codex external、Gemini API/Vertex 或手动提示词。默认将本机 SAM3 LiteText-S0 文本编码器接入原生 SAM3 双向视频跟踪器，不要求 SAM2；主关键帧缺少目标时会在抽样帧中自动寻找播种帧。也可选原生 SAM3 视频跟踪或 SimFoundry 的 SAM3 mask + SAM2 传播。检查整段 mask 后再运行 VOID，并复核补洞视频。相机扫描可继续进入原生 A 重建与 AutoBG 对齐；操作演示仅用于清理冒烟测试。
 - 当前工作树中的工具库检索及输入输出声明；不会执行浏览器提交的 Python。
 
 ## 启动

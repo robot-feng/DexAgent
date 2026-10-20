@@ -733,10 +733,10 @@ export interface components {
             skip_objects?: string[];
             /**
              * Propagation Model
-             * @default sam3
+             * @default litetext
              * @enum {string}
              */
-            propagation_model: "sam2" | "sam3";
+            propagation_model: "sam2" | "sam3" | "litetext";
             /**
              * Proposal Backend
              * @default codex_external
@@ -771,10 +771,10 @@ export interface components {
             skip_objects: string[];
             /**
              * Propagation Model
-             * @default sam3
+             * @default litetext
              * @enum {string}
              */
-            propagation_model: "sam2" | "sam3";
+            propagation_model: "sam2" | "sam3" | "litetext";
             /**
              * Proposal Backend
              * @default codex_external

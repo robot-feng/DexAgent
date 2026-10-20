@@ -227,7 +227,7 @@ class CleanupCreate(BaseModel):
     floor_category: str = Field(default='desk', min_length=1, max_length=120)
     include_objects: list[str] = Field(default_factory=list, max_length=20)
     skip_objects: list[str] = Field(default_factory=list, max_length=50)
-    propagation_model: Literal['sam2', 'sam3'] = 'sam3'
+    propagation_model: Literal['sam2', 'sam3', 'litetext'] = 'litetext'
     proposal_backend: Literal['codex_external', 'gemini', 'manual'] = 'codex_external'
 
 
@@ -242,7 +242,7 @@ class CleanupJob(ReadModel):
     message: str
     include_objects: list[str] = Field(default_factory=list)
     skip_objects: list[str] = Field(default_factory=list)
-    propagation_model: Literal['sam2', 'sam3'] = 'sam3'
+    propagation_model: Literal['sam2', 'sam3', 'litetext'] = 'litetext'
     proposal_backend: Literal['codex_external', 'gemini', 'manual'] = 'codex_external'
     proposal_transport_dir: str | None = None
     proposed_objects: list[str] = Field(default_factory=list)

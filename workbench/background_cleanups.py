@@ -177,6 +177,8 @@ print(json.dumps({"missing": missing}))
         return CleanupRequirement(id=requirement_id, title=title, available=ready, detail=detail)
 
     def _requirements(self) -> list[CleanupRequirement]:
+        from .cleanup_segmentation import runtime
+        lite = runtime(self.repo)
         auto_bg = self.simfoundry / 'scripts/pipeline/A_reconstruction/stages/auto_bg_reconstruction'
         void_root = self.simfoundry / 'deps/void-model'
         sam2_paths = [
@@ -199,6 +201,8 @@ print(json.dumps({"missing": missing}))
             CleanupRequirement(id='conda', title='Conda/Mamba', available=self._conda() is not None,
                                detail='需要 conda 或 mamba 启动 SimFoundry 环境。' if not self._conda() else f'检测到 {self._conda()}。'),
             self._environment_requirement('simfoundry_env', 'SimFoundry 环境', 'simfoundry'),
+            CleanupRequirement(id='litetext_runtime', title='SAM3 LiteText 视频跟踪',
+                               available=lite['ready'], detail=lite['detail']),
             CleanupRequirement(id='sam2_checkpoint', title='SAM2 视频传播权重', available=has_sam2,
                                detail='缺少 sam2.1_hiera_large.pt；按 SimFoundry 默认路径检查。' if not has_sam2 else 'SAM2 权重已找到。'),
             CleanupRequirement(id='void_env', title='VOID 环境与权重', available=void_ready and has_void,
@@ -255,7 +259,8 @@ print(json.dumps({"missing": missing}))
                                            capture_type=capture_type))
         videos.sort(key=lambda video: (video.capture_type != 'operation_demo', video.name.casefold()))
         return CleanupCatalog(videos=videos, requirements=requirements,
-                              preview_available=all(by_id.get(key, False) for key in preview_ids),
+                              preview_available=(all(by_id.get(key, False) for key in preview_ids)
+                                  or all(by_id.get(key, False) for key in ('video_tools', 'litetext_runtime', 'auto_bg_sources'))),
                               build_available=all(by_id.get(key, False) for key in build_ids))
 
     def _label(self, path: Path) -> str:
@@ -295,7 +300,7 @@ print(json.dumps({"missing": missing}))
                     continue
         raise KeyError(video_id)
 
-    def _require(self, *, phase: str, proposal_backend: str = 'codex_external', propagation_model: str = 'sam3'):
+    def _require(self, *, phase: str, proposal_backend: str = 'codex_external', propagation_model: str = 'litetext'):
         # Polling may reuse dependency discovery; starting work must recheck the
         # current environment after an install, uninstall or repair.
         with self.lock:
@@ -303,10 +308,12 @@ print(json.dumps({"missing": missing}))
             catalog = self.catalog()
         requirements = {item.id: item for item in catalog.requirements}
         required = ['video_tools', 'conda', 'simfoundry_env', 'sam2_checkpoint', 'auto_bg_sources']
+        if propagation_model == 'litetext':
+            required = ['video_tools', 'litetext_runtime', 'auto_bg_sources']
         if propagation_model == 'sam3':
             required.remove('sam2_checkpoint')
         if phase in {'inpaint', 'build'}:
-            required.append('void_env')
+            required.extend(['conda', 'void_env'])
         # Transitional compatibility guard: the current upstream full A build
         # still instantiates Gemini directly in several stages. This is an
         # upstream adapter gap, not a product-level requirement; remove the
@@ -315,7 +322,7 @@ print(json.dumps({"missing": missing}))
         if proposal_backend == 'gemini' or phase == 'build':
             required.append('gemini')
         if phase == 'build':
-            required.extend(['da3_env', 'nerfstudio_env', '3dgrut_env', 'mesh_env'])
+            required.extend(['simfoundry_env', 'da3_env', 'nerfstudio_env', '3dgrut_env', 'mesh_env'])
         missing = [requirements[item].detail if item in requirements else f'缺少运行依赖检查：{item}。'
                    for item in required if item not in requirements or not requirements[item].available]
         if missing:
@@ -354,6 +361,10 @@ print(json.dumps({"missing": missing}))
                 'message': '正在启动 SimFoundry mask 流程。',
                 'updated_at': self._now(), 'pid': None,
             }
+            if body.propagation_model == 'litetext':
+                from .cleanup_segmentation import runtime
+                job['segmentation_runtime'] = runtime(self.repo)
+                (directory / 'segmentation_runtime.json').write_text(json.dumps(job['segmentation_runtime']))
             self._write(directory, job)
             self._launch(job_id, 'mask')
             return self.job(job_id)

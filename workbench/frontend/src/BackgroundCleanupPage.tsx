@@ -45,7 +45,7 @@ export function BackgroundCleanupPage() {
   const [includeText, setIncludeText] = useState("robot arm, gripper");
   const [skipText, setSkipText] = useState("");
   const [proposalBackend, setProposalBackend] = useState<"codex_external" | "gemini" | "manual">("codex_external");
-  const [propagationModel, setPropagationModel] = useState<"sam3" | "sam2">("sam3");
+  const [propagationModel, setPropagationModel] = useState<"sam3" | "sam2" | "litetext">("litetext");
   const [selectedJobId, setSelectedJobId] = useState("");
 
   const selectedVideo = useMemo(
@@ -56,7 +56,8 @@ export function BackgroundCleanupPage() {
   const requirement = (id: string) => catalog.data?.requirements.find((item) => item.id === id);
   const canStart = Boolean(
     catalog.data?.preview_available &&
-    (propagationModel === "sam3" || requirement("sam2_checkpoint")?.available) &&
+    (propagationModel === "litetext" ? requirement("litetext_runtime")?.available :
+      requirement("simfoundry_env")?.available && (propagationModel === "sam3" || requirement("sam2_checkpoint")?.available)) &&
     (proposalBackend !== "gemini" || requirement("gemini")?.available) &&
     videoId &&
     (proposalBackend !== "manual" || objectNames(includeText).length),
@@ -177,6 +178,7 @@ export function BackgroundCleanupPage() {
               <label>
                 <span>视频分割模型</span>
                 <select aria-label="视频分割模型" value={propagationModel} onChange={(event) => setPropagationModel(event.target.value as typeof propagationModel)}>
+                  <option value="litetext">SAM3 LiteText 视频跟踪（本机 S0 权重）</option>
                   <option value="sam3">SAM3 单模型（文字分割 + 跨帧跟踪）</option>
                   <option value="sam2">SimFoundry 原流程（SAM3 mask + SAM2 传播）</option>
                 </select>
@@ -192,7 +194,7 @@ export function BackgroundCleanupPage() {
             </div>
             <div className="notice cleanup-note">
               <ShieldCheck size={16} />
-              <span>对象提案由所选 provider 生成结构化标签；DexAgent external 会把关键帧交给外部 Agent 并等待匹配响应。默认由 SAM3 完成关键帧文本分割与双向跟踪，SAM2 可作对照；VOID 负责后续视频补洞。</span>
+              <span>LiteText 仅替换 SAM3 文本编码器，视频仍由 SAM3 原生双向跟踪器传播；目标在主关键帧不可见时，会自动尝试其它抽样帧播种。确认整段彩色 mask 没有漏检或漂移后再运行 VOID 补洞。</span>
             </div>
             {catalog.data?.preview_available && propagationModel === "sam2" && requirement("sam2_checkpoint")?.available === false && (
               <p className="notice warning cleanup-warning">所选 SimFoundry 原组合需要本机 SAM2 checkpoint；当前未检测到，切回 SAM3 单模型或安装该权重。</p>
@@ -276,11 +278,11 @@ function CleanupReview({ job, onApprove, onBuild, onStop, busy, canBuild }: {
       )}
       {job.status === "review_mask" && (
         <>
-          <div className="notice warning cleanup-warning"><AlertTriangle size={16} /><span>确认彩色区域只覆盖要移除的对象，并在黑白视频中检查跨帧跟踪。mask 不正确时请调整对象提示词后重新生成。</span></div>
+          <div className="notice warning cleanup-warning"><AlertTriangle size={16} /><span>确认彩色区域只覆盖要移除的对象，并检查黑白视频中的运动、遮挡和自动选取的种子帧。mask 不正确时请调整对象提示词后重新生成。</span></div>
           {job.detected_objects.length > 0 && <div className="cleanup-object-tags">{job.detected_objects.map((name) => <span key={name}>{name}</span>)}</div>}
           <div className="cleanup-preview-grid mask-review-grid">
             {job.mask_preview_url && <figure><img src={job.mask_preview_url} alt="SAM 关键帧对象分割 overlay" /><figcaption>关键帧分割 overlay</figcaption></figure>}
-            {job.mask_video_url && <figure><video controls src={job.mask_video_url} /><figcaption>跨帧目标 mask（黑色为待移除区域）</figcaption></figure>}
+            {job.mask_video_url && <figure><video controls src={job.mask_video_url} /><figcaption>视频目标 mask（黑色为待移除区域）</figcaption></figure>}
           </div>
           <div className="cleanup-actions">
             <button className="button primary" onClick={onApprove} disabled={busy}><Check size={15} />确认 mask，运行 VOID 补洞</button>

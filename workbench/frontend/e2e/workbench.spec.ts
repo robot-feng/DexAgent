@@ -4,7 +4,7 @@ const prefix = "/api/workbench/v1";
 const standard = "e2e_reference_layout_20261016";
 const failed = "rss_reference_raw_blocking_final_20261016";
 
-test("background cleanup exposes SAM3 and the SimFoundry comparison with truthful preflight", async ({ page }) => {
+test("background cleanup defaults to native SAM3 LiteText tracking and keeps model comparisons", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/background-cleanup");
@@ -21,13 +21,15 @@ test("background cleanup exposes SAM3 and the SimFoundry comparison with truthfu
     "手动对象提示词",
   ]);
   const model = page.getByLabel("视频分割模型");
+  await expect(model).toHaveValue("litetext");
   await expect(model.locator("option")).toContainText([
+    "SAM3 LiteText 视频跟踪（本机 S0 权重）",
     "SAM3 单模型（文字分割 + 跨帧跟踪）",
     "SimFoundry 原流程（SAM3 mask + SAM2 传播）",
   ]);
+  await expect(page.getByRole("button", { name: "生成 mask 预览" })).toBeEnabled();
   await model.selectOption("sam3");
   await expect(page.getByRole("button", { name: "生成 mask 预览" })).toBeDisabled();
-  await expect(page.getByText("需要 simfoundry 环境运行抽帧、SAM3 和场景流程。", { exact: true })).toBeVisible();
   expect(errors).toEqual([]);
 });
 

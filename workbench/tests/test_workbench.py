@@ -470,6 +470,22 @@ def test_background_cleanup_build_does_not_pass_auto_bg_key_to_canonical_hydra(t
     assert json.loads((job_dir / 'job.json').read_text())['status'] == 'ready'
 
 
+def test_background_cleanup_build_never_falls_back_to_upstream_object_proposal(tmp_path):
+    from workbench import background_cleanup_worker as worker
+
+    job_dir = tmp_path / 'state/jobs/0123456789abcdef01234567'
+    job_dir.mkdir(parents=True)
+    source = job_dir / 'source.mp4'
+    source.write_bytes(b'smoke')
+    job = {
+        'scene_name': 'cleanup_scan', 'source_copy': str(source), 'floor_category': 'desk',
+        'include_objects': ['table'], 'proposed_objects': ['robot arm'], 'skip_objects': ['table', 'robot arm'],
+    }
+
+    with pytest.raises(RuntimeError, match='避免静默退回上游 Gemini 提案'):
+        worker._build_phase(tmp_path, Path('/usr/bin/conda'), job_dir, {}, job)
+
+
 def test_bad_source_symlink_does_not_disable_other_runs(client, workspace):
     repo, root = workspace
     outside = write(repo / 'outside.json', {'secret': 'never serve'})
