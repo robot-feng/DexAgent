@@ -1,0 +1,489 @@
+{
+  "robot": "G1_omnipicker",
+  "aggregate_complete": false,
+  "local_evidence_root": ".workbench/previews/geniesim-gripper-dynamics-20261021",
+  "original_report": {
+    "scope": "adapted_runtime_mechanism_diagnostic_not_exact_qualification_or_task_success",
+    "exact_source_qualification": "failed",
+    "task_success_evaluated": false,
+    "diagnostic_status": "stopped_on_frozen_criterion",
+    "status": "diagnostic_only_exact_qualification_still_failed",
+    "simulation_steps": 118
+  },
+  "source_layers_sha256": {
+    "GenieSimAssets/robot/G1_omnipicker/robot.usda": "ce89c938628b574d330a051bdd81116d4b6a439905825cb2e5f0f55e28b0eff4",
+    "GenieSimAssets/robot/G1_omnipicker/configuration/robot_physics.usd": "a72aeeaac23b2bb49eee415e5bc2a625ae97033e9f0251fc612130aba2dd4cb9",
+    "GenieSimAssets/robot/G1_omnipicker/configuration/robot_sensor.usd": "d32e25c7daf3f7fdd008086f37e7f95dd2198a1bf94068c72defd7fdf81053f3",
+    "GenieSimAssets/robot/G1_omnipicker/configuration/Cam.usd": "f58b881307b67f42ea849c93f4e66736c9eacd3c832ff9839f7a1d394327b6d0",
+    "GenieSimAssets/robot/G1_omnipicker/configuration/robot_base.usd": "506709c177cb55840eb70db635864d8b60757895b54ac55296bcdd20f38977af",
+    "GenieSimAssets/robot/G1_omnipicker/configuration/robot_robot.usd": "9232253524b49eb3c8b6fddea2b62d633096a442901d1bafbd3757c5c35088ee"
+  },
+  "original_code_snapshot_sha256": {
+    "agent/geniesim_import.py": "73d9d474e01621b38c618fcf6ee74a564f05419257c33b573d2ee3f7ffddaa46",
+    "agent/run_reports.py": "3bd55ba103b3ef8dd196a7e2e927e27ac950cddd59d021271adc26f57b9b9610"
+  },
+  "environment": {
+    "newton": "1.6.0",
+    "warp-lang": "1.18.0",
+    "mujoco": "3.12.0",
+    "usd-core": "26.8",
+    "newton-usd-schemas": "0.6.0"
+  },
+  "frozen_protocol": {
+    "dt_s": 0.001,
+    "steps": 1000,
+    "schedule": "0-.1 hold; .1-.5 smoothstep 0.10 rad; .5-.7 hold; .7-.9 smoothstep return; .9-1 hold",
+    "driver_absolute_target_range_rad": [
+      0,
+      0.7853981633974483
+    ],
+    "stop_thresholds": {
+      "mimic_residual_rad": 0.01,
+      "loop_anchor_residual_m": 0.001,
+      "joint_limit_violation_rad": 0.01,
+      "scalar_speed_rad_s": 10.0,
+      "fixed_base_position_drift_m": 1e-05,
+      "fixed_base_rotation_drift_rad": 1e-05,
+      "effort_cap_relative_slack": 1e-05,
+      "effort_cap_absolute_slack": 1e-06
+    },
+    "result_thresholds": {
+      "driver_tracking_error_rad": 0.03,
+      "minimum_peak_driver_motion_rad": 0.05
+    },
+    "adaptations": [
+      "same anonymous missing decorative camera overlay",
+      "observe native finalize helper-inertia normalization; no manual mass/inertia edits",
+      "replace invalid source drive targets with measured hold and explicit bounded diagnostic commands"
+    ],
+    "max_full_import_trials": 1,
+    "scalar_unit_note": "Original _rad scalar threshold labels are misleading for prismatic joints: values apply in metres / metres per second for those coordinates; numeric thresholds unchanged."
+  },
+  "original_trial": {
+    "full_import_seconds": 55.55952633637935,
+    "elapsed_seconds": 93.79170418623835,
+    "stop": {
+      "time_s": 0.11800000000000001,
+      "reasons": [
+        "mimic_residual"
+      ]
+    },
+    "native_dimensions": {
+      "nq": 34,
+      "nv": 34,
+      "neq": 6,
+      "ngeom": 3140,
+      "nu": 20
+    },
+    "observed": {
+      "max_loop_anchor_residual_m": 0.0005661380710080266,
+      "max_mimic_residual_rad": 0.010127200745046139,
+      "max_driver_speed_rad_s": 0.0026907003484666348,
+      "driver_q_initial": [
+        0.0,
+        0.0
+      ],
+      "driver_q_final": [
+        1.6881707779248245e-05,
+        1.684030212345533e-05
+      ],
+      "max_driver_displacement_rad": [
+        1.6881707779248245e-05,
+        1.684030212345533e-05
+      ],
+      "all_finite": true,
+      "max_ncon": 0
+    }
+  },
+  "recording_integrity": {
+    "invalid_raw_history_fields": [
+      "q",
+      "v",
+      "body_q",
+      "body_qd"
+    ],
+    "cause": "CPU Warp .numpy() shared views were stored without copy and overwritten by state reuse",
+    "valid_evidence": "native_qpos/native_qvel/native_ctrl and forces explicitly copied; driver/follower fancy-index copies; online residual/finite/stop metrics computed immediately",
+    "native_samples": 119,
+    "derived_kinematics": "trajectory-native-reconstructed.npz from saved native state via mj_forward only; xyzw poses, world-oriented body-origin angular/linear velocities, not original Newton COM history",
+    "offline_simulation_steps": 0,
+    "safe_copy_recorder_status": "syntax-checked only; no second full trial"
+  },
+  "offline_findings": {
+    "effort_cap_checks": {
+      "all_compiled_caps_match_imported": true,
+      "all_finite_authored_caps_match_imported": true,
+      "all_measured_total_actuator_efforts_within_imported_caps": true
+    },
+    "driver_source_caps_nm": [
+      5,
+      5
+    ],
+    "driver_peak_total_effort_nm": [
+      0.556930437056721,
+      0.5567829401427531
+    ],
+    "command_vs_native_ctrl_max_error": 0,
+    "followers": "No applied PhysicsDriveAPI, no native actuator, ke/kd zero; inactive drive attributes are not active drive caps.",
+    "child_anchor_shifts_m": [
+      0.0005648004329825537,
+      0.0005646890694145436,
+      0.0005646499703043079,
+      0.0005647757579208989
+    ],
+    "source_loop_vs_online_max_difference_m": 2.1702457693971444e-07,
+    "mimic_source_semantics": "No authored naturalFrequency/dampingRatio; native default softness is not demonstrated equivalent to PhysX fallback.",
+    "anchor_audit_scope": "Imported local anchors to compiled model only; not comprehensive USD axis/frame validation.",
+    "original_source_effort_audit_scope": "Original offline-audit reads angular DriveAPI attributes; its true finite-source-cap aggregate does not establish linear drive coverage."
+  },
+  "source_inertia_review": {
+    "G1_omnipicker": {
+      "changed_helper_frames": 3,
+      "source_mass_authored": false,
+      "source_diagonal_inertia_authored": true,
+      "raw_fidelity_status": "failed",
+      "source_report_sha256": "82344f049da229a04877e65b94a30d245d2e0c6e6a82cb27bc3a1f24b59e87e5"
+    },
+    "G2_omnipicker": {
+      "changed_helper_frames": 7,
+      "source_mass_authored": false,
+      "source_diagonal_inertia_authored": true,
+      "raw_fidelity_status": "failed",
+      "source_report_sha256": "58642fce7884027191f246d16e1695c89c6d842d23f2e2bb475ab26c46dfa98c"
+    }
+  },
+  "native_model_comparisons": {
+    "scope": "native_direct_solver_comparison_not_integrated_newton_or_task_pass",
+    "profiles": [
+      {
+        "id": "01_native_replay",
+        "status": "stopped_on_frozen_criterion",
+        "steps": 118,
+        "stop_reasons": [
+          "mimic_residual"
+        ],
+        "max_mimic_rad": 0.010127200510513861,
+        "max_source_loop_m": 0.0005659863641829529,
+        "all_equalities_active": true,
+        "physical_arrays_unchanged": true
+      },
+      {
+        "id": "02_source_child_anchors",
+        "status": "stopped_on_frozen_criterion",
+        "steps": 118,
+        "stop_reasons": [
+          "mimic_residual"
+        ],
+        "max_mimic_rad": 0.010090054893857732,
+        "max_source_loop_m": 0.0005646535569913548,
+        "all_equalities_active": true,
+        "physical_arrays_unchanged": true
+      },
+      {
+        "id": "03_source_child_anchors_stiff_mimic",
+        "status": "stopped_on_frozen_criterion",
+        "steps": 135,
+        "stop_reasons": [
+          "source_loop_anchor_residual"
+        ],
+        "max_mimic_rad": 0.002018905630075175,
+        "max_source_loop_m": 0.0010135339735787088,
+        "all_equalities_active": true,
+        "physical_arrays_unchanged": true
+      },
+      {
+        "id": "04_source_child_anchors_stiff_all_equalities",
+        "status": "stopped_on_frozen_criterion",
+        "steps": 195,
+        "stop_reasons": [
+          "joint_limit_violation"
+        ],
+        "max_mimic_rad": 0.004171497248914776,
+        "max_source_loop_m": 0.0005646535569913548,
+        "all_equalities_active": true,
+        "physical_arrays_unchanged": true
+      }
+    ],
+    "baseline_replay_equivalence": {
+      "max_qpos_error": 7.11861110856693e-10,
+      "max_qvel_error": 8.286946528990313e-08,
+      "passed": true
+    },
+    "integrated_newton_pass": false,
+    "task_success_evaluated": false,
+    "exact_source_qualification": "failed",
+    "strict_profile_parameters": {
+      "solref": [
+        0.002,
+        1
+      ],
+      "solimp": [
+        0.9999,
+        0.9999,
+        0.001,
+        0.5,
+        2
+      ],
+      "acceptance_criteria": "unchanged frozen protocol",
+      "source_physx_equivalence_claim": false
+    }
+  },
+  "audit_regression": {
+    "result": "27 passed, 20 warnings in 4.76s",
+    "warnings": "USD deprecated API usage",
+    "log_name": "geniesim-dynamics-audit-regression.log",
+    "log_sha256": "00720216b1a8d505da2c18994e7be608ca0224e5fe0c97dd53001c1e22b64954",
+    "note": "Checker regression result, not a repeated full dynamics trial or robot task pass."
+  },
+  "artifact_sha256": {
+    "report.json": "24dc6e09a6a4e7706d3709722bf23981d2bb206a5c2e00b57f60af43a4821397",
+    "protocol.json": "066d32653b70923c9365bdfad5fdde0dd50b95b8b2f88a2901d59b8ec32cf375",
+    "diagnostic.py": "2264f2b0c617e4f1b42067118a612e2800d81d68b175322015b1573d030af98f",
+    "trajectory.npz": "11eca578fc42290f9d490ede85ce80ebffba99b988793759bc862c7a4bcbeb32",
+    "native_model.mjb": "e11d2773805f19e6795234f50d04fbb58664f3f1074241da9fa43d33a8284f81",
+    "offline-audit.json": "d588f20fee87707e4d4a5718065356a2e693ec667475b0052be705ab87dbc210",
+    "offline-audit.py": "f6e09143de5ce68a2796b7a75a4f3a14dae9f6ba6652949d6b087f37f290c445",
+    "trajectory-native-reconstructed.npz": "312c2d6714a8647806550611f6f4f8132decf59c12db1e5941a497b0f74fbe8d",
+    "diagnostic-v2-safe-copy.py": "ff62e1da234cbaf2f42becb1cd12757fb31ec52c9d4e83b7d75f97e41dd62cca",
+    "source-inertia-review.json": "cc8aa6eb741ea0d70e70a102c0c8379ee4f332c05603b79d7b10d52ae8fcb51c",
+    "FINDINGS.md": "d2046357032746186fbab279b3b0ea2a488ddfddca2d9e2fab109d12340c02f4",
+    "comparison/report.json": "7d0579269c1647ac7a08f7cb52a10cdf69c8815d97aad4cadaf9a3d1335f640b",
+    "comparison/protocol.json": "e5d42cd76d5aa8e53fea07d09770f5d132ea871ac923ba2edcd23bf61809e116",
+    "comparison/comparison.py": "f49d5d9b61cac8a57079f60e420287b17aba4d3d6d59b16c132d11b4252ca2d4",
+    "source-gravity-audit.json": "3440a5a8121d4bc37c4f8cc31ac816a4cb0af84e6ca363c5d58581f3e8716038",
+    "comparison04-all-equalities/report.json": "0ded2e3c8ca9bd23ed27a52269738ebd63db099651c7b8aeb1ee6f03cd936705",
+    "comparison04-all-equalities/protocol.json": "55e8727c3b433db8ba28f235acd0698a6685724a7a140d66eb085a6749528be7",
+    "comparison04-all-equalities/comparison.py": "dfc8b8aaf701eda938b659e8bbd08a2bfa6ecc42e838ea102ff0d911c090bc7c",
+    "comparison04-all-equalities/linear-drive-audit.json": "1a9a258fe1839f402e57d07655d4c924a2ecfbab857a92b7206411d52b595e74",
+    "comparison04-all-equalities/source-drive-audit-v2.json": "5b65b2f5cf5be63b028f4fbe7accac51a26068d1ee3faf8639159cec6afb4dad",
+    "comparison-source-gravity-refreshed/report.json": "aeeb54d6b18f219eb886b346202ef67ac92909a6511c2fa14f8e242bdab52cbd",
+    "comparison-source-gravity-refreshed/protocol.json": "956bb0dd23d76f496f852321619319bb442cbbc349f8b00eee6e7633bb607280",
+    "comparison-source-gravity-refreshed/comparison.py": "bdaa24ac2e89115812d39864285196b4a337624214135ca7750119ac13767998",
+    "comparison-source-gravity-refreshed/FINDINGS.md": "f8b0f3cd82bab644980db8689013211294078b4e6c172d464c461c7c802fe8f6",
+    "comparison-source-gravity/report.json": "7131a991990f65165ba67aa4073b4d01c3a23f12f19a54e5d37e2e62583376f6",
+    "comparison-source-gravity/comparison.py": "5b577727a61c8e6503709c0ddec261aa1b7d2aa4db3f15064bdd9b3fef1f359e"
+  },
+  "source_gravity_gap": {
+    "source_counts": {
+      "G1_omnipicker": {
+        "true": 42,
+        "false": 0,
+        "absent_or_unauthored": 0,
+        "active_enabled": 42
+      },
+      "G2_omnipicker": {
+        "true": 55,
+        "false": 1,
+        "absent_or_unauthored": 0,
+        "active_enabled": 56
+      }
+    },
+    "saved_native_gravcomp_all_zero": true,
+    "global_gravity": [
+      -0.0,
+      -0.0,
+      -9.8100004196167
+    ],
+    "impact": "Original and first four comparisons contain source-unrequested gravity; constraint softness is not established as sole cause.",
+    "cancelled_trial": "Planned limit-hardening fifth profile was cancelled before execution after discovering body gravity fidelity loss.",
+    "production_mapping": "Authored per-body flags mapped to mjc:gravcomp in anonymous session before compilation; source files and global gravity preserved.",
+    "corrected_comparisons": {
+      "report": "comparison-source-gravity-refreshed/report.json",
+      "scope": "native_direct_solver_comparison_not_integrated_newton_or_task_pass",
+      "profiles": [
+        {
+          "id": "05_source_gravity_only",
+          "status": "stopped_on_frozen_criterion",
+          "steps": 118,
+          "stop": {
+            "step": 118,
+            "time_s": 0.11800000000000009,
+            "reasons": [
+              "mimic_residual"
+            ]
+          },
+          "ngravcomp": 42,
+          "max_initial_bias_minus_passive": 1.1368683772161603e-13,
+          "all_intended_equalities_preserved": true,
+          "physical_arrays_unchanged": true,
+          "all_equalities_active": true,
+          "max_mimic_rad": 0.010085158560823518,
+          "max_source_loop_m": 0.0005647812265253701,
+          "driver_final": [
+            1.6840861764917897e-05,
+            1.684087668737478e-05
+          ],
+          "all_finite": true,
+          "max_ncon": 0,
+          "max_total_effort_cap_excess": 0.0
+        },
+        {
+          "id": "06_source_gravity_anchors_stiff_equalities",
+          "status": "stopped_on_frozen_criterion",
+          "steps": 745,
+          "stop": {
+            "step": 745,
+            "time_s": 0.7450000000000006,
+            "reasons": [
+              "mimic_residual"
+            ]
+          },
+          "ngravcomp": 42,
+          "max_initial_bias_minus_passive": 1.1368683772161603e-13,
+          "all_intended_equalities_preserved": true,
+          "physical_arrays_unchanged": true,
+          "all_equalities_active": true,
+          "max_mimic_rad": 0.010084522584254713,
+          "max_source_loop_m": 0.0005646535569913548,
+          "driver_final": [
+            0.08717643487455026,
+            0.08717643480997533
+          ],
+          "all_finite": true,
+          "max_ncon": 0,
+          "max_total_effort_cap_excess": 0.0
+        }
+      ],
+      "input_files_unchanged": true,
+      "total_physics_steps": 863,
+      "partial_opening": {
+        "profile": "06",
+        "time_s": 0.7,
+        "driver_q_rad": 0.08516874,
+        "target_rad": 0.1,
+        "full_cycle_passed": false
+      },
+      "method": "mj_setConst refreshes cached ngravcomp to 42; intended equality arrays restored after refresh and hashes verified. Global gravity and joint-limit parameters retained."
+    },
+    "invalid_initial_comparison_attempt": "comparison-source-gravity: body_gravcomp mutation left cached ngravcomp=0; retained but invalid as restored-gravity evidence. Authoritative corrected results are under comparison-source-gravity-refreshed."
+  },
+  "linear_drive_audit": {
+    "type": "PhysicsPrismaticJoint",
+    "coordinate_unit": "m",
+    "force_unit": "N",
+    "source_cap_matches_native": true,
+    "fourth_stop": {
+      "time_s": 0.19500000000000015,
+      "q_m": -0.010019592189876846,
+      "violation_m": 0.010019592189876846,
+      "velocity_m_s": -0.05997470370849406,
+      "actuator_force_N": 100.0,
+      "constraint_force_N": 78.51810478181784
+    },
+    "native_static_bias_N": 177.22219030048194,
+    "threshold_label_defect": "Frozen joint_limit_violation_rad key is misleading for prismatic; original numeric0.01 threshold applies in metres here, unchanged.",
+    "type_aware_checks": {
+      "all_active_source_drive_gains_match": true,
+      "all_active_finite_source_caps_match": true,
+      "all_compiled_joint_caps_match": true
+    },
+    "type_aware_coverage": {
+      "scalar_joints": 34,
+      "active_linear_drives": 1,
+      "active_angular_drives": 19
+    }
+  },
+  "gravity_mapping_regression": {
+    "result": "31 passed, 24 warnings in 5.26s",
+    "log_name": "geniesim-gravity-regression.log",
+    "log_sha256": "3a026afc8b0f7941943663189b809519665e72452754aaa76c0151f2dfe32768",
+    "coverage": "Actual 100-step two-free-body hover/fall and authored gravity conflict rejection; not complete G1 dynamics.",
+    "code_sha256_at_final_documentation": {
+      "agent/geniesim_import.py": "5b82590fe70e74001cac1a52274ae174a4bd7039f0606a74e6b1eb10cdd9cd13",
+      "tests/test_geniesim_import.py": "9d7314ecc972f7dc8bae002059da011c6480719712a25a04ca0773defacfebaa",
+      "tests/test_geniesim_collision_semantics.py": "cda1de624c88717a2d1e46b41926fc95f6ae63a1e2164ca299494255467b6adb"
+    }
+  },
+  "final_production_imports": {
+    "G1_omnipicker": {
+      "report": ".workbench/previews/geniesim-gravity-import-20261021/G1_omnipicker.json",
+      "report_sha256": "10f1d864504308887b274daf200cbf041006c28df262fe364416bbb5360ff2ba",
+      "scope": "embodiment_import_qualification",
+      "status": "failed",
+      "cli_exit_code": 1,
+      "task_success_evaluated": false,
+      "elapsed_s": 105.919,
+      "check_counts": {
+        "failed": 4,
+        "passed": 14,
+        "skipped": 1
+      },
+      "gravity_check": {
+        "status": "passed",
+        "bodies": 42,
+        "source_disabled": 42,
+        "all_preserved": true
+      },
+      "failed_checks": [
+        "exact_source_composes",
+        "authored_drive_targets_within_limits",
+        "finalized_authored_mass_principal_inertia_preserved",
+        "native_ball_loop_anchors_preserved"
+      ],
+      "skipped_checks": [
+        "remaining_physical_qualification"
+      ],
+      "source_entry_and_layers_unchanged": true,
+      "source_hash_reference": "source_layers_sha256 at top level (unchanged)"
+    },
+    "G2_omnipicker": {
+      "report": ".workbench/previews/geniesim-gravity-import-20261021/G2_omnipicker.json",
+      "report_sha256": "1197c1593804bf7384b8f33d7a6715bb30891c9a902a0565c1eaff27808a61c0",
+      "scope": "embodiment_import_qualification",
+      "status": "failed",
+      "cli_exit_code": 1,
+      "task_success_evaluated": false,
+      "elapsed_s": 144.85,
+      "check_counts": {
+        "passed": 16,
+        "failed": 2,
+        "skipped": 1
+      },
+      "gravity_check": {
+        "status": "passed",
+        "bodies": 56,
+        "source_disabled": 55,
+        "all_preserved": true
+      },
+      "source_layers_sha256": {
+        "GenieSimAssets/robot/G2_omnipicker/robot.usda": "50cedc50f7fb3593649e98bc64593c7d31ce379f66eeda68d94786152346261a",
+        "GenieSimAssets/robot/G2_omnipicker/configuration/robot_physics.usd": "1680e1dc7ea75a2585144eee33b1224284a80f5d25c9dacfd0caa0b9170040f2",
+        "GenieSimAssets/robot/G2_omnipicker/configuration/Cam_L.usd": "f9a76dcb1e5e451554917702cf03d5df52f7299bf7ab7e36e896109ca44ae8c8",
+        "GenieSimAssets/robot/G2_omnipicker/configuration/Cam_R.usd": "2dcb93e617198af75d53241782deceea454204758e58fd9d64028176d3371b7d",
+        "GenieSimAssets/robot/G2_omnipicker/configuration/robot_sensor.usd": "d32e25c7daf3f7fdd008086f37e7f95dd2198a1bf94068c72defd7fdf81053f3",
+        "GenieSimAssets/robot/G2_omnipicker/configuration/robot_robot.usd": "a7f5238b029832980a6fd82a224a822781e7a121c15e4fcc29c8b71c32b4cae4",
+        "GenieSimAssets/robot/G2_omnipicker/configuration/robot_base.usd": "6abf3888859bc2385bd084bcdeec8fe464891110d61d3fa9ef1c7efd5a690488"
+      },
+      "failed_checks": [
+        "finalized_authored_mass_principal_inertia_preserved",
+        "native_ball_loop_anchors_preserved"
+      ],
+      "skipped_checks": [
+        "remaining_physical_qualification"
+      ],
+      "source_entry_and_layers_unchanged": true
+    }
+  },
+  "original_check_summary": {
+    "passed": 9,
+    "failed": [
+      "finalized_authored_mass_principal_inertia_preserved"
+    ]
+  },
+  "studio_verification": {
+    "port": 8765,
+    "run_ids": {
+      "G1_import": "16bd3d9972aed9f19f212856",
+      "G2_import": "3e54369aa47ee38cb2912421",
+      "G1_diagnostic": "9337f56258636fe4b07af420"
+    },
+    "all_display_failed": true,
+    "page_errors": [],
+    "image_dimensions": [
+      2080,
+      1216
+    ],
+    "figure_sha256": "a348bcb3577bad427b68ffeefc843074d1d50fb7addc95b549c40974012ad619",
+    "publishing_script_sha256": "1d2f5383a10dcb35230259867aa5734a22c951d8c8489ceeaef26d974497066d"
+  }
+}

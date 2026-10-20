@@ -126,6 +126,35 @@ def test_position_target_uses_q_layout_after_floating_base():
     assert builder_inventory(builder)["joints"][1]["target"] == 0.4
 
 
+def test_prismatic_drive_target_stays_in_metres():
+    pytest.importorskip("pxr")
+    from pxr import Usd, UsdPhysics
+
+    stage = Usd.Stage.CreateInMemory()
+    joint = UsdPhysics.PrismaticJoint.Define(stage, "/robot/lift")
+    joint.CreateLowerLimitAttr(0)
+    joint.CreateUpperLimitAttr(0.55)
+    drive = UsdPhysics.DriveAPI.Apply(joint.GetPrim(), "linear")
+    drive.CreateTargetPositionAttr(0.8)
+    entry, = source_inventory(stage)["joints"]
+    assert entry["coordinate_unit"] == "m"
+    assert entry["target"] == pytest.approx(0.8)
+    assert entry["target"] > entry["upper"]  # Must not hide an invalid metre target as radians.
+
+
+def test_revolute_drive_target_converts_degrees_to_radians():
+    pytest.importorskip("pxr")
+    from pxr import Usd, UsdPhysics
+
+    stage = Usd.Stage.CreateInMemory()
+    joint = UsdPhysics.RevoluteJoint.Define(stage, "/robot/hinge")
+    drive = UsdPhysics.DriveAPI.Apply(joint.GetPrim(), "angular")
+    drive.CreateTargetPositionAttr(45)
+    entry, = source_inventory(stage)["joints"]
+    assert entry["coordinate_unit"] == "rad"
+    assert entry["target"] == pytest.approx(0.7853981633974483)
+
+
 def test_missing_file_after_identity_capture_is_a_failed_check(tmp_path):
     source = tmp_path / "robot.usda"
     source.write_text("#usda 1.0\n")

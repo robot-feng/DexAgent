@@ -93,6 +93,10 @@ def source_inventory(stage):
         result = attr.Get() if attr else None
         return result if result is not None else default
 
+    def authored(prim, name):
+        attr = prim.GetAttribute(name)
+        return bool(attr and attr.HasAuthoredValueOpinion())
+
     joints, bodies, collisions, articulations = [], [], [], []
     for prim in Usd.PrimRange.Stage(stage, Usd.TraverseInstanceProxies()):
         path = str(prim.GetPath())
@@ -117,8 +121,10 @@ def source_inventory(stage):
             for key in ("lower", "upper"):
                 limit = value(prim, f"physics:{key}Limit")
                 joint[key] = float(limit) * scale if limit is not None and math.isfinite(limit) else None
-            target = value(prim, "drive:angular:physics:targetPosition")
-            joint["target"] = float(target) * math.pi / 180 if target is not None else None
+            drive_axis = "linear" if prim.IsA(UsdPhysics.PrismaticJoint) else "angular"
+            target = value(prim, f"drive:{drive_axis}:physics:targetPosition")
+            joint["target"] = float(target) * scale if target is not None else None
+            joint["coordinate_unit"] = "m" if drive_axis == "linear" else "rad"
             for rel in prim.GetRelationships():
                 if rel.GetName().startswith("physxMimicJoint:") and rel.GetName().endswith(":referenceJoint"):
                     prefix = rel.GetName().rsplit(":", 1)[0]
@@ -133,7 +139,15 @@ def source_inventory(stage):
         if prim.HasAPI(UsdPhysics.RigidBodyAPI):
             diagonal = value(prim, "physics:diagonalInertia")
             bodies.append({"path": path, "mass": value(prim, "physics:mass"),
-                           "diagonal_inertia": list(diagonal) if diagonal is not None else None})
+                           "mass_authored": authored(prim, "physics:mass"),
+                           "density": value(prim, "physics:density"),
+                           "density_authored": authored(prim, "physics:density"),
+                           "gravity_disabled": value(prim, "physxRigidBody:disableGravity")
+                           if authored(prim, "physxRigidBody:disableGravity") else None,
+                           "diagonal_inertia": list(diagonal) if diagonal is not None else None,
+                           "diagonal_inertia_authored": authored(prim, "physics:diagonalInertia"),
+                           "geometry_paths": [str(p.GetPath()) for p in Usd.PrimRange(
+                               prim, Usd.TraverseInstanceProxies()) if p.IsA(UsdGeom.Gprim)]})
         if prim.HasAPI(UsdPhysics.CollisionAPI) and value(prim, "physics:collisionEnabled", True):
             collisions.append({"path": path, "kind": prim.GetTypeName()})
     # Articulations can be rooted at a joint or one body; other members need
@@ -263,6 +277,121 @@ def compare_physics(source, imported):
             check("declared_colliders_preserved", not missing_colliders, missing_colliders)]
 
 
+def describe_inertia_changes(source, imported, finalized):
+    """Record finalization changes without waiving source-fidelity failures.
+
+    In particular, USD's fallback mass=0 means unspecified, not an explicit
+    zero-mass physical body. Empty fixed reference frames can still carry
+    authored placeholder inertia. This evidence does not establish how the
+    source engine interprets those incomplete mass properties.
+    """
+    import numpy as np
+
+    sources = {body["path"]: body for body in source["bodies"]}
+    before = {body["path"]: body for body in imported}
+    changes = []
+    for after in finalized:
+        prior = before[after["path"]]
+        if (math.isclose(prior["mass"], after["mass"], rel_tol=1e-5, abs_tol=1e-9)
+                and np.allclose(prior["inertia"], after["inertia"], rtol=1e-5, atol=1e-9)):
+            continue
+        changes.append({"path": after["path"], "source": sources.get(after["path"]),
+                        "before_finalize": prior, "after_finalize": after,
+                        "attached_joints": [joint for joint in source["joints"]
+                                            if after["path"] in joint["body0"] + joint["body1"]]})
+    return changes
+
+
+def map_physx_body_gravity(stage):
+    """Map authored per-body gravity into the CPU backend's supported schema.
+
+    Newton's PhysX resolver currently reads gravity only for a scene prim.
+    Keep world gravity for other objects and leave the source layers untouched.
+    """
+    from pxr import Sdf, Usd, UsdPhysics
+
+    mappings = []
+    for prim in Usd.PrimRange.Stage(stage, Usd.TraverseInstanceProxies()):
+        if not prim.HasAPI(UsdPhysics.RigidBodyAPI):
+            continue
+        attr = prim.GetAttribute("physxRigidBody:disableGravity")
+        if not attr or not attr.HasAuthoredValueOpinion() or attr.Get() is None:
+            continue
+        expected = float(bool(attr.Get()))
+        current = prim.GetAttribute("mjc:gravcomp")
+        if current and current.HasAuthoredValueOpinion():
+            if current.Get() != expected:
+                raise ValueError(f"Conflicting authored gravity settings on {prim.GetPath()}")
+            continue
+        mappings.append({"path": str(prim.GetPath()), "source_disabled": bool(attr.Get()),
+                         "mujoco_gravcomp": expected})
+    # Validate conflicts before writing any session opinions.
+    with Usd.EditContext(stage, stage.GetSessionLayer()):
+        for entry in mappings:
+            prim = stage.GetPrimAtPath(entry["path"])
+            prim.CreateAttribute("mjc:gravcomp", Sdf.ValueTypeNames.Float).Set(entry["mujoco_gravcomp"])
+    return mappings
+
+
+def compare_body_gravity(source, model, solver):
+    import numpy as np
+
+    mapping = solver.mjc_body_to_newton.numpy()[0]
+    body_ids = {name: i for i, name in enumerate(model.body_label)}
+    evidence = []
+    for body in source["bodies"]:
+        disabled = body.get("gravity_disabled")
+        if disabled is None:
+            continue
+        ids = np.flatnonzero(mapping == body_ids.get(body["path"], -2))
+        actual = [float(solver.mj_model.body_gravcomp[i]) for i in ids]
+        evidence.append({"path": body["path"], "source_disabled": disabled,
+                         "compiled_gravcomp": actual,
+                         "preserved": len(actual) == 1 and abs(actual[0] - float(disabled)) < 1e-6})
+    return check("authored_body_gravity_preserved", all(e["preserved"] for e in evidence), evidence)
+
+
+def compare_ball_loop_anchors(model, solver):
+    """Audit both local anchors after the CPU backend compiles ball closures.
+
+    A backend may synthesize the second anchor from the initial body pose.
+    That closes the initial configuration but changes an authored mechanism.
+    Compare against the imported joint frames, without changing either model.
+    """
+    import newton
+    import numpy as np
+    import mujoco
+
+    types = model.joint_type.numpy()
+    loops = np.flatnonzero((types == int(newton.JointType.BALL))
+                           & (model.joint_articulation.numpy() < 0)
+                           & model.joint_enabled.numpy())
+    native = solver.mj_model
+    mapping = (solver.mjc_eq_to_newton_jnt.numpy()[0]
+               if solver.mjc_eq_to_newton_jnt is not None else np.array([], dtype=int))
+    bodies = solver.mjc_body_to_newton.numpy()[0]
+    parent, child = model.joint_parent.numpy(), model.joint_child.numpy()
+    xp, xc = model.joint_X_p.numpy(), model.joint_X_c.numpy()
+    evidence = []
+    for j in loops:
+        ids = np.flatnonzero(mapping == j)
+        entry = {"path": model.joint_label[j], "equality_ids": ids.tolist(), "preserved": False}
+        if len(ids) == 1:
+            i = int(ids[0])
+            expected = np.concatenate((xp[j, :3], xc[j, :3]))
+            actual = native.eq_data[i, :6]
+            bound = (int(native.eq_type[i]) == int(mujoco.mjtEq.mjEQ_CONNECT)
+                     and bodies[native.eq_obj1id[i]] == parent[j]
+                     and bodies[native.eq_obj2id[i]] == child[j])
+            entry.update(expected_anchors=expected.tolist(), compiled_anchors=actual.tolist(),
+                         bodies_match=bool(bound),
+                         max_anchor_component_error_m=float(np.max(abs(actual - expected))),
+                         preserved=bool(bound and solver.mj_data.eq_active[i]
+                                        and np.allclose(actual, expected, rtol=0, atol=1e-6)))
+        evidence.append(entry)
+    return check("native_ball_loop_anchors_preserved", all(e["preserved"] for e in evidence), evidence)
+
+
 def qualify(source: Path, output: Path, *, omit_missing_camera=False):
     """Import and finalize on CPU, retaining failed attempts and source identity."""
     started = time.monotonic()
@@ -313,6 +442,11 @@ def qualify(source: Path, output: Path, *, omit_missing_camera=False):
             report["adaptations"].append({"operation": "clear_reference_and_deactivate_in_anonymous_session",
                                           "path": MISSING_CAMERA,
                                           "reason": "unavailable Isaac decorative camera mesh"})
+        gravity_mapping = map_physx_body_gravity(stage)
+        if gravity_mapping:
+            report["adaptations"].append({"operation": "map_authored_physx_body_gravity_to_mujoco",
+                                          "bodies": gravity_mapping,
+                                          "source_layers_modified": False})
         builder = newton.ModelBuilder()
         builder.validate_inertia_detailed = True
         SolverMuJoCo.register_custom_attributes(builder)
@@ -347,6 +481,8 @@ def qualify(source: Path, output: Path, *, omit_missing_camera=False):
                              "inertia": final_inertias[i].tolist()}
                             for i, body in enumerate(imported["bodies"])]
             report["finalized_bodies"] = final_bodies
+            report["runtime_inertia_changes"] = describe_inertia_changes(
+                inventory, imported["bodies"], final_bodies)
             inertia_check = compare_physics(inventory, {**imported, "bodies": final_bodies})[1]
             inertia_check["id"] = "finalized_authored_mass_principal_inertia_preserved"
             checks.append(inertia_check)
@@ -357,6 +493,9 @@ def qualify(source: Path, output: Path, *, omit_missing_camera=False):
                                      "neq": solver.mj_model.neq}))
             except Exception as exc:
                 checks.append(check("native_cpu_solver_build", False, f"{type(exc).__name__}: {exc}"))
+            else:
+                checks.append(compare_body_gravity(inventory, model, solver))
+                checks.append(compare_ball_loop_anchors(model, solver))
             report["warnings"] = [str(w.message) for w in caught]
         report["sweep"] = {"status": "not_run",
                            "simulation_steps": 0,

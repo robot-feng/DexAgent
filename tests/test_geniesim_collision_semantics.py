@@ -209,3 +209,118 @@ def test_report_rejects_unverified_articulation_membership(tmp_path, native, mem
         source, imported, builder.shape_collision_filter_pairs)
     assert result["status"] == "failed"
     assert result["required"] is True
+
+
+@pytest.mark.parametrize("explicit_zero", [False, True])
+def test_empty_fixed_frame_inertia_change_remains_a_fidelity_failure(tmp_path, native, explicit_zero):
+    """An explanation of finalization must not turn lost source inertia green."""
+    _, _, _, _, Gf, _, _, UsdGeom, UsdPhysics = native
+    path, stage = make_stage(tmp_path, native)
+    frame = UsdGeom.Xform.Define(stage, "/Robot/tcp").GetPrim()
+    UsdPhysics.RigidBodyAPI.Apply(frame)
+    mass = UsdPhysics.MassAPI.Apply(frame)
+    if explicit_zero:
+        mass.CreateMassAttr(0.0)
+    mass.CreateDiagonalInertiaAttr(Gf.Vec3f(0.0001))
+    fixed = UsdPhysics.FixedJoint.Define(stage, "/Robot/tcp_fixed")
+    fixed.CreateBody0Rel().SetTargets(["/Robot/link2"])
+    fixed.CreateBody1Rel().SetTargets(["/Robot/tcp"])
+    stage.GetRootLayer().Save()
+
+    report = geniesim_import.qualify(path, tmp_path / "frame_report.json")
+    checks = {c["id"]: c for c in report["checks"]}
+    assert checks["native_cpu_solver_build"]["status"] == "passed"
+    assert checks["finalized_authored_mass_principal_inertia_preserved"]["status"] == "failed"
+    assert report["status"] == "failed"
+    assert report["task_success_evaluated"] is False
+    change, = report["runtime_inertia_changes"]
+    assert change["path"] == "/Robot/tcp"
+    assert change["source"]["mass"] == 0
+    assert change["source"]["mass_authored"] is explicit_zero
+    assert change["source"]["density_authored"] is False
+    assert change["source"]["diagonal_inertia_authored"] is True
+    assert change["source"]["geometry_paths"] == []
+    assert [j["path"] for j in change["attached_joints"]] == ["/Robot/tcp_fixed"]
+    assert change["before_finalize"]["inertia"][0][0] == pytest.approx(0.0001)
+    assert change["after_finalize"]["inertia"] == [[0.0] * 3] * 3
+
+
+@pytest.mark.parametrize("child_offset", [0.0, 0.001])
+def test_native_ball_loop_audit_rejects_recomputed_child_anchor(tmp_path, native, child_offset):
+    _, _, _, _, Gf, _, _, _, UsdPhysics = native
+    path, stage = make_stage(tmp_path, native)
+    loop = UsdPhysics.SphericalJoint.Define(stage, "/Robot/loop")
+    loop.CreateBody0Rel().SetTargets(["/Robot/link0"])
+    loop.CreateBody1Rel().SetTargets(["/Robot/link2"])
+    loop.CreateLocalPos0Attr(Gf.Vec3f(0.5, 0, 0))
+    loop.CreateLocalPos1Attr(Gf.Vec3f(child_offset, 0, 0))
+    loop.CreateExcludeFromArticulationAttr(True)
+    stage.GetRootLayer().Save()
+    report = geniesim_import.qualify(path, tmp_path / "loop_report.json")
+    checks = {c["id"]: c for c in report["checks"]}
+    assert checks["native_cpu_solver_build"]["status"] == "passed"
+    audit = checks["native_ball_loop_anchors_preserved"]
+    assert audit["required"] is True
+    assert audit["status"] == ("passed" if child_offset == 0 else "failed")
+    entry, = audit["evidence"]
+    assert entry["path"] == "/Robot/loop"
+    assert entry["bodies_match"] is True
+    assert entry["expected_anchors"][3] == pytest.approx(child_offset)
+    assert entry["max_anchor_component_error_m"] == pytest.approx(child_offset, abs=1e-7)
+    assert report["task_success_evaluated"] is False
+
+
+def test_authored_body_gravity_mapping_keeps_other_objects_falling(tmp_path, native):
+    newton, SolverMuJoCo, _, _, Gf, Sdf, Usd, UsdGeom, UsdPhysics = native
+    path = tmp_path / "gravity.usda"
+    stage = Usd.Stage.CreateNew(str(path))
+    UsdGeom.SetStageMetersPerUnit(stage, 1)
+    UsdGeom.SetStageUpAxis(stage, UsdGeom.Tokens.z)
+    for name, disabled, x in [("hover", True, 0), ("fall", False, 1)]:
+        transform = UsdGeom.Xform.Define(stage, "/" + name)
+        transform.AddTranslateOp().Set(Gf.Vec3d(x, 0, 1))
+        prim = transform.GetPrim()
+        UsdPhysics.RigidBodyAPI.Apply(prim)
+        mass = UsdPhysics.MassAPI.Apply(prim)
+        mass.CreateMassAttr(1)
+        mass.CreateDiagonalInertiaAttr(Gf.Vec3f(0.01))
+        prim.CreateAttribute("physxRigidBody:disableGravity", Sdf.ValueTypeNames.Bool).Set(disabled)
+        cube = UsdGeom.Cube.Define(stage, f"/{name}/collision")
+        cube.CreateSizeAttr(0.1)
+        UsdPhysics.CollisionAPI.Apply(cube.GetPrim())
+    stage.GetRootLayer().Save()
+    original = path.read_bytes()
+    report = geniesim_import.qualify(path, tmp_path / "gravity_report.json")
+    checks = {c["id"]: c for c in report["checks"]}
+    assert checks["authored_body_gravity_preserved"]["status"] == "passed"
+    assert len(checks["authored_body_gravity_preserved"]["evidence"]) == 2
+    assert path.read_bytes() == original
+
+    geniesim_import.map_physx_body_gravity(stage)
+    builder = import_stage(stage, native)
+    model = builder.finalize(device="cpu")
+    solver = SolverMuJoCo(model, use_mujoco_cpu=True)
+    state, other, control = model.state(), model.state(), model.control()
+    newton.eval_fk(model, state.joint_q, state.joint_qd, state)
+    for _ in range(100):
+        state.clear_forces()
+        solver.step(state, other, control, None, 0.001)
+        state, other = other, state
+    positions = state.body_q.numpy()
+    assert positions[list(model.body_label).index("/hover"), 2] == pytest.approx(1, abs=1e-5)
+    assert positions[list(model.body_label).index("/fall"), 2] < 0.97
+    assert path.read_bytes() == original
+
+
+def test_conflicting_body_gravity_opinions_reject_without_session_edits(tmp_path, native):
+    _, _, _, _, _, Sdf, _, _, _ = native
+    _, stage = make_stage(tmp_path, native)
+    first = stage.GetPrimAtPath("/Robot/link0")
+    first.CreateAttribute("physxRigidBody:disableGravity", Sdf.ValueTypeNames.Bool).Set(True)
+    conflict = stage.GetPrimAtPath("/Robot/link1")
+    conflict.CreateAttribute("physxRigidBody:disableGravity", Sdf.ValueTypeNames.Bool).Set(True)
+    conflict.CreateAttribute("mjc:gravcomp", Sdf.ValueTypeNames.Float).Set(0.0)
+    before = stage.GetSessionLayer().ExportToString()
+    with pytest.raises(ValueError, match="Conflicting authored gravity"):
+        geniesim_import.map_physx_body_gravity(stage)
+    assert stage.GetSessionLayer().ExportToString() == before
