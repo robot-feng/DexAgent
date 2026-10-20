@@ -24,6 +24,8 @@ from .executions import Executions, ExecutionBusy
 from .models import CandidateScene, Execution, ExecutionCatalog, ExecutionCreate, ExecutionLog, TaskVariantInputs
 from .models import PlanningTrials, PlanningTrialDetail
 from .diagnostics import planning_trials, planning_trial
+from .episode_bundles import EpisodeBundles, BundleBusy
+from .models import EpisodeBundle, EpisodeBundleRequest
 
 PREFIX = '/api/workbench/v1'
 LOGGER = logging.getLogger(__name__)
@@ -45,6 +47,7 @@ def create_app(repo: Path | None = None, *, runs_root: Path | None = None,
     rss_live = RssLiveInspector(repo, rss_run_dir)
     cleanups = BackgroundCleanups(repo, state_dir or repo / '.workbench', source_roots=cleanup_video_roots)
     executions = Executions(index, state_dir or repo / '.workbench', input_roots=cleanup_video_roots)
+    bundles = EpisodeBundles(index, state_dir or repo / '.workbench')
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -124,7 +127,7 @@ def create_app(repo: Path | None = None, *, runs_root: Path | None = None,
             Capability(id='background_cleanup', title='背景 mask 与视频补洞', available=True, level='integrated',
                        reason='显式启动 SimFoundry Stage 1b、SAM3/SAM2 mask 和 VOID 两遍补洞；具体环境与权重状态见背景清理页预检。'),
             Capability(id='episodes', title='原生 Episode', available=True, level='implemented',
-                       reason='兼容历史元信息缺失；未接入训练格式转换。'),
+                       reason='浏览并下载带来源与 SHA 校验清单的原生记录包；兼容历史元信息缺失，未接入训练格式转换。'),
             Capability(id='recorded_3d', title='原生 3D 回放', available=replay_environment,
                        level='environment_detected' if replay_environment else 'missing_dependencies',
                        reason='对支持的 RSS / DexAgent 刚体记录生成交互式 Viser 回放；逐次核对场景与记录身份，不执行物理。'
@@ -405,6 +408,27 @@ def create_app(repo: Path | None = None, *, runs_root: Path | None = None,
         values = index.episode_catalog(query=q, project_id=project_id, run_id=run_id,
                                        success=success, metadata=metadata)
         return EpisodeCatalogPage(items=values[offset:offset + limit], total=len(values))
+
+    @app.post(f'{PREFIX}/runs/{{run_id}}/episodes/{{episode_id}}/bundle', response_model=EpisodeBundle)
+    def create_episode_bundle(run_id: str, episode_id: str, body: EpisodeBundleRequest):
+        from zipfile import BadZipFile
+        try:
+            if executions.is_run_active(run_id):
+                raise BundleBusy('source execution is still running; wait for recording to finish')
+            return bundles.create(run_id, episode_id, include_simulator_state=body.include_simulator_state)
+        except BundleBusy as exc:
+            raise HTTPException(409, str(exc))
+        except (OSError, BadZipFile, EOFError) as exc:
+            raise HTTPException(422, f'cannot package native episode: {exc}')
+
+    @app.get(f'{PREFIX}/episode-bundles/{{bundle_id}}/download', response_class=FileResponse)
+    def download_episode_bundle(bundle_id: str):
+        try:
+            path = bundles.path(bundle_id)
+        except FileNotFoundError:
+            raise HTTPException(404, 'episode bundle no longer exists')
+        return FileResponse(path, media_type='application/zip', filename=f'episode-{bundle_id[:12]}.zip',
+                            headers={'X-Content-Type-Options': 'nosniff'})
 
     @app.get(f'{PREFIX}/runs/{{run_id}}/logs', response_model=ArtifactPage)
     def logs(run_id: str):

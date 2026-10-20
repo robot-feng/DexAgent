@@ -14,7 +14,7 @@ import yaml
 from agent.external import ExternalLLM, atomic_json
 from workbench.api import PREFIX, create_app
 from workbench.executions import Executions, ExecutionBusy, process_birth
-from workbench.index import Index
+from workbench.index import Index, identity
 from workbench.models import ExecutionCreate, TaskVariantInputs
 from agent.scene_candidate import digest
 from agent.run_reports import sha256_file
@@ -138,11 +138,16 @@ def test_restart_preserves_live_identity_and_stop_kills_descendants(workspace):
     child_file = manager.index.runs_root / job.output_name / "child.pid"
     wait_for(child_file.is_file)
     child = int(child_file.read_text())
+    run_id = identity(str((manager.index.runs_root / job.output_name).resolve()))
+    assert manager.is_run_active(run_id)
+    assert not manager.is_run_active("a-different-run")
     restored = Executions(manager.index, manager.root.parent)
+    assert restored.is_run_active(run_id)
     assert restored.state(job.id).status == "running"
     with pytest.raises(ExecutionBusy):
         restored.start(request(manager))
     assert restored.stop(job.id).status == "stopped"
+    assert not restored.is_run_active(run_id)
     assert process_birth(child) is None
     manager.processes[job.id].wait(timeout=2)
     restored.close()

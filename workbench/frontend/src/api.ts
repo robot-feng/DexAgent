@@ -9,6 +9,7 @@ export type Project = components["schemas"]["Project"];
 export type Tool = components["schemas"]["Tool"];
 export type Episode = components["schemas"]["Episode"];
 export type EpisodeCatalogItem = components["schemas"]["EpisodeCatalogItem"];
+export type EpisodeBundle = components["schemas"]["EpisodeBundle"];
 export type Capability = components["schemas"]["Capability"];
 export type Preview = components["schemas"]["Preview"];
 export type Health = components["schemas"]["Health"];
@@ -127,6 +128,14 @@ export const api = {
     ),
   episodes: (run: string) =>
     request<components["schemas"]["EpisodePage"]>(`/runs/${run}/episodes`),
+  createEpisodeBundle: (
+    runId: string,
+    episodeId: string,
+    includeSimulatorState: boolean,
+  ) =>
+    request<EpisodeBundle>(`/runs/${runId}/episodes/${episodeId}/bundle`, {
+      include_simulator_state: includeSimulatorState,
+    }),
   episodeCatalog: (search: string) =>
     request<components["schemas"]["EpisodeCatalogPage"]>(
       `/episode-catalog?${search}`,

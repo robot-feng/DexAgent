@@ -701,6 +701,16 @@ class Executions:
             reverse=True,
         )
 
+    def is_run_active(self, run_id: str) -> bool:
+        """Read process identities without changing unrelated execution state."""
+        with self.lock:
+            for path in self.root.glob("*/launch.json"):
+                data = self._read(path.parent.name)
+                source_id = identity(str((self.index.runs_root / data["output_name"]).resolve()))
+                if source_id == run_id and data["status"] == "running" and self._live(data):
+                    return True
+        return False
+
     def retry(self, key: str) -> Execution:
         with self.lock:
             if self.state(key).status == "running":

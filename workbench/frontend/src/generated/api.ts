@@ -587,6 +587,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workbench/v1/runs/{run_id}/episodes/{episode_id}/bundle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Episode Bundle */
+        post: operations["create_episode_bundle_api_workbench_v1_runs__run_id__episodes__episode_id__bundle_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workbench/v1/episode-bundles/{bundle_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download Episode Bundle */
+        get: operations["download_episode_bundle_api_workbench_v1_episode_bundles__bundle_id__download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workbench/v1/runs/{run_id}/logs": {
         parameters: {
             query?: never;
@@ -994,6 +1028,35 @@ export interface components {
             missing_fields: string[];
             /** Issues */
             issues: components["schemas"]["Issue"][];
+        };
+        /** EpisodeBundle */
+        EpisodeBundle: {
+            /** Id */
+            id: string;
+            /** Run Id */
+            run_id: string;
+            /** Episode Id */
+            episode_id: string;
+            /** Url */
+            url: string;
+            /** Size */
+            size: number;
+            /** File Count */
+            file_count: number;
+            /** Sha256 */
+            sha256: string;
+            /** Includes Simulator State */
+            includes_simulator_state: boolean;
+            /** Omitted Episode Entries */
+            omitted_episode_entries: string[];
+        };
+        /** EpisodeBundleRequest */
+        EpisodeBundleRequest: {
+            /**
+             * Include Simulator State
+             * @default false
+             */
+            include_simulator_state: boolean;
         };
         /** EpisodeCatalogItem */
         EpisodeCatalogItem: {
@@ -2784,6 +2847,71 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["EpisodeCatalogPage"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_episode_bundle_api_workbench_v1_runs__run_id__episodes__episode_id__bundle_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+                episode_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EpisodeBundleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EpisodeBundle"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_episode_bundle_api_workbench_v1_episode_bundles__bundle_id__download_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bundle_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

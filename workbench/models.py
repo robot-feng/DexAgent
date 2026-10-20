@@ -175,6 +175,22 @@ class EpisodeCatalogPage(ReadModel):
     total: int
 
 
+class EpisodeBundleRequest(BaseModel):
+    include_simulator_state: bool = False
+
+
+class EpisodeBundle(ReadModel):
+    id: str
+    run_id: str
+    episode_id: str
+    url: str
+    size: int
+    file_count: int
+    sha256: str
+    includes_simulator_state: bool
+    omitted_episode_entries: list[str]
+
+
 class Project(ReadModel):
     id: str
     name: str

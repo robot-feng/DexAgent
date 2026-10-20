@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { api, contentUrl } from "./api";
 import SceneEditor from "./SceneEditor";
+import EpisodeDownload from "./EpisodeDownload";
 import type { Artifact, Tool } from "./api";
 import type { Episode, EpisodeCatalogItem } from "./api";
 import {
@@ -532,6 +533,7 @@ function EpisodeCards({
                 </button>
               ))}
             </div>
+            <EpisodeDownload runId={episode.run_id} episodeId={episode.id} />
           </article>
         ))}
       </div>
