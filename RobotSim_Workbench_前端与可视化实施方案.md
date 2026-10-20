@@ -3,7 +3,7 @@
 > 版本：v2.8 · 2026-10-20（Asia/Shanghai）<br>
 > 范围：当前 DexAgent 工作区中的 DexAgent + RoboSimStudio + SimFoundry<br>
 > 依据：本机源码、已有运行报告与实际文件结构；替代 v1.0 中按公开仓库推测的部分。<br>
-> 状态：产品入口命名为 EmbodiForge Studio（现有实现路径仍为 `workbench/`）；已实现真实运行浏览、媒体/报告/工具、两类原生曲线、记录式 3D 回放、SimFoundry 场景副本编辑、RSS live 只读状态反馈和总览续接编辑会话；新增任务执行页可启动已有 CLI、查看日志、停止、新运行重试并显示 external Agent 等待；场景版本绑定的物理验收、实时控制和候选发布仍待接入。当前可运行范围和启动方法见 [workbench/README.md](workbench/README.md)，实际验收见 [可视化验证记录](docs/WORKBENCH_VALIDATION_20261019.md)。
+> 状态：产品入口命名为 EmbodiForge Studio（现有实现路径仍为 `workbench/`）；已实现真实运行浏览、媒体/报告/工具、两类原生曲线、记录式 3D 回放、SimFoundry 场景副本编辑、RSS live 只读状态反馈和总览续接编辑会话。任务执行页可启动已有 CLI、查看日志、停止、新运行重试并显示 external Agent 等待；MJCF 候选已接入 RSS 物理验收和原生任务重新规划。新布局任务成功仍需完整动作与目标门禁；实时控制、OG/USD 候选物理导入和正式发布仍待接入。当前可运行范围和启动方法见 [workbench/README.md](workbench/README.md)，实际验收见 [可视化验证记录](docs/WORKBENCH_VALIDATION_20261019.md)。
 > 当前分工：本工作流完善统一入口、执行管理与可视化；pipeline 算法优化和 SimFoundry 复现分别由并行工作流负责，按产物契约对接。
 > **备注：** 当前方案仍可改进；实施前应根据本机源码、运行结果和用户目标持续修订
 
@@ -458,6 +458,12 @@ SimFoundry 的普通 Stage 2c 直接从视频训练高斯；要去掉机器人/�
 
 默认 8765 已真实跑通创建、验收、同版本重试与 3D 回放；杯子平移 1 厘米的正常布局通过，抬高 15 厘米的负例被漂移/穿透检查拒绝。该结果仅表示布局验收，任务成功未评估，训练发布未放行。OG/USD 编辑候选仍需保真物理导入；不能用当前含 Robotiq 的 OG 机器人或非均匀缩放物体替换成不等价的单刚体代理。证据见[候选场景验证记录](docs/WORKBENCH_SCENE_CANDIDATES_20261020.md)。
 
+### 8.7 已验收候选的原生任务重新规划
+
+候选通过必需物理检查后，可在任务页点击“基于候选重新规划”。沿父候选版本链找到原任务，核对原始场景、视频、语义、相机和来源 recipe 的内容身份；启动前冻结这些输入和候选验收报告。原视频表达任务意图，不作为新布局的像素位置真值；旧 Stage 3 控制与轨迹不进入新规划输入。
+
+复用原 Stage 2 proposal 和既有 `compile_rigid`，只映射候选自由物体初态；编译后完整物理模型摘要必须与 RSS 已验收候选一致。每次运行有独立 external transport，仍由原生 Stage 3 生成新动作并执行完整门禁；重试使用封存的输入快照，缺文件、内容变化或编译环境不一致时拒绝继续。实际预检与规划工具调用已跑通，新布局的完整任务成功尚未确认，详见[重新规划验证记录](docs/WORKBENCH_TASK_REPLANNING_20261020.md)。
+
 ## 9. 管理 API 与执行生命周期
 
 ### 9.1 首批 API
@@ -469,6 +475,7 @@ SimFoundry 的普通 Stage 2c 直接从视频训练高斯；要去掉机器人/�
 | GET `/capabilities` | UI-1 提供真实能力与阻塞原因；UI-4 扩展已验证的阶段模型选项 | UI-1/UI-4 |
 | GET `/executions/catalog`、GET / POST `/executions`、GET `/executions/{id}` | 配置目录、受管启动与进程状态；CLI 原生报告独立验收 | UI-3（已接入） |
 | POST `/executions/{id}/stop`、`/executions/{id}/retry`、GET `/executions/{id}/log` | 停止带运行标识的工作进程；以冻结配置创建新运行；有界日志 | UI-3（已接入） |
+| GET `/executions/tasks/{run_id}` | 读取已验收候选的源任务和输入版本；提交 `replan` 时核对同一摘要 | UI-3（已接入） |
 | POST / GET `/projects` | 创建项目、列出关联项目 | UI-1 |
 | POST `/imports` | 按已配置根目录导入历史运行，不修改原文件 | UI-1 |
 | GET `/runs`、`/runs/{id}` | 逻辑运行列表、范围、分层状态与阶段尝试 | UI-1 |

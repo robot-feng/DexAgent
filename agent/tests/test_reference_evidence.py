@@ -486,12 +486,29 @@ class ReferenceEvidenceTests(unittest.TestCase):
             else:
                 self.assertFalse(report["ok"])
                 self.assertIn("source frame index 0", " ".join(report["issues"]))
-        E._AUTHORITIES.pop(str(self.ws.resolve()))
-        with patch("agent.library.call_tool", side_effect=self.replay_dispatch) as dispatch:
-            report = E.revalidate_source_recipes(self.ws, self.video)
-        self.assertTrue(report["ok"], report)
-        self.assertEqual(report["checked"][0]["source_frame_index"], 0)
-        self.assertEqual(dispatch.call_count, 1)
+        recipes_path = self.ws / "reference_evidence_recipes.json"
+        recipes = json.loads(recipes_path.read_text())
+        frame_paths = recipes["frame_paths"]
+        for relative in (False, True):
+            recipes["frame_paths"] = {
+                str(Path(path).relative_to(self.ws)) if relative else path: record
+                for path, record in frame_paths.items()
+            }
+            recipes_path.write_text(json.dumps(recipes))
+            for index in (2, 0):
+                with self.subTest(relative=relative, frame=index):
+                    recon["frame0"] = str(self.ws / f"frames/frame{index:05d}.jpg")
+                    (self.ws / "scene_recon.json").write_text(json.dumps(recon))
+                    E._AUTHORITIES.pop(str(self.ws.resolve()), None)
+                    with patch("agent.library.call_tool", side_effect=self.replay_dispatch) as dispatch:
+                        report = E.revalidate_source_recipes(self.ws, self.video)
+                    if index == 0:
+                        self.assertTrue(report["ok"], report)
+                        self.assertEqual(report["checked"][0]["source_frame_index"], 0)
+                        self.assertEqual(dispatch.call_count, 1)
+                    else:
+                        self.assertFalse(report["ok"])
+                        self.assertIn("source frame index 0", " ".join(report["issues"]))
 
     def test_byte_copy_alias_requires_one_common_binding_across_all_masks(self):
         self.static_mask_fixture(identical_frames=True)

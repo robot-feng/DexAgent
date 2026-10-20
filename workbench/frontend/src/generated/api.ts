@@ -92,6 +92,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workbench/v1/executions/tasks/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Execution Task Inputs */
+        get: operations["execution_task_inputs_api_workbench_v1_executions_tasks__run_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workbench/v1/executions": {
         parameters: {
             query?: never;
@@ -1000,7 +1017,7 @@ export interface components {
              * Mode
              * @enum {string}
              */
-            mode: "pipeline" | "rigid" | "towel" | "sharpa" | "grasp" | "reference" | "simfoundry" | "candidate";
+            mode: "pipeline" | "rigid" | "towel" | "sharpa" | "grasp" | "reference" | "simfoundry" | "candidate" | "replan";
             /** Config Name */
             config_name: string;
             /** Profile */
@@ -1027,6 +1044,8 @@ export interface components {
             agent_wait: components["schemas"]["ExecutionAgentWait"] | null;
             /** Candidate Sha256 */
             candidate_sha256: string | null;
+            /** Task Inputs Sha256 */
+            task_inputs_sha256: string | null;
         };
         /** ExecutionAgentWait */
         ExecutionAgentWait: {
@@ -1044,7 +1063,7 @@ export interface components {
             /** Configs */
             configs: components["schemas"]["ExecutionConfig"][];
             /** Modes */
-            modes: ("pipeline" | "rigid" | "towel" | "sharpa" | "grasp" | "reference" | "simfoundry" | "candidate")[];
+            modes: ("pipeline" | "rigid" | "towel" | "sharpa" | "grasp" | "reference" | "simfoundry" | "candidate" | "replan")[];
             /** Detail */
             detail: string;
         };
@@ -1064,7 +1083,7 @@ export interface components {
              * @default pipeline
              * @enum {string}
              */
-            mode: "pipeline" | "rigid" | "towel" | "sharpa" | "grasp" | "reference" | "simfoundry" | "candidate";
+            mode: "pipeline" | "rigid" | "towel" | "sharpa" | "grasp" | "reference" | "simfoundry" | "candidate" | "replan";
             /**
              * Profile
              * @default pipeline_eval
@@ -1091,6 +1110,8 @@ export interface components {
             reference_run_id?: string | null;
             /** Scene Sha256 */
             scene_sha256?: string | null;
+            /** Task Inputs Sha256 */
+            task_inputs_sha256?: string | null;
             /** Scene Offsets */
             scene_offsets?: components["schemas"]["SceneOffset"][];
             /**
@@ -1511,6 +1532,17 @@ export interface components {
             /** Error */
             error: string | null;
         };
+        /** TaskVariantInputs */
+        TaskVariantInputs: {
+            /** Sha256 */
+            sha256: string;
+            /** Candidate Sha256 */
+            candidate_sha256: string;
+            /** Source Run Id */
+            source_run_id: string;
+            /** Task */
+            task: string;
+        };
         /** Tool */
         Tool: {
             /** Name */
@@ -1682,6 +1714,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CandidateScene"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    execution_task_inputs_api_workbench_v1_executions_tasks__run_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskVariantInputs"];
                 };
             };
             /** @description Validation Error */

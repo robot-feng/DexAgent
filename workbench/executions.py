@@ -24,6 +24,7 @@ from .models import (
     ExecutionCatalog,
     ExecutionConfig,
     ExecutionCreate,
+    TaskVariantInputs,
 )
 
 
@@ -114,6 +115,10 @@ class Executions:
                 "simfoundry",
                 "candidate",
             ]
+        if (self.repo / "run_dexagent.py").is_file() and (
+            self.repo / "agent/task_variants.py"
+        ).is_file():
+            modes.append("replan")
         ready = bool(configs and modes and importlib.util.find_spec("yaml"))
         return ExecutionCatalog(
             available=ready,
@@ -153,6 +158,35 @@ class Executions:
                 "该运行没有完整的 DexAgent MJCF 任务场景；请选择已完成场景打包的运行。"
             )
         return source.resolve()
+
+    def task_inputs(self, run_id: str) -> TaskVariantInputs:
+        from agent.task_variants import accepted_candidate, describe_task
+        from agent.scene_candidate import verify_snapshot
+
+        original, _ = self.index.run_path(run_id)
+        try:
+            manifest = accepted_candidate(original)
+        except OSError as exc:
+            raise ValueError("请选择已有完整快照并通过物理验收的场景候选") from exc
+        seen = set()
+        for _ in range(100):
+            source_id = manifest.get("source_run_id")
+            if not source_id or source_id in seen:
+                raise ValueError("候选缺少完整的源任务版本链，无法自动重新规划")
+            seen.add(source_id)
+            source, _ = self.index.run_path(source_id)
+            scene = source / "stage3/stage4_task/scene.xml"
+            if scene.is_file():
+                if sha256_file(scene) != manifest["source"]["source_sha256"]:
+                    raise ValueError("候选来源场景已变化，不能借用当前源任务")
+                return TaskVariantInputs(
+                    **describe_task(original, source), source_run_id=source_id
+                )
+            parent = verify_snapshot(source / "candidate")
+            if manifest.get("parent_candidate_sha256") != parent["candidate_sha256"]:
+                raise ValueError("候选父版本身份不一致")
+            manifest = parent
+        raise ValueError("候选来源链超过支持长度")
 
     def inspect_scene(self, run_id: str, config_id: str) -> CandidateScene:
         """Compile in the configured native environment, outside the API process."""
@@ -269,7 +303,7 @@ class Executions:
             )
             agent_transport = None
             if (
-                request.mode == "pipeline"
+                request.mode in {"pipeline", "replan"}
                 and cfg.get("agent", {}).get("provider") == "external"
             ):
                 agent_transport = output / "external"
@@ -280,7 +314,80 @@ class Executions:
             directory = self.root / key
             snapshot = directory / "config.yaml"
             scene_request = None
-            if request.mode == "pipeline":
+            task_input_identity = candidate_identity = None
+            if request.mode == "replan":
+                if (
+                    request.video
+                    or request.prompt
+                    or request.profile != "pipeline_eval"
+                    or request.stop_at not in {"stage3", "stage4"}
+                ):
+                    raise ValueError(
+                        "候选任务沿用原视频和语义，使用正式规划，并从 Stage 3 开始"
+                    )
+                if previous:
+                    from agent.task_variants import verify_task_snapshot
+
+                    source = self.index.runs_root / previous["output_name"]
+                    if not previous.get("task_snapshot_sha256"):
+                        raise ValueError(
+                            "原运行尚未形成完整任务输入快照，请重新读取候选"
+                        )
+                    try:
+                        manifest = verify_task_snapshot(
+                            source,
+                            previous["task_inputs_sha256"],
+                            previous["task_snapshot_sha256"],
+                        )
+                    except OSError as exc:
+                        raise ValueError("原任务输入快照不完整，不能用于重试") from exc
+                    scene_request = {
+                        "snapshot": str(source),
+                        "sha256": manifest["input_identity_sha256"],
+                        "snapshot_sha256": previous["task_snapshot_sha256"],
+                    }
+                    task_input_identity, candidate_identity = (
+                        manifest["input_identity_sha256"],
+                        manifest["candidate_sha256"],
+                    )
+                else:
+                    if not request.reference_run_id or not request.task_inputs_sha256:
+                        raise ValueError("请先读取已验收候选的任务输入")
+                    descriptor = self.task_inputs(request.reference_run_id)
+                    if descriptor.sha256 != request.task_inputs_sha256:
+                        raise ValueError("候选或源任务输入发生变化，请重新读取")
+                    original, _ = self.index.run_path(request.reference_run_id)
+                    source, _ = self.index.run_path(descriptor.source_run_id)
+                    scene_request = {
+                        "candidate_run": str(original),
+                        "candidate_run_id": request.reference_run_id,
+                        "source_run": str(source),
+                        "source_run_id": descriptor.source_run_id,
+                        "sha256": descriptor.sha256,
+                    }
+                    task_input_identity, candidate_identity = (
+                        descriptor.sha256,
+                        descriptor.candidate_sha256,
+                    )
+                cfg.setdefault("inputs", {})["video"] = str(output / "inputs/video.mp4")
+                cfg["inputs"]["egodex_hdf5"] = None
+                cfg.setdefault("stage3", {})["notes"] = (
+                    str(cfg.get("stage3", {}).get("notes", ""))
+                    + f"\nLayout variant {candidate_identity}: the frozen Stage 2 scene is the initial layout. "
+                    "Original video/masks convey source task intent, not new-layout pixel positions. "
+                    "Generate new physical controls and pass all native task gates; never reuse an old trajectory."
+                )
+                runner = self.repo / "agent/task_variants.py"
+                command = [
+                    str(python),
+                    "-m",
+                    "agent.task_variants",
+                    str(snapshot),
+                    str(directory / "scene_request.json"),
+                    "--to",
+                    request.stop_at,
+                ]
+            elif request.mode == "pipeline":
                 runner = self.repo / "run_dexagent.py"
                 command = [
                     str(python),
@@ -377,7 +484,9 @@ class Executions:
                 id=key,
                 mode=request.mode,
                 config_name=config_name,
-                profile=request.profile if request.mode == "pipeline" else None,
+                profile=request.profile
+                if request.mode in {"pipeline", "replan"}
+                else None,
                 status="running",
                 message="正在启动原生执行进程。",
                 output_name=output_name,
@@ -393,6 +502,8 @@ class Executions:
                 pid=None,
                 birth=None,
                 agent_transport=str(agent_transport) if agent_transport else None,
+                task_inputs_sha256=task_input_identity,
+                candidate_sha256=candidate_identity,
             )
             self._write(data)
             try:
@@ -539,6 +650,22 @@ class Executions:
             except KeyError:
                 run_id = None
             waiting = self._agent_wait(data) if data["status"] == "running" else None
+            if data["mode"] == "replan" and not data.get("task_snapshot_sha256"):
+                path = self.index.runs_root / data["output_name"] / "task_inputs.json"
+                try:
+                    manifest = json.loads(path.read_text())
+                    if (
+                        isinstance(manifest, dict)
+                        and manifest.get("schema") == "embodiforge.task_variant.v1"
+                        and manifest.get("input_identity_sha256")
+                        == data.get("task_inputs_sha256")
+                        and manifest.get("candidate_sha256")
+                        == data.get("candidate_sha256")
+                    ):
+                        data["task_snapshot_sha256"] = sha256_file(path)
+                        self._write(data)
+                except (OSError, ValueError, TypeError):
+                    pass
             if data["mode"] == "candidate" and not data.get("candidate_sha256"):
                 try:
                     report = json.loads(

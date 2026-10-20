@@ -300,7 +300,14 @@ class Preview(ReadModel):
     stale: bool = False
 
 
-ExecutionMode = Literal['pipeline', 'rigid', 'towel', 'sharpa', 'grasp', 'reference', 'simfoundry', 'candidate']
+ExecutionMode = Literal['pipeline', 'rigid', 'towel', 'sharpa', 'grasp', 'reference', 'simfoundry', 'candidate', 'replan']
+
+
+class TaskVariantInputs(ReadModel):
+    sha256: str
+    candidate_sha256: str
+    source_run_id: str
+    task: str
 
 
 class SceneOffset(BaseModel):
@@ -345,6 +352,7 @@ class ExecutionCreate(BaseModel):
     prompt: str = Field(default='', max_length=4000)
     reference_run_id: str | None = None
     scene_sha256: str | None = Field(default=None, pattern='^[a-f0-9]{64}$')
+    task_inputs_sha256: str | None = Field(default=None, pattern='^[a-f0-9]{64}$')
     scene_offsets: list[SceneOffset] = Field(default_factory=list, max_length=100)
     stage8: str = Field(default='', max_length=1000)
     stage11: str = Field(default='', max_length=1000)
@@ -373,6 +381,7 @@ class Execution(ReadModel):
     retry_of: str | None = None
     agent_wait: ExecutionAgentWait | None = None
     candidate_sha256: str | None = None
+    task_inputs_sha256: str | None = None
 
 
 class ExecutionLog(ReadModel):

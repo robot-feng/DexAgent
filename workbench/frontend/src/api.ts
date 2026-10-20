@@ -55,6 +55,10 @@ export const api = {
       `/executions/scenes/${runId}?config_id=${configId}`,
     ),
   executions: () => request<Execution[]>("/executions"),
+  executionTaskInputs: (runId: string) =>
+    request<components["schemas"]["TaskVariantInputs"]>(
+      `/executions/tasks/${runId}`,
+    ),
   createExecution: (body: ExecutionCreate) =>
     request<Execution>("/executions", body),
   stopExecution: (id: string) =>

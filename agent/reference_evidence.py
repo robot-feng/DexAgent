@@ -616,6 +616,8 @@ def revalidate_source_recipes(workspace, video, *, library=None, cfg=None):
                 hands_role = kind == "masks" and path == ws / "masks" / "hands.png"
                 proposed = _bindings((recipes.get(kind) or {}).get(digest))
                 exact_path = (recipes.get("frame_paths") or {}).get(str(path)) if kind == "frames" else None
+                if kind == "frames" and exact_path is None and path.is_relative_to(ws):
+                    exact_path = (recipes.get("frame_paths") or {}).get(str(path.relative_to(ws)))
                 if isinstance(exact_path, dict) and exact_path.get("sha256") == digest:
                     # This is only an index proposal. Its source frame must be
                     # decoded afresh and reproduce the target bytes below.

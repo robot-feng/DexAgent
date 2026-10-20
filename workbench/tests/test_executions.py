@@ -15,7 +15,7 @@ from agent.external import ExternalLLM, atomic_json
 from workbench.api import PREFIX, create_app
 from workbench.executions import Executions, ExecutionBusy, process_birth
 from workbench.index import Index
-from workbench.models import ExecutionCreate
+from workbench.models import ExecutionCreate, TaskVariantInputs
 from agent.scene_candidate import digest
 from agent.run_reports import sha256_file
 
@@ -399,3 +399,182 @@ def test_candidate_source_must_match_the_native_report(workspace):
     )
     # Failed layouts can be inspected and corrected; they are not promoted.
     assert manager.candidate_source(key) == output / "candidate/scene.xml"
+
+
+def test_replanning_process_retry_uses_sealed_inputs_not_live_source(
+    workspace, monkeypatch
+):
+    """Substitute only the CLI process; no fixture claims physical acceptance."""
+    manager, _ = workspace
+    source = manager.index.runs_root / "task-source"
+    atomic_json(
+        source / "stage_report.json",
+        {"schema": "dexagent.step_report.v1", "status": "passed"},
+    )
+    source_candidate_sha = frozen_fixture(source / "candidate")
+    manager.index.refresh()
+    source_id = manager.index.runs()[0].id
+    runner = manager.repo / "agent/task_variants.py"
+    runner.parent.mkdir()
+    runner.write_text("# process lifecycle fixture only")
+    descriptor = TaskVariantInputs(
+        sha256="a" * 64,
+        candidate_sha256=source_candidate_sha,
+        source_run_id=source_id,
+        task="fixture",
+    )
+    monkeypatch.setattr(manager, "task_inputs", lambda key: descriptor)
+    spawn = subprocess.Popen
+
+    def fixture_process(command, **options):
+        assert command[1:3] == ["-m", "agent.task_variants"]
+        return spawn(
+            [sys.executable, str(manager.repo / "run_dexagent.py"), command[3]],
+            **options,
+        )
+
+    monkeypatch.setattr("workbench.executions.subprocess.Popen", fixture_process)
+    body = ExecutionCreate(
+        config_id=manager.catalog().configs[0].id,
+        mode="replan",
+        stop_at="stage3",
+        reference_run_id=source_id,
+        task_inputs_sha256=descriptor.sha256,
+    )
+    first = manager.start(body)
+    finished(manager, first.id)
+    out = manager.index.runs_root / first.output_name
+    atomic_json(out / "task_inputs.json", [])
+    assert manager.state(first.id).status == "completed"
+    assert not manager._read(first.id).get("task_snapshot_sha256")
+    candidate_sha = frozen_fixture(out / "candidate")
+    assert candidate_sha == source_candidate_sha
+    for name in (
+        "stage1/scene_semantics.json",
+        "stage2/scene.xml",
+        "stage2/scene_recon.json",
+        "stage2/camera.json",
+        "stage2/reference_evidence_recipes.json",
+        "inputs/video.mp4",
+    ):
+        path = out / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("identity fixture only")
+    atomic_json(
+        out / "inputs/source_candidate_report.json",
+        {
+            "status": "passed",
+            "metrics": {"scope": "scene_candidate_validation"},
+            "checks": [{"id": "fixture_only", "status": "passed", "required": True}],
+            "inputs": {"candidate": {"sha256": candidate_sha}},
+        },
+    )
+    atomic_json(
+        out / "inputs/planning_model_identity.json",
+        {
+            "compiled_physics_equal": True,
+            "compiled_model_sha256": "d" * 64,
+            "proposal_model_sha256": "c" * 64,
+            "planning_scene_sha256": sha256_file(out / "stage2/scene.xml"),
+            "candidate_scene_sha256": sha256_file(out / "candidate/scene.xml"),
+        },
+    )
+    files = {
+        str(p.relative_to(out)): sha256_file(p)
+        for folder in ("stage1", "stage2", "candidate", "inputs")
+        for p in (out / folder).rglob("*")
+        if p.is_file()
+    }
+    atomic_json(
+        out / "task_inputs.json",
+        {
+            "schema": "embodiforge.task_variant.v1",
+            "files": files,
+            "old_controls_reused": False,
+            "compiled_model_sha256": "d" * 64,
+            "proposal_model_sha256": "c" * 64,
+            "input_identity_sha256": descriptor.sha256,
+            "candidate_sha256": candidate_sha,
+        },
+    )
+    manager.state(first.id)
+    assert manager._read(first.id)["task_snapshot_sha256"] == sha256_file(
+        out / "task_inputs.json"
+    )
+    monkeypatch.setattr(
+        manager,
+        "task_inputs",
+        lambda key: pytest.fail("retry must not inspect live upstream"),
+    )
+    retry = manager.retry(first.id)
+    finished(manager, retry.id)
+    config = yaml.safe_load((manager.directory(retry.id) / "config.yaml").read_text())
+    assert config["inputs"]["video"] == str(
+        manager.index.runs_root / retry.output_name / "inputs/video.mp4"
+    )
+    assert config["agent"]["transport_dir"] != str(out / "external")
+    (out / "task_inputs.json").write_text("changed")
+    with pytest.raises(ValueError, match="清单发生变化"):
+        manager.retry(first.id)
+
+
+def test_replanning_resolves_candidate_lineage_and_rejects_changed_origin(workspace):
+    manager, _ = workspace
+    root = manager.index.runs_root
+    source = root / "source-task"
+    for name in (
+        "stage2/scene.xml",
+        "stage2/scene_recon.json",
+        "stage2/camera.json",
+        "stage2/reference_evidence_recipes.json",
+        "stage3/stage4_task/human_video.mp4",
+        "stage3/stage4_task/scene.xml",
+    ):
+        path = source / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("provenance fixture only")
+    atomic_json(
+        source / "stage1/scene_semantics.json", {"subgoals": [{}], "task": "fixture"}
+    )
+    atomic_json(source / "stage_report.json", {"schema": "dexagent.step_report.v1"})
+    manager.index.refresh()
+    source_id = next(r.id for r in manager.index.runs() if r.name == source.name)
+
+    def candidate(name, origin, parent=None):
+        run = root / name
+        frozen_fixture(run / "candidate")
+        manifest_path = run / "candidate/manifest.json"
+        manifest = json.loads(manifest_path.read_text())
+        manifest.pop("candidate_sha256")
+        manifest.update(
+            source_run_id=origin,
+            source={
+                "source_sha256": sha256_file(source / "stage3/stage4_task/scene.xml")
+            },
+            parent_candidate_sha256=parent,
+        )
+        sha = manifest["candidate_sha256"] = digest(manifest)
+        atomic_json(manifest_path, manifest)
+        atomic_json(
+            run / "stage_report.json",
+            {
+                "schema": "dexagent.step_report.v1",
+                "status": "passed",
+                "metrics": {"scope": "scene_candidate_validation"},
+                "checks": [
+                    {"id": "fixture_only", "required": True, "status": "passed"}
+                ],
+                "inputs": {"candidate": {"sha256": sha}},
+            },
+        )
+        manager.index.refresh()
+        return next(r.id for r in manager.index.runs() if r.name == name), sha
+
+    first_id, first_sha = candidate("first-candidate", source_id)
+    last_id, last_sha = candidate("child-candidate", first_id, first_sha)
+    descriptor = manager.task_inputs(last_id)
+    assert descriptor.source_run_id == source_id
+    assert descriptor.candidate_sha256 == last_sha
+    (source / "stage3/stage4_task/scene.xml").write_text("replaced source")
+    with pytest.raises(ValueError, match="来源场景已变化"):
+        manager.task_inputs(last_id)

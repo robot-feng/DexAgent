@@ -10,6 +10,7 @@ const modes: Record<Execution["mode"], string> = {
   simfoundry: "SimFoundry 刚体资产验收",
   reference: "已有 DexAgent 轨迹在 RSS 中验收",
   candidate: "任务场景候选 · RSS 落稳验收",
+  replan: "基于已验收候选重新规划任务",
   grasp: "RSS Sharpa 抓取验收",
   sharpa: "RSS Sharpa 运动验收",
   rigid: "RSS 刚体基础验收",
@@ -30,9 +31,14 @@ export function ExecutionsPage() {
   const [params, setParams] = useSearchParams();
   const [form, setForm] = useState<ExecutionCreate>({
     config_id: "",
-    mode: params.get("mode") === "candidate" ? "candidate" : "pipeline",
+    mode:
+      params.get("mode") === "replan"
+        ? "replan"
+        : params.get("mode") === "candidate"
+          ? "candidate"
+          : "pipeline",
     profile: "pipeline_eval",
-    stop_at: "stage4",
+    stop_at: params.get("mode") === "replan" ? "stage3" : "stage4",
     video: "",
     prompt: "",
     reference_run_id: params.get("source"),
@@ -59,7 +65,7 @@ export function ExecutionsPage() {
   const referenceRuns = useQuery({
     queryKey: ["execution-references"],
     queryFn: () => api.runs("limit=200"),
-    enabled: mode === "reference" || mode === "candidate",
+    enabled: ["reference", "candidate", "replan"].includes(mode),
   });
   const configId = form.config_id || catalog.data?.configs[0]?.id || "";
   const candidateScene = useQuery({
@@ -72,6 +78,13 @@ export function ExecutionsPage() {
   const selected = params.get("job")
     ? jobs.data?.find((job) => job.id === params.get("job"))
     : jobs.data?.[0];
+  const taskInputs = useQuery({
+    queryKey: ["task-variant-inputs", form.reference_run_id],
+    queryFn: () => api.executionTaskInputs(form.reference_run_id!),
+    enabled: mode === "replan" && !!form.reference_run_id,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
   const nativeRun = useQuery({
     queryKey: ["execution-run", selected?.run_id],
     queryFn: () => api.run(selected!.run_id!),
@@ -136,6 +149,10 @@ export function ExecutionsPage() {
                 scene_sha256:
                   mode === "candidate" ? candidateScene.data?.sha256 : null,
                 scene_offsets: mode === "candidate" ? form.scene_offsets : [],
+                task_inputs_sha256:
+                  mode === "replan" ? taskInputs.data?.sha256 : null,
+                video: mode === "replan" ? "" : form.video,
+                prompt: mode === "replan" ? "" : form.prompt,
               });
             }}
           >
@@ -144,7 +161,13 @@ export function ExecutionsPage() {
               <select
                 value={mode}
                 onChange={(e) =>
-                  patch("mode", e.target.value as Execution["mode"])
+                  setForm((old) => ({
+                    ...old,
+                    mode: e.target.value as Execution["mode"],
+                    ...(e.target.value === "replan"
+                      ? { profile: "pipeline_eval", stop_at: "stage3" }
+                      : {}),
+                  }))
                 }
               >
                 {(catalog.data?.modes ?? []).map((m) => (
@@ -236,7 +259,7 @@ export function ExecutionsPage() {
                 </p>
               </>
             )}
-            {(mode === "reference" || mode === "candidate") && (
+            {["reference", "candidate", "replan"].includes(mode) && (
               <label>
                 参考运行
                 <select
@@ -259,15 +282,71 @@ export function ExecutionsPage() {
                 </select>
               </label>
             )}
-            {(mode === "reference" || mode === "candidate") && (
+            {["reference", "candidate", "replan"].includes(mode) && (
               <ErrorNotice error={referenceRuns.error} />
+            )}
+            {mode === "replan" && (
+              <div className="candidate-fields">
+                <p className="small muted">
+                  沿用源任务的视频、语义和相机，将已验收候选作为新初始布局。原生
+                  Stage 3
+                  将生成新控制并重新检查任务目标；旧轨迹不会复制。缺少来源凭据或候选版本变化时阻止启动。
+                </p>
+                {taskInputs.isFetching && <Loading />}
+                <ErrorNotice error={taskInputs.error} />
+                {taskInputs.data && (
+                  <>
+                    <p>
+                      <strong>沿用任务</strong>
+                      <br />
+                      {taskInputs.data.task}
+                    </p>
+                    <p className="small muted">
+                      输入版本{" "}
+                      <code>{taskInputs.data.sha256.slice(0, 12)}</code>
+                      <br />
+                      候选{" "}
+                      <code>
+                        {taskInputs.data.candidate_sha256.slice(0, 12)}
+                      </code>
+                    </p>
+                    <label>
+                      执行到
+                      <select
+                        value={form.stop_at}
+                        onChange={(e) =>
+                          patch(
+                            "stop_at",
+                            e.target.value as ExecutionCreate["stop_at"],
+                          )
+                        }
+                      >
+                        <option value="stage3">新动作规划与验收</option>
+                        <option value="stage4">规划通过后继续数据生成</option>
+                      </select>
+                    </label>
+                    <button
+                      type="button"
+                      className="button"
+                      disabled={taskInputs.isFetching}
+                      onClick={() => taskInputs.refetch()}
+                    >
+                      重新读取任务输入
+                    </button>
+                    <p className="small muted">
+                      external Agent
+                      按本次运行独立响应；沿用完整原生门禁，布局通过不代表任务通过。
+                    </p>
+                  </>
+                )}
+              </div>
             )}
             {mode === "candidate" && (
               <div className="candidate-fields">
                 <p className="small muted">
                   选择已打包 MJCF 场景的 DexAgent
-                  运行。按世界坐标平移自由物体（米，Z
-                  向上），复用 DexAgent 既有刚体执行模型。启动后保存独立候选并检查落稳；任务成功需后续动作规划与验收。
+                  运行。按世界坐标平移自由物体（米，Z 向上），复用 DexAgent
+                  既有刚体执行模型。启动后保存独立候选并检查落稳；任务成功需后续动作规划与验收。
                 </p>
                 {candidateScene.isFetching && <Loading />}
                 <ErrorNotice error={candidateScene.error} />
@@ -364,7 +443,7 @@ export function ExecutionsPage() {
                 ))}
               </>
             )}
-            {mode !== "pipeline" && (
+            {mode !== "pipeline" && mode !== "replan" && (
               <div className="cleanup-model-row">
                 <label className="check-row">
                   <input
@@ -395,7 +474,11 @@ export function ExecutionsPage() {
                 (mode === "candidate" &&
                   (!candidateScene.data ||
                     candidateScene.isFetching ||
-                    !!candidateScene.error))
+                    !!candidateScene.error)) ||
+                (mode === "replan" &&
+                  (!taskInputs.data ||
+                    taskInputs.isFetching ||
+                    !!taskInputs.error))
               }
               type="submit"
             >
@@ -495,6 +578,17 @@ export function ExecutionsPage() {
                   </p>
                 </div>
               )}
+              {selected.mode === "replan" && (
+                <div className="notice execution-candidate-result">
+                  <strong>基于候选生成新动作</strong>
+                  <code className="execution-request-path">
+                    {selected.task_inputs_sha256}
+                  </code>
+                  <p>
+                    输入版本包含已验收候选与源任务。旧轨迹不会复用；新的规划、物理和交付门禁通过前，任务成功尚未确认。
+                  </p>
+                </div>
+              )}
               {selected.agent_wait && (
                 <div className="notice execution-agent-wait" role="status">
                   <div>
@@ -537,6 +631,26 @@ export function ExecutionsPage() {
                 </p>
               )}
               <div className="cleanup-actions">
+                {selected.mode === "candidate" &&
+                  selected.run_id &&
+                  selected.status === "completed" &&
+                  nativeRun.data?.validation === "passed" && (
+                    <Link
+                      className="button"
+                      to={`/executions?mode=replan&source=${selected.run_id}`}
+                      onClick={() =>
+                        setForm((old) => ({
+                          ...old,
+                          mode: "replan",
+                          reference_run_id: selected.run_id,
+                          profile: "pipeline_eval",
+                          stop_at: "stage3",
+                        }))
+                      }
+                    >
+                      基于候选重新规划
+                    </Link>
+                  )}
                 {selected.mode === "candidate" && selected.run_id && (
                   <Link
                     className="button"

@@ -289,6 +289,12 @@ export function RunWorkbench() {
     refetchInterval: 10_000,
   });
   const projects = useQuery({ queryKey: ["projects"], queryFn: api.projects });
+  const executions = useQuery({
+    queryKey: ["executions"],
+    queryFn: api.executions,
+    refetchInterval: 5000,
+  });
+  const managed = executions.data?.find((job) => job.run_id === runId);
   const client = useQueryClient();
   const assign = useMutation({
     mutationFn: (project: string) => api.assign(runQuery.data!.name, project),
@@ -358,8 +364,18 @@ export function RunWorkbench() {
           </div>
         </div>
         <div className="run-header-right">
+          {managed && (
+            <Link className="button" to={`/executions?job=${managed.id}`}>
+              查看执行进程
+            </Link>
+          )}
           {run.available_actions.includes("adjust_layout") && (
-            <Link className="button" to={`/executions?mode=candidate&source=${run.id}`}>调整物体布局</Link>
+            <Link
+              className="button"
+              to={`/executions?mode=candidate&source=${run.id}`}
+            >
+              调整物体布局
+            </Link>
           )}
           <select
             aria-label="归属项目"

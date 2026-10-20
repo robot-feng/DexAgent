@@ -21,7 +21,7 @@ from .reports import read_object
 from .rss_live import RssLiveInspector
 from .background_cleanups import BackgroundCleanups, CleanupBusy, CleanupUnavailable
 from .executions import Executions, ExecutionBusy
-from .models import CandidateScene, Execution, ExecutionCatalog, ExecutionCreate, ExecutionLog
+from .models import CandidateScene, Execution, ExecutionCatalog, ExecutionCreate, ExecutionLog, TaskVariantInputs
 
 PREFIX = '/api/workbench/v1'
 LOGGER = logging.getLogger(__name__)
@@ -155,6 +155,10 @@ def create_app(repo: Path | None = None, *, runs_root: Path | None = None,
     @app.get(f'{PREFIX}/executions/scenes/{{run_id}}', response_model=CandidateScene)
     def execution_scene(run_id: str, config_id: str = Query(pattern='^[a-f0-9]{24}$')):
         return executions.inspect_scene(run_id, config_id)
+
+    @app.get(f'{PREFIX}/executions/tasks/{{run_id}}', response_model=TaskVariantInputs)
+    def execution_task_inputs(run_id: str):
+        return executions.task_inputs(run_id)
 
     @app.get(f'{PREFIX}/executions', response_model=list[Execution])
     def execution_jobs():
