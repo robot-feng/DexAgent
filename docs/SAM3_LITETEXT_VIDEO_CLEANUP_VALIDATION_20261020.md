@@ -42,6 +42,20 @@ mask 人审界面现在将原始视频与 mask 视频并排同步播放，任一
 
 当前本机预检确认 VOID Python 模块和上游脚本已存在，仍缺 `void_pass1.safetensors`、`void_pass2.safetensors` 和 `CogVideoX-Fun-V1.5-5b-InP` 基础模型目录，因此没有运行 VOID。CogVideoX-Fun 官方模型页标明 5B Transformer 权重按 CogVideoX License 发布，代码仓库的 Apache-2.0 许可不等同于 5B 权重许可；若用于商业服务，模型许可要求先单独核验。[CogVideoX-Fun 5B 模型卡](https://huggingface.co/alibaba-pai/CogVideoX-Fun-V1.5-5b-InP) · [CogVideoX License](https://github.com/alibaba/Tora/blob/main/CogVideoX_LICENSE)
 
+补齐时不需要运行会尝试下载 SimFoundry 全部 checkpoint 的总脚本。先在 Hugging Face 完成本账号需要的模型访问/许可步骤，然后在仓库根目录只下载这三项；VOID 权重必须放在 `SimFoundry/deps/void-model`，基础模型目录名也必须与配置一致：
+
+```bash
+hf auth login
+hf download alibaba-pai/CogVideoX-Fun-V1.5-5b-InP \
+  --local-dir SimFoundry/deps/void-model/CogVideoX-Fun-V1.5-5b-InP
+hf download netflix/void-model void_pass1.safetensors \
+  --local-dir SimFoundry/deps/void-model
+hf download netflix/void-model void_pass2.safetensors \
+  --local-dir SimFoundry/deps/void-model
+```
+
+完成后重新打开背景清理页或等待环境目录刷新；预检会逐项确认基础模型组件和两份 checkpoint，再启用 mask 复核后的 VOID 操作。不要把权重提交到 Git。
+
 ## 验证命令与边界
 
 已通过：
