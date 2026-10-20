@@ -137,8 +137,9 @@ def contact_sample(bridge, groups, t, phase, goal):
         raise RuntimeError("native contact probe is required for grasp evaluation")
     probe.update(sim.step_count)
     pose = sim.pipeline.snapshot.body_q
-    obj = np.asarray(pose[bridge.body_indices["task_cube"]], float)
-    hand = np.asarray(pose[bridge.body_indices["robot_right_right_base_yaw"]], float)
+    # Task definitions and independent MuJoCo comparisons use source rig space.
+    obj = bridge.world_pose_to_rig(pose[bridge.body_indices["task_cube"]])
+    hand = bridge.world_pose_to_rig(pose[bridge.body_indices["robot_right_right_base_yaw"]])
     finger_forces = np.asarray([probe.pairwise_force(groups["object"], groups[f]) for f in H.FINGERS])
     strengths = np.linalg.norm(finger_forces, axis=1)
     active = strengths > 0.02

@@ -30,7 +30,7 @@
 
 分离是职责和引用分离，不要求把所有源导出文件立即拆开。RSS 的 `scene_resident` 只跳过机器人重复导入，不能验证原本体身份；`monolithic` 用于候选筛选，不是不可绕过的锁；`static_overrides` 只替换任务 scenery 的具名资产路径，不会自动剥离旧机器人或替换 Cell statics。扫描背景中已烘焙的机器人必须实际清理；仅隐藏独立机器人或再加载新本体会留下残影。
 
-当前 `agent/rss_scene.py::TaskSceneEntity` 完整导入 MJCF，且不应用 `self.frame`；给 `SharpaBridge` 换桌高不会移动这份整场景。`SharpaBridge` 保留 YAM + Sharpa 的 56 关节控制，这条已验证兼容路径继续保留。可迁移任务逐步接入独立环境、本体和任务对象，但还须适配 Stage 2 布局、Stage 3 抓取/运动学及记录，不仅是填注册表。G1/G2 物理适配未完成前不加入可执行选项；不改写 RSS 编译器、不做泛化自动匹配平台。
+源码审查时 `agent/rss_scene.py::TaskSceneEntity` 完整导入 MJCF，却忽略 `self.frame`；随后已修复整场景平移，并同步自由物体状态、相机和录制回放，见[坐标接入验证](WORKBENCH_RIG_FRAME_ALIGNMENT_20261020.md)。`SharpaBridge` 保留 YAM + Sharpa 的 56 关节控制；目前只是将已有完整场景正确放到 RSS 世界，原桌子仍在其中。可迁移任务还须接入独立环境/任务对象，适配 Stage 2 布局与 Stage 3 抓取/运动学。G1/G2 物理适配未完成前不加入可执行选项；不改写 RSS 编译器、不做泛化自动匹配平台。
 
 环境背景通过实际被编译器消费的 `StaticSpec(asset=...)` 接入；`CellSpec.asset` 当前虽声明却未被该构建路径使用。公共相机也需显式转换：`CameraSpec` 默认世界坐标，并不自动乘桌面 frame。严格复现还需核对编译器新增地面对接触的影响。源码依据与三项目关键调用链见[源码复核](ENVIRONMENT_EMBODIMENT_SOURCE_REVIEW_20261020.md)；新组合尚未端到端运行。
 

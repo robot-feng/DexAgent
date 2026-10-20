@@ -7,9 +7,26 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 from pathlib import Path
 import sys
 import traceback
+
+
+def recorded_rig_translation(manifest: dict) -> tuple[float, float, float]:
+    """Rebuild the recorded placement, never infer it from the current scene."""
+    if manifest.get('schema') != 'dexagent.rss_sharpa.v1':
+        raise ValueError('unsupported recorded scene manifest')
+    pose = manifest.get('rig_to_world_xyzw')
+    if (not isinstance(pose, list) or len(pose) != 7
+            or any(type(v) not in (int, float) or not math.isfinite(v) for v in pose)
+            or any(abs(v) > 1e-12 for v in pose[3:6]) or abs(abs(pose[6]) - 1) > 1e-12):
+        raise ValueError('recorded rig placement must be a finite translation with identity rotation')
+    ground = manifest.get('additional_ground_z_m')
+    if type(ground) not in (int, float) or not math.isfinite(ground) or not math.isclose(
+            ground, pose[2] - 1.0, rel_tol=0, abs_tol=1e-9):
+        raise ValueError('recorded extra ground does not match rig placement')
+    return tuple(float(v) for v in pose[:3])
 
 
 def read_dexagent_recording(path: Path, *, scene_sha256: str, joint_names: list[str],
@@ -64,12 +81,17 @@ def build(run: Path, episode: Path, output: Path, *, mode: str = 'rss', max_fram
             if sum(info.file_size for info in archive.infolist()) > 128 * 1024 * 1024:
                 raise ValueError('recorded arrays exceed the 128 MiB interactive preview limit')
     bridge = None
+    manifest = None
+    translation = (0.0, 0.0, 0.0)
+    if mode == 'rss':
+        manifest = json.loads((run / 'sharpa_manifest.json').read_text())
+        translation = recorded_rig_translation(manifest)
     if mode == 'rss_assets':
         from agent.rss_simfoundry import rebuild_snapshot
         sim, camera, body_labels = rebuild_snapshot(run, episode)
     else:
         bridge = SharpaBridge(output / 'model', source=source,
-                              device='cpu', physics_device='cpu')
+                              device='cpu', physics_device='cpu', rig_translation=translation)
         sim, camera = bridge.sim, bridge.camera('ego')
     viewer = None
     try:
@@ -78,9 +100,6 @@ def build(run: Path, episode: Path, output: Path, *, mode: str = 'rss', max_fram
             raise ValueError('visualization scene unexpectedly executed physics during construction')
         actual = bridge.manifest() if bridge else None
         if mode == 'rss':
-            manifest = json.loads((run / 'sharpa_manifest.json').read_text())
-            if manifest.get('schema') != 'dexagent.rss_sharpa.v1':
-                raise ValueError('unsupported recorded scene manifest')
             for key in ('source_scene_sha256', 'asset_sha256', 'body_labels'):
                 if not manifest.get(key) or actual[key] != manifest[key]:
                     raise ValueError(f'recorded model identity does not match rebuilt scene: {key}')

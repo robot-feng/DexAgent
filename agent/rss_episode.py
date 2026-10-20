@@ -74,16 +74,7 @@ def validate_reference(model, data):
 
 def source_qpos(bridge, state):
     """Invert the bridge's named joint mapping, including free-root quaternion order."""
-    q = bridge.initial_qpos.copy()
-    imported = state.joint_q.numpy()
-    for j, name in enumerate(bridge.state_joint_names):
-        a = int(bridge.source.jnt_qposadr[j])
-        b = bridge.state_q_starts[name]
-        if bridge.source.jnt_type[j] == mujoco.mjtJoint.mjJNT_FREE:
-            q[a:a + 7] = imported[b + np.array([0, 1, 2, 6, 3, 4, 5])]
-        else:
-            q[a] = imported[b]
-    return q
+    return bridge.import_q_to_source(state.joint_q.numpy())
 
 
 def feedback_control(bridge, data, index, state, *, omega=12.):

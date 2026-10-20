@@ -141,6 +141,29 @@ class SharpaControlTests(unittest.TestCase):
         np.testing.assert_allclose(camera.world_matrix[:3, :3], expected, atol=1e-12)
         np.testing.assert_allclose(camera.world_matrix[:3, 3], d.cam_xpos[c], atol=1e-12)
 
+    def test_translated_cameras_preserve_orientation_and_relative_projection(self):
+        baseline = {name: self.bridge.camera(name) for name in ('ego', 'workspace')}
+        self.bridge.rig_translation = (.4, -.7, 1.)
+        for name, camera in baseline.items():
+            translated = self.bridge.camera(name)
+            np.testing.assert_allclose(np.asarray(translated.eye) - camera.eye, self.bridge.rig_translation)
+            np.testing.assert_allclose(np.asarray(translated.look_at) - camera.look_at, self.bridge.rig_translation)
+            np.testing.assert_allclose(translated.world_matrix[:3, :3], camera.world_matrix[:3, :3], atol=1e-12)
+
+    def test_world_pose_readback_does_not_mutate_recorded_arrays(self):
+        self.bridge.rig_translation = (.4, -.7, 1.)
+        poses = np.array([[.5, -.5, 1.3, 0, 0, 0, 1], [.7, -.1, 1.8, 0, 0, 1, 0]])
+        before = poses.copy()
+        source = self.bridge.world_pose_to_rig(poses)
+        np.testing.assert_allclose(source[:, :3], [[.1, .2, .3], [.3, .6, .8]])
+        np.testing.assert_array_equal(source[:, 3:], before[:, 3:])
+        np.testing.assert_array_equal(poses, before)
+
+    def test_invalid_translation_is_rejected_before_source_loading(self):
+        for translation in ([0, 0], [[0, 0, 0]], [0, np.nan, 0], [0, 0, np.inf]):
+            with self.subTest(translation=translation), self.assertRaisesRegex(ValueError, "three finite metre"):
+                SharpaBridge("/unused", source="/missing.xml", rig_translation=translation)
+
     def test_missing_robot_is_rejected_before_import(self):
         fake = SimpleNamespace(model=SimpleNamespace(nq=7, nv=6, nu=0, njnt=0))
         with self.assertRaisesRegex(ValueError, "56 physical robot"):

@@ -84,6 +84,9 @@ Keep scan footage and operation footage explicitly identified and linked.
 Support monocular, stereo and RGB-D devices through capability-based input
 adapters, with optional poses/SLAM and IMU. Do not require a specific device or
 invent missing depth, metric scale, stereo calibration or camera trajectories.
+The current implementation priority is the complete monocular RGB pipeline.
+Defer stereo/RGB-D adapter work until that pipeline is verified; compatibility
+is a future interface requirement, not a reason to build several pipelines now.
 Preserve per-stream calibration, timestamps, coordinate conventions and the
 scan-to-demonstration registration. A selected frame's camera pose is not a
 moving camera trajectory. Scene geometry/scale and registration must be checked

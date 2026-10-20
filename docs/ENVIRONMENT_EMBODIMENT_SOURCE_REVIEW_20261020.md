@@ -38,6 +38,8 @@ Agent 统筹这些模块，选择已有工具并根据证据重试；Workbench �
 
 用户进一步确定：**新采集先用 Ego 设备扫描环境、建立场景和独立对象资产，再开始操作示范采集；设备须兼容单目、双目、带深度等不同类型。** 扫描提供反复复用的空间基础，示范提供任务和运动信息，两者在同一项目内关联，而不是每段示范重建一份互不相干的世界。
 
+最新实施优先级：**先把单目 RGB 的完整链路优化好**。下表中的双目/RGB-D 是后续输入兼容目标，不代表当前同时实施或已经验证。近期围绕单目尺度、相机轨迹、背景/对象重建、示范配准及目标机器人执行推进，避免分散为多条设备管线。
+
 ```text
 一次环境扫描 → 检查尺度/支撑/对象分离 → 场景版本
                                              ↓ 复用
@@ -116,7 +118,7 @@ setup.yaml / scene.xml
 - [place_egodex_camera_for_reach.py](../tool_library/skills/place_egodex_camera_for_reach.py) 和 [Stage 2 提示](../stage2_scene_reconstruction/prompts/stage2.md) 已含机械臂可达性驱动的相机/布局处理。若每换机器人重新执行这一步，任务布局可能跟着变；应区分场景恢复与本体可行性检查。
 - [stage2_gate_suite.py](../tool_library/verifiers/stage2_gate_suite.py) 对照给定 setup 检查机构、限位、驱动、安装和 home。新本体要提供正确基准，不能跳过旧检查来兼容。
 - [hand.py](../tool_library/common/hand.py)、[optimize_grasp_pose.py](../tool_library/skills/optimize_grasp_pose.py) 包含五指、拇指及手部局部坐标约定；[rigid_robot.py](../tool_library/common/rigid_robot.py) 的 `compile_rigid` 导入 YAM 机构。夹爪须有自己的抓取/工具适配，不能把手指名称改成夹爪名称继续用。
-- [rss_sharpa.py](../agent/rss_sharpa.py) 明确要求 56 个物理关节/驱动（12 臂轴 + 44 指关节），当前不是 RSS 通用本体控制器；[rss_scene.py](../agent/rss_scene.py) 的 `TaskSceneEntity.build()` 整体导入 MJCF，**没有应用 `self.frame`**。更换 `CellSpec.surface_z` 不会自动抬高这份场景，另加桌子还会重复。
+- [rss_sharpa.py](../agent/rss_sharpa.py) 明确要求 56 个物理关节/驱动（12 臂轴 + 44 指关节），当前不是 RSS 通用本体控制器。审查时 [rss_scene.py](../agent/rss_scene.py) 整体导入 MJCF 忽略 `self.frame`；随后已接入 RSS 表面坐标平移及状态/相机/回放双向对应，见[坐标接入验证](WORKBENCH_RIG_FRAME_ALIGNMENT_20261020.md)。整场景中的原桌子仍保留，尚未完成独立环境替换，不能再叠加一张桌子。
 - [rss_episode.py](../agent/rss_episode.py)、[native_preview.py](../workbench/native_preview.py) 的机器人重建仍使用 SharpaBridge。已有 RSS 记录/回放机制可复用，但新本体需匹配自己的构建与动作映射。
 
 任务的对象关系与成功语义可以复用；[task_gates.py](../tool_library/common/task_gates.py) 的身体/接触分组仍需按本体映射。例如 held 判据可依据接触和离开支撑面，而非要求所有本体共享五指实现。`ArmSide` 的底层链式 IK 可接显式关节列表，主要耦合在配置、装配、工具约定和调用方，并非所有 IK 都要重写。

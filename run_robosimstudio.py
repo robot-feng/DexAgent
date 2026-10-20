@@ -171,7 +171,8 @@ def run(args, out, report):
         if args.task == "grasp":
             from agent.rss_grasp import create_task
             scene_source = create_task(out / "task")
-        bridge = SharpaBridge(out, source=scene_source, physics_device=args.physics_device)
+        bridge = SharpaBridge(out, source=scene_source, physics_device=args.physics_device,
+                              rig_translation=args.rig_translation)
         sim = bridge.sim
         report["metrics"].update(physics_device=bridge.physics_device, state_and_render_device=str(sim.model.device))
         if args.task == "grasp" and bridge.physics_device == "cpu":
@@ -434,12 +435,18 @@ def main(argv=None):
                         help="reference feedforward plus bounded feedback, or diagnostic open-loop raw replay")
     parser.add_argument("--no-grip", action="store_true", help="negative control for grasp; must fail the grasp gates")
     parser.add_argument("--physics-device", choices=("cpu", "gpu"), help="rigid physics device; grasp defaults to the configured CPU profile")
+    parser.add_argument("--rig-translation", nargs=3, type=float, default=(0.0, 0.0, 0.0), metavar=("X", "Y", "Z"),
+                        help="sharpa/grasp: translate the complete source rig and its extra floor into RSS world [m]")
     parser.add_argument("--gpu", default=os.environ.get("CUDA_VISIBLE_DEVICES", "2"))
     parser.add_argument("--output", type=Path)
     parser.add_argument("--no-render", dest="render", action="store_false")
     parser.add_argument("--fps", type=int, default=15)
     parser.add_argument("--config", type=Path, default=ROOT / "dexagent.yaml")
     args = parser.parse_args(argv)
+    if not all(math.isfinite(value) for value in args.rig_translation):
+        parser.error("--rig-translation requires finite metre values")
+    if args.task not in {"sharpa", "grasp"} and any(args.rig_translation):
+        parser.error("--rig-translation is currently supported for sharpa/grasp only")
     if args.task == "candidate" and args.scene_request is None:
         parser.error("candidate requires --scene-request")
     if args.task == "reference" and args.reference_run is None:

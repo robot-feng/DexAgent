@@ -22,9 +22,30 @@ class TaskSceneEntity(rss.Entity):
     domain = "articulated"
 
     def build(self, builder, episode):
+        import warp as wp
+
+        raw_frame = np.asarray(self.frame, dtype=float)
+        if (raw_frame.shape != (7,) or not np.isfinite(raw_frame).all()
+                or not np.allclose(raw_frame[3:6], 0, rtol=0, atol=1e-12)
+                or not np.isclose(abs(raw_frame[6]), 1, rtol=0, atol=1e-12)):
+            raise ValueError("whole MJCF placement currently supports translation only")
+        frame = np.asarray(self.placed((0, 0, 0, 0, 0, 0, 1)), dtype=float)
+        if np.any(frame[:3] != 0):
+            source = mujoco.MjModel.from_xml_path(self.spec.path)
+            # The importer leaves world-relative equality anchors/relposes
+            # unchanged. Refuse these instead of placing constrained bodies at
+            # the old world origin. Body-to-body constraints remain local.
+            body_equalities = np.isin(source.eq_type, [mujoco.mjtEq.mjEQ_CONNECT, mujoco.mjtEq.mjEQ_WELD])
+            # Site IDs are not body IDs. The native site's equality conversion
+            # has not been qualified here; keep it out of translated imports.
+            if np.any(body_equalities & (source.eq_objtype == mujoco.mjtObj.mjOBJ_SITE)):
+                raise ValueError("translated MJCF with a site-based equality is not supported")
+            if np.any(body_equalities & ((source.eq_obj1id <= 0) | (source.eq_obj2id <= 0))):
+                raise ValueError("translated MJCF with a world-connected equality is not supported")
         # None honors each root's own freejoint/fixed declaration. False would
         # anchor objects; the robot importer additionally strips them entirely.
-        builder.add_mjcf(self.spec.path, floating=None, collapse_fixed_joints=False,
+        builder.add_mjcf(self.spec.path, xform=wp.transform(tuple(frame[:3]), tuple(frame[3:])),
+                         floating=None, collapse_fixed_joints=False,
                          enable_self_collisions=True, ctrl_direct=True, verbose=False)
 
     def handle(self, model):

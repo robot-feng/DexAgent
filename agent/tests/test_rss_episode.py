@@ -83,10 +83,29 @@ class ReferenceContractTests(unittest.TestCase):
         # Importer puts the free joint first and uses xyzw; hinge is last.
         values = np.array([.2, .3, .4, 0., 0., np.sqrt(.5), np.sqrt(.5), .6])
         state = SimpleNamespace(joint_q=SimpleNamespace(numpy=lambda: values))
-        bridge = SimpleNamespace(source=m, initial_qpos=m.key_qpos[0].copy(),
-            state_joint_names=['hinge', 'free'], state_q_starts={'free': 0, 'hinge': 7})
+        bridge = object.__new__(SharpaBridge)
+        bridge.source, bridge.initial_qpos = m, m.key_qpos[0].copy()
+        bridge.state_joint_names = ['hinge', 'free']
+        bridge.state_q_starts = {'free': 0, 'hinge': 7}
         result = source_qpos(bridge, state)
         np.testing.assert_allclose(result, [.6, .2, .3, .4, np.sqrt(.5), 0, 0, np.sqrt(.5)])
+
+    def test_translated_free_state_roundtrip_keeps_source_task_coordinates(self):
+        bridge = object.__new__(SharpaBridge)
+        bridge.source = self.model
+        bridge.initial_qpos = self.model.key_qpos[0].copy()
+        bridge.state_joint_names = ['hinge', 'free']
+        bridge.state_q_starts = {'free': 0, 'hinge': 7}
+        bridge.sim = SimpleNamespace(model=SimpleNamespace(joint_coord_count=self.model.nq))
+        bridge.rig_translation = (0.4, -0.7, 1.0)
+        q = np.array([.6, .2, .3, .4, np.sqrt(.5), 0, 0, np.sqrt(.5)])
+        original = q.copy()
+        world = bridge.source_q_to_import(q)
+        np.testing.assert_allclose(world[:3], [.6, -.4, 1.4], atol=1e-7)
+        np.testing.assert_allclose(world[3:7], [0, 0, np.sqrt(.5), np.sqrt(.5)], atol=1e-7)
+        self.assertAlmostEqual(world[7], .6)
+        np.testing.assert_allclose(bridge.import_q_to_source(world), q, atol=1e-7)
+        np.testing.assert_array_equal(q, original)
 
 
 class FeedbackTests(unittest.TestCase):
