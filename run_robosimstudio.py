@@ -471,8 +471,8 @@ def main(argv=None):
                          "max_slip_m": 0.015, "min_contact_fraction": 0.9, "max_release_force_n": 0.05,
                          "max_settle_speed_mps": 0.02, "max_cpu_object_error_m": 0.03,
                          **args.thresholds.get("grasp", {})}
-    args.physics_device = args.physics_device or ("cpu" if args.task in {"simfoundry", "candidate"} else
-                        args.grasp_limits.get("physics_device", "cpu") if args.task in {"grasp", "reference"} else "gpu")
+    from agent.rss_runtime import default_physics_device
+    args.physics_device = args.physics_device or default_physics_device(args.task, cfg)
     args.simfoundry_limits = {"seconds": 3., "rest_window_s": .5, "max_drift_m": .01,
                              "max_rotation_rad": .05, "max_speed_mps": .02, "max_angular_speed_rad_s": .05,
                              "max_penetration_m": .004, **args.thresholds.get("simfoundry", {})}

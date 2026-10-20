@@ -408,6 +408,32 @@ class ExecutionCatalog(ReadModel):
     detail: str
 
 
+class RuntimePackage(ReadModel):
+    name: str
+    version: str | None = None
+    available: bool
+
+
+class SimulationProfile(ReadModel):
+    mode: str
+    solver: str
+    physics_device: str
+    detail: str
+
+
+class SimulationRuntime(ReadModel):
+    config_id: str | None = None
+    config_name: str | None = None
+    engine: str = 'Newton'
+    integration: str = 'RoboSimStudio'
+    python: str | None = None
+    status: Literal['environment_detected', 'missing_dependencies', 'incompatible', 'error']
+    checked_at: str
+    detail: str
+    packages: list[RuntimePackage] = Field(default_factory=list)
+    profiles: list[SimulationProfile] = Field(default_factory=list)
+
+
 class ExecutionCreate(BaseModel):
     model_config = ConfigDict(extra='forbid')
     config_id: str = Field(pattern='^[a-f0-9]{24}$')

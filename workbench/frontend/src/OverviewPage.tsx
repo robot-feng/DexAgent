@@ -15,6 +15,7 @@ import {
 import { Link } from "react-router-dom";
 import { api } from "./api";
 import { Badge, ErrorNotice, Loading, formatTime } from "./components";
+import { SimulationRuntimePanel } from "./SimulationRuntime";
 
 const destinations = [
   {
@@ -159,6 +160,8 @@ export function OverviewPage() {
           </strong>
         </div>
       </section>
+
+      <SimulationRuntimePanel overview />
 
       <section className="overview-section">
         <div className="section-heading">

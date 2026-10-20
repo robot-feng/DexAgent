@@ -2808,3 +2808,22 @@ dd {
 }
 .execution-candidate-result { display: block; }
 .execution-candidate-result strong { display: block; margin-bottom: 6px; }
+.simulation-runtime { min-width: 0; padding: 14px; border: 1px solid var(--line); border-radius: 10px; }
+.overview-page > .simulation-runtime { margin-bottom: 20px; padding: 18px; }
+.simulation-runtime-heading, .simulation-runtime-summary { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; }
+.simulation-runtime-heading { justify-content: space-between; margin-bottom: 12px; }
+.simulation-runtime-heading h2 { margin: 0; font-size: 15px; }
+.simulation-runtime p { margin: 8px 0; }
+.simulation-runtime-profile { margin-top: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.simulation-runtime-device { display: block; margin-top: 4px; font-size: 12px; }
+.simulation-runtime-details { font-size: 12px; margin-top: 10px; }
+.simulation-runtime-details summary { cursor: pointer; }
+.simulation-runtime-details dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 12px; }
+.simulation-runtime-details dt { color: var(--muted); }
+.simulation-runtime-details dd { margin: 0; overflow-wrap: anywhere; }
+.simulation-runtime-package { display: contents; }
+.simulation-runtime-boundary { padding-top: 8px; }
+@media (max-width: 650px) {
+  .simulation-runtime { padding: 10px; }
+  .simulation-runtime-summary { align-items: flex-start; flex-direction: column; gap: 6px; }
+}

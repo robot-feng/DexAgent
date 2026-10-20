@@ -4,6 +4,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { Copy, PlayCircle, RotateCcw, Square } from "lucide-react";
 import { api, type Execution, type ExecutionCreate } from "./api";
 import { Badge, ErrorNotice, Loading, formatTime } from "./components";
+import { SimulationRuntimePanel } from "./SimulationRuntime";
 
 const modes: Record<Execution["mode"], string> = {
   pipeline: "视频 → 任务与数据流程",
@@ -23,6 +24,10 @@ const statuses: Record<Execution["status"], string> = {
   stopped: "已停止",
   interrupted: "退出状态未取得",
 };
+const initialMode = (value: string | null): Execution["mode"] =>
+  value && Object.prototype.hasOwnProperty.call(modes, value)
+    ? (value as Execution["mode"])
+    : "pipeline";
 
 export function ExecutionsPage() {
   const client = useQueryClient();
@@ -31,12 +36,7 @@ export function ExecutionsPage() {
   const [params, setParams] = useSearchParams();
   const [form, setForm] = useState<ExecutionCreate>({
     config_id: "",
-    mode:
-      params.get("mode") === "replan"
-        ? "replan"
-        : params.get("mode") === "candidate"
-          ? "candidate"
-          : "pipeline",
+    mode: initialMode(params.get("mode")),
     profile: "pipeline_eval",
     stop_at: params.get("mode") === "replan" ? "stage3" : "stage4",
     video: "",
@@ -200,6 +200,7 @@ export function ExecutionsPage() {
                 ))}
               </select>
             </label>
+            <SimulationRuntimePanel configId={configId} mode={mode} />
             {mode === "pipeline" && (
               <>
                 <label>

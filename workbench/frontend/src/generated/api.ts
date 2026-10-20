@@ -75,6 +75,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workbench/v1/simulation/runtime": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Simulation Runtime */
+        get: operations["simulation_runtime_api_workbench_v1_simulation_runtime_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workbench/v1/executions/scenes/{run_id}": {
         parameters: {
             query?: never;
@@ -1587,6 +1604,15 @@ export interface components {
             /** Issue Count */
             issue_count: number;
         };
+        /** RuntimePackage */
+        RuntimePackage: {
+            /** Name */
+            name: string;
+            /** Version */
+            version: string | null;
+            /** Available */
+            available: boolean;
+        };
         /** SceneFile */
         SceneFile: {
             /** Id */
@@ -1687,6 +1713,49 @@ export interface components {
             value_unit: string;
             /** Channel Name */
             channel_name: string | null;
+        };
+        /** SimulationProfile */
+        SimulationProfile: {
+            /** Mode */
+            mode: string;
+            /** Solver */
+            solver: string;
+            /** Physics Device */
+            physics_device: string;
+            /** Detail */
+            detail: string;
+        };
+        /** SimulationRuntime */
+        SimulationRuntime: {
+            /** Config Id */
+            config_id: string | null;
+            /** Config Name */
+            config_name: string | null;
+            /**
+             * Engine
+             * @default Newton
+             */
+            engine: string;
+            /**
+             * Integration
+             * @default RoboSimStudio
+             */
+            integration: string;
+            /** Python */
+            python: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "environment_detected" | "missing_dependencies" | "incompatible" | "error";
+            /** Checked At */
+            checked_at: string;
+            /** Detail */
+            detail: string;
+            /** Packages */
+            packages: components["schemas"]["RuntimePackage"][];
+            /** Profiles */
+            profiles: components["schemas"]["SimulationProfile"][];
         };
         /** Stage */
         Stage: {
@@ -1908,6 +1977,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExecutionCatalog"];
+                };
+            };
+        };
+    };
+    simulation_runtime_api_workbench_v1_simulation_runtime_get: {
+        parameters: {
+            query?: {
+                config_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SimulationRuntime"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

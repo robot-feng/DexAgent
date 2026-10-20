@@ -77,6 +77,9 @@ test("background cleanup mask review synchronizes the source and mask timelines"
     await expect(diagnostics).toContainText(`播种帧：${seedFrame}`);
   }
   for (const [object, score] of Object.entries(reviewJob.mask_summary.seed_scores)) {
+    expect(typeof score).toBe("number");
+    if (typeof score !== "number") throw new Error(`Invalid seed score for ${object}`);
+    expect(Number.isFinite(score)).toBe(true);
     await expect(diagnostics).toContainText(object);
     await expect(diagnostics).toContainText(`SAM 分割分数：${score.toFixed(3)}`);
   }

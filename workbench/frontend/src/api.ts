@@ -21,6 +21,7 @@ export type CleanupCreate = components["schemas"]["CleanupCreate"];
 export type CleanupJob = components["schemas"]["CleanupJob"];
 export type Execution = components["schemas"]["Execution"];
 export type ExecutionCreate = components["schemas"]["ExecutionCreate"];
+export type SimulationRuntime = components["schemas"]["SimulationRuntime"];
 export const prefix = "/api/workbench/v1";
 
 export async function request<T>(path: string, body?: unknown): Promise<T> {
@@ -49,6 +50,10 @@ export const contentUrl = (artifact: Artifact, download = false) =>
   `${prefix}/artifacts/${artifact.id}/content${download ? "?download=true" : ""}`;
 
 export const api = {
+  simulationRuntime: (configId?: string) =>
+    request<SimulationRuntime>(
+      `/simulation/runtime${configId ? `?${new URLSearchParams({ config_id: configId })}` : ""}`,
+    ),
   executionCatalog: () =>
     request<components["schemas"]["ExecutionCatalog"]>("/executions/catalog"),
   executionScene: (runId: string, configId: string) =>

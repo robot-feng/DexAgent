@@ -26,6 +26,8 @@ from .models import PlanningTrials, PlanningTrialDetail
 from .diagnostics import planning_trials, planning_trial
 from .episode_bundles import EpisodeBundles, BundleBusy
 from .models import EpisodeBundle, EpisodeBundleRequest
+from .models import SimulationRuntime
+from .simulation_runtime import inspect_runtime
 
 PREFIX = '/api/workbench/v1'
 LOGGER = logging.getLogger(__name__)
@@ -156,6 +158,10 @@ def create_app(repo: Path | None = None, *, runs_root: Path | None = None,
     @app.get(f'{PREFIX}/executions/catalog', response_model=ExecutionCatalog)
     def execution_catalog():
         return executions.catalog()
+
+    @app.get(f'{PREFIX}/simulation/runtime', response_model=SimulationRuntime)
+    def simulation_runtime(config_id: str | None = Query(default=None, pattern='^[a-f0-9]{24}$')):
+        return inspect_runtime(repo, executions.config_paths(), config_id)
 
     @app.get(f'{PREFIX}/executions/scenes/{{run_id}}', response_model=CandidateScene)
     def execution_scene(run_id: str, config_id: str = Query(pattern='^[a-f0-9]{24}$')):
