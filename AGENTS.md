@@ -77,9 +77,14 @@ interfaces rather than adding a parallel pipeline framework. See
 
 ## Ego capture workflow
 
-For new ego collection, scan/model the environment and reusable objects first,
-then collect operation demonstrations against that versioned scene. Reuse the
-scene across demonstrations; do not reconstruct an unrelated world per video.
+Scene capture/import and demonstrations are independent, reusable inputs.
+Support scene + instruction, scene + optional demo, and real robot data (video,
+state and actions) through a task instance binding Scene, Task and Robot, with
+Demo as an optional reference. Do not require a demo for instruction-driven tasks
+or require a new scan when a qualified scene asset already exists.
+For new ego collection, scanning/modeling the environment before collecting
+demonstrations is recommended, not a mandatory global pipeline order. Reuse the
+versioned scene across demonstrations.
 Keep scan footage and operation footage explicitly identified and linked.
 Support monocular, stereo and RGB-D devices through capability-based input
 adapters, with optional poses/SLAM and IMU. Do not require a specific device or
@@ -95,6 +100,22 @@ but prevents claiming aligned training data.
 For transferable tasks, the shared table can come from the scanned environment.
 An explicitly chosen standard-table migration keeps a recorded source-to-target
 transform and does not silently alter the source scene or per-robot layout.
+
+## Unified execution contract
+
+Represent task intent through objects, initial/goal states, contact/relationship
+constraints and success predicates; source trajectories are optional references.
+Use the existing semantic task, runtime binding, gates and Episode interfaces,
+not a duplicate TaskSpec registry. Scene, Demo, Task and Robot are logical asset
+boundaries; one task instance binds their versions and the chosen runtime.
+Preserve mature execution backends through minimal adapters. RSS is the preferred
+interaction foundation, not a requirement to replace all physics engines before
+integration. Check each transferred task on its actual target backend.
+Separate scene-model, motion-planning and control failures using actual evidence.
+Randomization requires renewed action solving and physical acceptance while
+preserving task intent. Policy training, real robot evaluation and simulation
+correction remain part of the end goal; a replay or exported bundle alone does
+not prove this loop complete. See docs/EMBODIFORGE_UNIFIED_WORKFLOW.md.
 
 ## Shared workbench
 

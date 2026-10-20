@@ -135,23 +135,31 @@ def read_egodex_episode(hdf5, out_dir, mp4=None, frame=0, stride=0, cam_xy=(0.01
     # frames
     cap = cv2.VideoCapture(str(mp4))
     W, H = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fps = float(cap.get(cv2.CAP_PROP_FPS) or 30.0)
+    fps = float(cap.get(cv2.CAP_PROP_FPS))
     nvid = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    if not cap.isOpened() or W <= 0 or H <= 0 or not np.isfinite(fps) or fps <= 0 or nvid != n:
+        cap.release()
+        raise ValueError(f"video needs valid dimensions/fps and one frame per camera pose: video={nvid}, poses={n}, fps={fps}")
     want = [frame] + ([i for i in range(0, min(n, nvid), int(stride)) if i != frame] if stride and stride > 0 else [])
     files = []
-    for i in sorted(set(want)):
-        cap.set(cv2.CAP_PROP_POS_FRAMES, i)
-        ok, im = cap.read()
-        if not ok:
-            continue
-        fp = out / f"frame{i:05d}.jpg"
-        cv2.imwrite(str(fp), im, [cv2.IMWRITE_JPEG_QUALITY, 95])
-        files.append(str(fp))
-    cap.release()
+    try:
+        for i in sorted(set(want)):
+            cap.set(cv2.CAP_PROP_POS_FRAMES, i)
+            ok, im = cap.read()
+            if not ok:
+                raise ValueError(f"could not decode source video frame {i}")
+            fp = out / f"frame{i:05d}.jpg"
+            if not cv2.imwrite(str(fp), im, [cv2.IMWRITE_JPEG_QUALITY, 95]):
+                raise OSError(f"could not write source video frame {i}")
+            files.append(str(fp))
+    finally:
+        cap.release()
     files.sort(key=lambda s: (not s.endswith(f"frame{frame:05d}.jpg"), s))
     sx, sy = W / (2 * K[0, 2]), H / (2 * K[1, 2])         # intrinsics are for the principal-point-centred image
     cam = RC.camera_dict(W, H, K[0, 0] * sx, K[1, 1] * sy, K[0, 2] * sx, K[1, 2] * sy, R_cv, pos,
-                         {"source": "egodex", "frame": int(frame), "hdf5": str(hdf5), "mp4": str(mp4)})
+                         {"source": "egodex", "frame": int(frame), "hdf5": str(hdf5), "mp4": str(mp4),
+                          "camera_motion": "moving", "reference_frame": int(frame),
+                          "trajectory_npz": str((out / "hands.npz").resolve())})
     RC.save(cam, out / "camera.json")
     # hands: 3D rig positions and pixels for every joint and frame
     names = sorted(joints)
@@ -165,7 +173,8 @@ def read_egodex_episode(hdf5, out_dir, mp4=None, frame=0, stride=0, cam_xy=(0.01
         uv[i, :, 0] = cam["cx"] + cam["fx"] * Pc[:, 0] / z
         uv[i, :, 1] = cam["cy"] + cam["fy"] * Pc[:, 1] / z
     np.savez_compressed(out / "hands.npz", names=np.array(names), rig_xyz=P_rig.astype(np.float32), pixels=uv.astype(np.float32),
-                        camera_world=Tc.astype(np.float32), R_world_rig=R_wr, origin_world=origin, y_table_world=y_table)
+                        camera_world=Tc.astype(np.float32), R_world_rig=R_wr, origin_world=origin, y_table_world=y_table,
+                        frame_idx=np.arange(n, dtype=np.int64), timestamps_s=np.arange(n, dtype=np.float64) / fps)
     tips = {}
     for side in ("left", "right"):
         for t in TIPS:
@@ -178,6 +187,8 @@ def read_egodex_episode(hdf5, out_dir, mp4=None, frame=0, stride=0, cam_xy=(0.01
                "which_llm_description": attrs.get("which_llm_description"),
                "dataset_objects": attrs.get("llm_objects"), "environment": attrs.get("environment"), "n_frames": int(n), "fps": fps,
                "width": W, "height": H, "frame": int(frame), "table_height_world": y_table,
+               "camera_motion": "moving", "time_source": "video_frame_index / video_fps; not measured capture timestamps",
+               "source_frame_indices": {Path(path).name: int(Path(path).stem.removeprefix("frame")) for path in files},
                "rig": {"R_world_rig": R_wr.tolist(), "origin_world": origin.tolist(), "cam_xy": [float(cam_xy[0]), float(cam_xy[1])]},
                "fingertips_px_z": tips, "hands_npz": str(out / "hands.npz"), "camera_json": str(out / "camera.json"), "frames": files}
     (out / "episode.json").write_text(json.dumps(episode, indent=1))

@@ -60,7 +60,70 @@ def camera_from_mujoco(width, height, fovy_deg, pos, quat_wxyz, extra=None) -> d
 def load(path) -> dict:
     cam = json.loads(Path(path).read_text())
     cam["R_cv"] = np.asarray(cam["R_cv"], float).reshape(3, 3).tolist()
+    if cam.get("trajectory_npz"):
+        trajectory = Path(cam["trajectory_npz"])
+        if not trajectory.is_absolute():
+            cam["trajectory_npz"] = str((Path(path).resolve().parent / trajectory).resolve())
     return cam
+
+
+def camera_poses(cam, frames):
+    """OpenCV camera axes and positions in rig metres for exact source frame IDs.
+
+    Moving cameras reuse EgoDex's camera_world, R_world_rig and origin_world
+    arrays. No interpolation or scale estimation is performed here. A static
+    camera remains compatible; a declared moving camera requires its track.
+    """
+    if isinstance(cam, (str, Path)):
+        cam = load(cam)
+    frames = np.atleast_1d(np.asarray(frames))
+    if frames.ndim != 1 or not np.issubdtype(frames.dtype, np.integer) or np.any(frames < 0):
+        raise ValueError("camera frames must be nonnegative integer source frame IDs")
+    path = cam.get("trajectory_npz")
+    if not path:
+        if cam.get("camera_motion") == "moving":
+            raise ValueError("moving camera requires trajectory_npz")
+        return (np.repeat(np.asarray(cam["R_cv"], float)[None], len(frames), axis=0),
+                np.repeat(np.asarray(cam["pos"], float)[None], len(frames), axis=0))
+    with np.load(path, allow_pickle=False) as z:
+        if not {"camera_world", "R_world_rig", "origin_world"}.issubset(z.files):
+            raise ValueError("camera trajectory requires camera_world, R_world_rig and origin_world")
+        world = np.asarray(z["camera_world"], float)
+        basis = np.asarray(z["R_world_rig"], float)
+        origin = np.asarray(z["origin_world"], float)
+        ids = np.asarray(z["frame_idx"]) if "frame_idx" in z else None
+    if (world.ndim != 3 or world.shape[1:] != (4, 4) or not len(world)
+            or basis.shape != (3, 3) or origin.shape != (3,)
+            or not all(np.isfinite(v).all() for v in (world, basis, origin))
+            or not np.allclose(world[:, 3], [0, 0, 0, 1], rtol=0, atol=1e-6)):
+        raise ValueError("camera trajectory must contain finite rigid transforms")
+    for rotation in (world[:, :3, :3], basis[None]):
+        if (not np.allclose(np.swapaxes(rotation, -1, -2) @ rotation, np.eye(3), rtol=0, atol=1e-5)
+                or not np.allclose(np.linalg.det(rotation), 1, rtol=0, atol=1e-5)):
+            raise ValueError("camera trajectory rotations must be proper rigid rotations, without scale")
+    if ids is None:
+        ids = np.arange(len(world))
+    if (ids.shape != (len(world),) or not np.issubdtype(ids.dtype, np.integer)
+            or np.any(ids < 0) or np.any(ids[1:] <= ids[:-1])):
+        raise ValueError("camera trajectory frame_idx must be unique increasing nonnegative integers")
+    indices = {int(frame): i for i, frame in enumerate(ids)}
+
+    def rows(requested):
+        missing = [int(frame) for frame in requested if int(frame) not in indices]
+        if missing:
+            raise ValueError(f"camera trajectory is missing source frames {missing[:8]}")
+        selected = world[[indices[int(frame)] for frame in requested]]
+        return basis.T @ selected[:, :3, :3], (selected[:, :3, 3] - origin) @ basis
+
+    reference = cam.get("reference_frame")
+    if reference is not None:
+        if type(reference) is not int or reference < 0:
+            raise ValueError("camera reference_frame must be a nonnegative integer")
+        rotation, position = rows([reference])
+        if (not np.allclose(rotation[0], cam["R_cv"], rtol=0, atol=1e-5)
+                or not np.allclose(position[0], cam["pos"], rtol=0, atol=1e-5)):
+            raise ValueError("camera reference pose does not match its trajectory rig frame")
+    return rows(frames)
 
 
 def save(cam: dict, path) -> str:

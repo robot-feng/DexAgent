@@ -1,5 +1,7 @@
 # EmbodiForge：SimFoundry、DexAgent 与 RoboSimStudio 融合升级实施方案
 
+> **统一主流程更新（2026-10-20）：** 场景采集与示范相互独立，Scene / Demo / Task / Robot 通过任务实例连接；支持演示、指令与真实机器人数据三类入口，保留成熟执行后端。最新系统边界以 [EmbodiForge 统一 Real2Sim2Real 工作流](docs/EMBODIFORGE_UNIFIED_WORKFLOW.md) 为准；扫描后采集是推荐方式，当前优先单目。
+
 > **文档类型：** 源码审查后的工程规划与实施验收方案\
 > **规划日期：** 2026-10-19\
 > **状态：** 实施计划，尚不代表跨项目集成已经完成或测试已经通过。

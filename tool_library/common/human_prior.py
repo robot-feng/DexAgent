@@ -110,22 +110,39 @@ def keypoints_from_hamer(hamer_npz, camera, side: str, frames, joint_regressor, 
     """The same keypoints from extract_hand_meshes' hands.npz (MANO vertices in HaMeR's camera frame). HaMeR places
     each hand with a nominal focal length (5000 / 256 * the longer image side); the hand's depth is rescaled to the
     real camera's focal so its pixels stay where HaMeR put them, then the points go to the rig through camera.json.
+    When camera.json references trajectory_npz, source_frame_idx maps HaMeR's
+    input-image indices to original video frame IDs before querying camera poses.
     `joint_regressor` is MANO's J_regressor (16 x 778: an .npy, or the MANO_RIGHT.pkl HaMeR ships in its _DATA)."""
     from tool_library.common import rigcam as RC
     cam = RC.load(camera) if isinstance(camera, (str, Path)) else camera
     J = _mano_regressor(joint_regressor)
     with np.load(str(hamer_npz), allow_pickle=True) as zf:
         z = {k: zf[k] for k in ("frame_idx", "is_right", "verts", "cam_t")}
-    fidx = [int(v) for v in z["frame_idx"]]
+        source_ids = np.asarray(zf["source_frame_idx"]) if "source_frame_idx" in zf else None
+    frame_ids = np.asarray(z["frame_idx"])
+    if (frame_ids.ndim != 1 or not np.issubdtype(frame_ids.dtype, np.integer)
+            or np.any(frame_ids < 0) or len(np.unique(frame_ids)) != len(frame_ids)):
+        raise ValueError("HaMeR frame_idx must contain unique nonnegative integer image indices")
+    fidx = frame_ids.tolist()
     f_nom = float(hamer_focal_px) if hamer_focal_px else 5000.0 / 256.0 * max(cam["width"], cam["height"])
     f_real = 0.5 * (cam["fx"] + cam["fy"])
-    R, p = np.asarray(cam["R_cv"], float), np.asarray(cam["pos"], float)
+    frames = np.atleast_1d(np.asarray(frames))
+    if frames.ndim != 1 or not np.issubdtype(frames.dtype, np.integer) or np.any(frames < 0):
+        raise ValueError("HaMeR frames must be nonnegative integer image indices")
+    if any(int(fr) not in fidx for fr in frames):
+        raise ValueError("requested frame is not in the HaMeR output")
+    rows_in_archive = [fidx.index(int(fr)) for fr in frames]
+    camera_frames = frames
+    if cam.get("trajectory_npz"):
+        if (source_ids is None or source_ids.shape != frame_ids.shape
+                or not np.issubdtype(source_ids.dtype, np.integer) or np.any(source_ids < 0)
+                or len(np.unique(source_ids)) != len(source_ids)):
+            raise ValueError("moving-camera HaMeR input requires unique integer source_frame_idx mapping")
+        camera_frames = source_ids[rows_in_archive]
+    rotations, positions = RC.camera_poses(cam, camera_frames)
     want = 1 if side == "right" else 0
     rows = {"wrist": []} | {f: [] for f in FINGERS}
-    for fr in np.atleast_1d(np.asarray(frames, int)):
-        if int(fr) not in fidx:
-            raise ValueError(f"frame {int(fr)} is not in the HaMeR output")
-        i = fidx.index(int(fr))
+    for fr, i, R, p in zip(frames, rows_in_archive, rotations, positions):
         isr = np.atleast_1d(z["is_right"][i])
         hit = [k for k, r in enumerate(isr) if int(r) == want]
         if not hit:

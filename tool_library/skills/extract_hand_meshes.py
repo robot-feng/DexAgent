@@ -91,6 +91,23 @@ def extract_hand_meshes(frames_dir, out_dir, hamer_root=None, checkpoint=None, f
         os.chdir(cwd)
 
 
+def _source_frame_indices(files, frames_dir):
+    """Keep image ordinals distinct from video IDs; filenames alone are not evidence."""
+    episode = Path(frames_dir) / "episode.json"
+    if not episode.is_file():
+        return None
+    mapping = json.loads(episode.read_text()).get("source_frame_indices")
+    if mapping is None:
+        return None
+    if not isinstance(mapping, dict):
+        raise ValueError("episode source_frame_indices must map image filenames to source video frames")
+    indices = [mapping.get(Path(path).name) for path in files]
+    if (any(type(i) is not int or i < 0 for i in indices)
+            or len(set(indices)) != len(indices)):
+        raise ValueError("every input image needs a unique nonnegative source frame index")
+    return np.asarray(indices, dtype=np.int64)
+
+
 def _run(frames_dir, out_dir, checkpoint, fps, enhance, kp_thresh, rescale_factor, max_frames):
     try:
         import torch
@@ -106,6 +123,7 @@ def _run(frames_dir, out_dir, checkpoint, fps, enhance, kp_thresh, rescale_facto
     if max_frames:
         files = files[: int(max_frames)]
     assert files, f"no frames in {frames_dir}"
+    source_frame_idx = _source_frame_indices(files, frames_dir)
     out = Path(out_dir)
     (out / "layers").mkdir(parents=True, exist_ok=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -176,7 +194,8 @@ def _run(frames_dir, out_dir, checkpoint, fps, enhance, kp_thresh, rescale_facto
     np.savez(str(out / "hands.npz"), frame_idx=np.array(rec["frame_idx"]), n_hands=np.array(rec["n_hands"]),
              verts=obj("verts"), cam_t=obj("cam_t"), is_right=obj("is_right"), bbox=obj("bbox"),
              global_orient=obj("global_orient"), hand_pose=obj("hand_pose"), betas=obj("betas"),
-             faces=model.mano.faces, fps=float(fps))
+             faces=model.mano.faces, fps=float(fps),
+             **({"source_frame_idx": source_frame_idx} if source_frame_idx is not None else {}))
     write_video(overlay, out / "overlay.mp4", fps)
     summary = {"processed_frames": len(files), "frames_with_hands": n_with,
                "detection_rate": round(n_with / max(1, len(files)), 3), "hands_left": int(n_left),

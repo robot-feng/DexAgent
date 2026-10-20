@@ -421,6 +421,14 @@ def _reframe(ed, out, tr, cam_xy):
     move = lambda P: a + d + (np.asarray(P, float) - a) @ Rz.T
     files = {}
     cam = RC.load(ed / "camera.json")
+    if cam.get("trajectory_npz"):
+        # This operation only transforms the paired EgoDex hands archive below.
+        # An unrelated trajectory must not silently keep the old rig coordinates.
+        if Path(cam["trajectory_npz"]).resolve() != (ed / "hands.npz").resolve():
+            raise ValueError("camera trajectory must be the episode's hands.npz before reach placement")
+        if not (ed / "hands.npz").is_file():
+            raise ValueError("moving camera trajectory hands.npz is missing")
+        cam["trajectory_npz"] = str((out / "hands.npz").resolve())
     extra = {k: v for k, v in cam.items() if k not in ("width", "height", "fx", "fy", "cx", "cy", "fovy_deg", "pos", "quat_wxyz", "R_cv",
                                                        "pitch_deg", "yaw_deg", "height_above_table_m")}
     extra["placed_for_reach"] = {"cam_xy": cam_xy, "yaw_deg": tr["dyaw_deg"]}
