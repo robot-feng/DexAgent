@@ -93,9 +93,19 @@ def source_inventory(stage):
         result = attr.Get() if attr else None
         return result if result is not None else default
 
-    joints, bodies, collisions = [], [], []
+    joints, bodies, collisions, articulations = [], [], [], []
     for prim in Usd.PrimRange.Stage(stage, Usd.TraverseInstanceProxies()):
         path = str(prim.GetPath())
+        if prim.HasAPI(UsdPhysics.ArticulationRootAPI):
+            setting = {"path": path, "self_collision_enabled": None, "attribute": None}
+            # Match the explicit resolver order used below. Unauthored schema
+            # defaults must not hide an authored PhysX value.
+            for name in ("newton:selfCollisionEnabled", "physxArticulation:enabledSelfCollisions"):
+                attr = prim.GetAttribute(name)
+                if attr and attr.HasAuthoredValueOpinion():
+                    setting.update(self_collision_enabled=bool(attr.Get()), attribute=name)
+                    break
+            articulations.append(setting)
         if prim.IsA(UsdPhysics.Joint):
             joint = {"path": path, "kind": prim.GetTypeName(),
                      "enabled": bool(value(prim, "physics:jointEnabled", True)),
@@ -126,7 +136,16 @@ def source_inventory(stage):
                            "diagonal_inertia": list(diagonal) if diagonal is not None else None})
         if prim.HasAPI(UsdPhysics.CollisionAPI) and value(prim, "physics:collisionEnabled", True):
             collisions.append({"path": path, "kind": prim.GetTypeName()})
-    return {"joints": joints, "bodies": bodies, "collisions": collisions,
+    # Articulations can be rooted at a joint or one body; other members need
+    # not be descendants of that prim. Reuse the same native descriptors as
+    # Newton's importer instead of inferring membership from path prefixes.
+    native = UsdPhysics.LoadUsdPhysicsFromRange(stage, [stage.GetPseudoRoot().GetPath()])
+    paths, descriptors = native.get(UsdPhysics.ObjectType.Articulation, ([], []))
+    membership = {str(path): [str(body) for body in desc.articulatedBodies if str(body)]
+                  for path, desc in zip(paths, descriptors) if desc.isValid}
+    for articulation in articulations:
+        articulation["articulated_bodies"] = membership.get(articulation["path"])
+    return {"joints": joints, "bodies": bodies, "collisions": collisions, "articulations": articulations,
             "meters_per_unit": UsdGeom.GetStageMetersPerUnit(stage),
             "up_axis": str(UsdGeom.GetStageUpAxis(stage)),
             "composition_errors": [str(e) for e in stage.GetCompositionErrors()]}
@@ -163,12 +182,54 @@ def builder_inventory(builder):
     bodies = [{"path": path, "mass": float(builder.body_mass[i]),
                "inertia": np.asarray(builder.body_inertia[i]).reshape(3, 3).tolist()}
               for i, path in enumerate(builder.body_label)]
-    collisions = [{"path": path, "body": builder.body_label[builder.shape_body[i]]
+    collisions = [{"index": i, "path": path, "body": builder.body_label[builder.shape_body[i]]
                    if builder.shape_body[i] >= 0 else None}
                   for i, path in enumerate(builder.shape_label)
                   if int(builder.shape_flags[i]) & int(newton.ShapeFlags.COLLIDE_SHAPES)]
     return {"joints": joints, "mimics": mimics, "bodies": bodies, "collisions": collisions,
             "shape_count": builder.shape_count, "joint_coordinate_count": len(builder.joint_q)}
+
+
+def compare_collision_filters(source, imported, filter_pairs):
+    """Check every imported hull against authored disabled articulation self-contact.
+
+    A compact boolean matrix avoids building a second Python set of millions
+    of hull pairs. This does not certify external contact forces or the geometry
+    of convex approximations; those require separate physical qualification.
+    """
+    import numpy as np
+
+    shapes = imported["collisions"]
+    positions = {shape["index"]: i for i, shape in enumerate(shapes)}
+    filtered = np.zeros((len(shapes), len(shapes)), dtype=bool)
+    for a, b in filter_pairs:
+        i, j = positions.get(a), positions.get(b)
+        if i is not None and j is not None:
+            filtered[min(i, j), max(i, j)] = True
+    roots = source.get("articulations", [])
+    bodies = np.asarray([shape["body"] for shape in shapes], dtype=object)
+    order = np.arange(len(shapes))
+    evidence = []
+    for root in roots:
+        if root["self_collision_enabled"] is not False:
+            continue
+        if not root.get("articulated_bodies"):
+            evidence.append({**root, "expected_filtered_pairs": None, "missing_filtered_pairs": None,
+                             "error": "Native articulation membership is missing or invalid", "examples": []})
+            continue
+        expected, missing, examples = 0, 0, []
+        member = np.isin(bodies, root["articulated_bodies"])
+        for i in np.flatnonzero(member):
+            targets = np.flatnonzero(member & (bodies != bodies[i]) & (order > i))
+            absent = targets[~filtered[i, targets]]
+            expected += len(targets)
+            missing += len(absent)
+            for j in absent[:max(0, 5 - len(examples))]:
+                examples.append([shapes[i]["path"], shapes[j]["path"]])
+        evidence.append({**root, "expected_filtered_pairs": expected,
+                         "missing_filtered_pairs": missing, "examples": examples})
+    return check("authored_self_collision_filters_preserved",
+                 all(e["missing_filtered_pairs"] == 0 for e in evidence), evidence)
 
 
 def compare_physics(source, imported):
@@ -218,12 +279,18 @@ def qualify(source: Path, output: Path, *, omit_missing_camera=False):
         wp.config.enable_cuda = False
         import newton
         from newton.solvers import SolverMuJoCo
+        from newton.usd import SchemaResolverNewton, SchemaResolverPhysx
         from pxr import Sdf, Usd
         from robosimstudio.scene.build.imports import add_usd_stage
 
         report["environment"] = {"python": sys.executable,
             "packages": {name: importlib.metadata.version(name)
                          for name in ("newton", "warp-lang", "usd-core", "newton-usd-schemas")}}
+        report["import_options"] = {
+            "schema_resolvers": ["SchemaResolverNewton", "SchemaResolverPhysx"],
+            "collapse_fixed_joints": False,
+            "skip_mesh_approximation": False,
+        }
         root = Sdf.Layer.FindOrOpen(str(source))
         session = Sdf.Layer.CreateAnonymous("geniesim_import_qualification")
         stage = Usd.Stage.Open(root, session, Usd.Stage.LoadAll)
@@ -251,13 +318,17 @@ def qualify(source: Path, output: Path, *, omit_missing_camera=False):
         SolverMuJoCo.register_custom_attributes(builder)
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
-            add_usd_stage(builder, stage, collapse_fixed_joints=False, verbose=False)
+            add_usd_stage(builder, stage, collapse_fixed_joints=False, verbose=False,
+                          schema_resolvers=[SchemaResolverNewton(), SchemaResolverPhysx()])
             report["imported_inventory"] = builder_inventory(builder)
             checks.append(check("native_rss_import", True,
                                 "robosimstudio.scene.build.imports.add_usd_stage"))
             imported = report["imported_inventory"]
             checks.extend(compare_joints(inventory["joints"], imported["joints"], imported["mimics"]))
             checks.extend(compare_physics(inventory, imported))
+            # Iterate Newton's compact storage without materializing its public
+            # list property (millions of pairs on the fully decomposed robots).
+            checks.append(compare_collision_filters(inventory, imported, builder._shape_collision_filter_pairs))
             invalid_source_targets = [j for j in inventory["joints"]
                                       if j["target"] is not None and (
                                           (j["lower"] is not None and j["target"] < j["lower"] - 1e-6)
@@ -289,7 +360,7 @@ def qualify(source: Path, output: Path, *, omit_missing_camera=False):
             report["warnings"] = [str(w.message) for w in caught]
         report["sweep"] = {"status": "not_run",
                            "simulation_steps": 0,
-                           "reason": "Resolve solver construction and physical fidelity checks before a controlled sweep"}
+                           "reason": "This import audit does not step physics; resolve remaining physical fidelity checks before a controlled sweep"}
     except Exception as exc:
         checks.append(check("native_runtime_completed", False, f"{type(exc).__name__}: {exc}"))
         report["failure"] = traceback.format_exc()

@@ -1,0 +1,748 @@
+{
+  "scope": "Original Omnipicker USD import fidelity and CPU solver construction, no dynamic sweep or task acceptance",
+  "task_success_evaluated": false,
+  "aggregate_complete": false,
+  "launch_commit": "ea0f16677115d3efccf1dfe1b3fce7b390a7bf1d",
+  "worktree_note": "Ran with uncommitted explicit PhysX resolver and collision-filter audit. A later source-only edit clarifies the no-step sweep reason; raw reports retain launch-time wording. Final review replaced path-prefix articulation membership with native USD descriptors. Full native membership was re-read from unchanged original assets and covers exactly the same full-import collider set and expected pair counts; no second full solver run is claimed.",
+  "schema_resolvers": [
+    "SchemaResolverNewton",
+    "SchemaResolverPhysx"
+  ],
+  "robots": {
+    "G1": {
+      "source": {
+        "source": "/data/tzq/DexAgent/GenieSimAssets/robot/G1_omnipicker/robot.usda",
+        "sha256": "ce89c938628b574d330a051bdd81116d4b6a439905825cb2e5f0f55e28b0eff4",
+        "layers": [
+          {
+            "path": "/data/tzq/DexAgent/GenieSimAssets/robot/G1_omnipicker/robot.usda",
+            "sha256": "ce89c938628b574d330a051bdd81116d4b6a439905825cb2e5f0f55e28b0eff4"
+          },
+          {
+            "path": "/data/tzq/DexAgent/GenieSimAssets/robot/G1_omnipicker/configuration/robot_physics.usd",
+            "sha256": "a72aeeaac23b2bb49eee415e5bc2a625ae97033e9f0251fc612130aba2dd4cb9"
+          },
+          {
+            "path": "/data/tzq/DexAgent/GenieSimAssets/robot/G1_omnipicker/configuration/robot_sensor.usd",
+            "sha256": "d32e25c7daf3f7fdd008086f37e7f95dd2198a1bf94068c72defd7fdf81053f3"
+          },
+          {
+            "path": "/data/tzq/DexAgent/GenieSimAssets/robot/G1_omnipicker/configuration/robot_base.usd",
+            "sha256": "506709c177cb55840eb70db635864d8b60757895b54ac55296bcdd20f38977af"
+          },
+          {
+            "path": "/data/tzq/DexAgent/GenieSimAssets/robot/G1_omnipicker/configuration/robot_robot.usd",
+            "sha256": "9232253524b49eb3c8b6fddea2b62d633096a442901d1bafbd3757c5c35088ee"
+          },
+          {
+            "path": "/data/tzq/DexAgent/GenieSimAssets/robot/G1_omnipicker/configuration/Cam.usd",
+            "sha256": "f58b881307b67f42ea849c93f4e66736c9eacd3c832ff9839f7a1d394327b6d0"
+          }
+        ]
+      },
+      "report_sha256": "82344f049da229a04877e65b94a30d245d2e0c6e6a82cb27bc3a1f24b59e87e5",
+      "elapsed_s": 98.372,
+      "status": "failed",
+      "import_options": {
+        "schema_resolvers": [
+          "SchemaResolverNewton",
+          "SchemaResolverPhysx"
+        ],
+        "collapse_fixed_joints": false,
+        "skip_mesh_approximation": false
+      },
+      "environment": {
+        "python": "/data/tzq/DexAgent/.workbench/geniesim-venv/bin/python",
+        "packages": {
+          "newton": "1.6.0",
+          "warp-lang": "1.18.0",
+          "usd-core": "26.8",
+          "newton-usd-schemas": "0.6.0"
+        }
+      },
+      "collision_shapes": 3134,
+      "shape_count": 3234,
+      "checks": [
+        {
+          "id": "exact_source_composes",
+          "status": "failed",
+          "required": true,
+          "evidence": [
+            "Could not open asset @/data/tzq/DexAgent/sim/isaacsim/kit/resources/models/camera/camera.usd@ for reference introduced by @/data/tzq/DexAgent/GenieSimAssets/robot/G1_omnipicker/robot.usda@</G01/head_link2/Top_Camera/OmniverseKitViewportCameraMesh>."
+          ]
+        },
+        {
+          "id": "native_rss_import",
+          "status": "passed",
+          "required": true,
+          "evidence": "robosimstudio.scene.build.imports.add_usd_stage"
+        },
+        {
+          "id": "named_joints_preserved",
+          "status": "passed",
+          "required": true,
+          "evidence": {
+            "missing": [],
+            "duplicates": [],
+            "disabled": []
+          }
+        },
+        {
+          "id": "joint_types_limits_loops_preserved",
+          "status": "passed",
+          "required": true,
+          "evidence": []
+        },
+        {
+          "id": "driver_follower_constraints_preserved",
+          "status": "passed",
+          "required": true,
+          "evidence": []
+        },
+        {
+          "id": "rigid_bodies_preserved",
+          "status": "passed",
+          "required": true,
+          "evidence": []
+        },
+        {
+          "id": "authored_mass_principal_inertia_preserved",
+          "status": "passed",
+          "required": true,
+          "evidence": []
+        },
+        {
+          "id": "declared_colliders_preserved",
+          "status": "passed",
+          "required": true,
+          "evidence": []
+        },
+        {
+          "id": "authored_self_collision_filters_preserved",
+          "status": "passed",
+          "required": true,
+          "evidence": [
+            {
+              "path": "/G01",
+              "self_collision_enabled": false,
+              "attribute": "physxArticulation:enabledSelfCollisions",
+              "expected_filtered_pairs": 3675353,
+              "missing_filtered_pairs": 0,
+              "examples": []
+            }
+          ]
+        },
+        {
+          "id": "authored_drive_targets_within_limits",
+          "status": "failed",
+          "required": true,
+          "evidence": [
+            {
+              "path": "/G01/joints/idx41_gripper_l_outer_joint1",
+              "kind": "PhysicsRevoluteJoint",
+              "enabled": true,
+              "loop": false,
+              "body0": [
+                "/G01/gripper_l_base_link"
+              ],
+              "body1": [
+                "/G01/gripper_l_outer_link1"
+              ],
+              "mimics": [],
+              "lower": 0.0,
+              "upper": 0.7853981633974483,
+              "target": 1.5271630954950381
+            },
+            {
+              "path": "/G01/joints/idx81_gripper_r_outer_joint1",
+              "kind": "PhysicsRevoluteJoint",
+              "enabled": true,
+              "loop": false,
+              "body0": [
+                "/G01/gripper_r_base_link"
+              ],
+              "body1": [
+                "/G01/gripper_r_outer_link1"
+              ],
+              "mimics": [],
+              "lower": 0.0,
+              "upper": 0.7853981633974483,
+              "target": 1.591740357713661
+            }
+          ]
+        },
+        {
+          "id": "drive_targets_within_limits",
+          "status": "passed",
+          "required": true,
+          "evidence": []
+        },
+        {
+          "id": "native_cpu_finalize",
+          "status": "passed",
+          "required": true,
+          "evidence": "cpu"
+        },
+        {
+          "id": "finalized_authored_mass_principal_inertia_preserved",
+          "status": "failed",
+          "required": true,
+          "evidence": [
+            {
+              "path": "/G01/arm_base_link",
+              "field": "inertia_eigenvalues",
+              "source": [
+                9.999999747378752e-05,
+                9.999999747378752e-05,
+                9.999999747378752e-05
+              ],
+              "imported": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            {
+              "path": "/G01/gripper_l_center_link",
+              "field": "inertia_eigenvalues",
+              "source": [
+                9.999999747378752e-05,
+                9.999999747378752e-05,
+                9.999999747378752e-05
+              ],
+              "imported": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            {
+              "path": "/G01/gripper_r_center_link",
+              "field": "inertia_eigenvalues",
+              "source": [
+                9.999999747378752e-05,
+                9.999999747378752e-05,
+                9.999999747378752e-05
+              ],
+              "imported": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          ]
+        },
+        {
+          "id": "native_cpu_solver_build",
+          "status": "passed",
+          "required": true,
+          "evidence": {
+            "nq": 34,
+            "nv": 34,
+            "neq": 6
+          }
+        },
+        {
+          "id": "source_entry_unchanged",
+          "status": "passed",
+          "required": true,
+          "evidence": []
+        },
+        {
+          "id": "source_layers_unchanged",
+          "status": "passed",
+          "required": true,
+          "evidence": []
+        },
+        {
+          "id": "remaining_physical_qualification",
+          "required": true,
+          "status": "skipped",
+          "evidence": [
+            "Joint axes/local frames, full inertia orientation, collision hull geometry and filtering, solver constraint enforcement, gripper dynamics and cameras are not qualified by this structural import audit"
+          ]
+        }
+      ],
+      "warnings": [
+        "LoadUsdPhysicsFromRange is deprecated, use UsdPhysicsLoadStageFromPrimRange instead.",
+        "Zero mass body for body '/G01/arm_base_link' should have zero inertia, correcting",
+        "Zero mass body for body '/G01/gripper_l_center_link' should have zero inertia, correcting",
+        "Zero mass body for body '/G01/gripper_r_center_link' should have zero inertia, correcting"
+      ],
+      "source_articulations": [
+        {
+          "path": "/G01",
+          "self_collision_enabled": false,
+          "attribute": "physxArticulation:enabledSelfCollisions"
+        }
+      ],
+      "previous_solver_failure": "FatalError: mj_stackAlloc: out of memory, stack overflow\n  max = 45616, available = 16800, requested = 16832\n nefc = 0, ncon = 28650",
+      "sweep_steps": 0
+    },
+    "G2": {
+      "source": {
+        "source": "/data/tzq/DexAgent/GenieSimAssets/robot/G2_omnipicker/robot.usda",
+        "sha256": "50cedc50f7fb3593649e98bc64593c7d31ce379f66eeda68d94786152346261a",
+        "layers": [
+          {
+            "path": "/data/tzq/DexAgent/GenieSimAssets/robot/G2_omnipicker/robot.usda",
+            "sha256": "50cedc50f7fb3593649e98bc64593c7d31ce379f66eeda68d94786152346261a"
+          },
+          {
+            "path": "/data/tzq/DexAgent/GenieSimAssets/robot/G2_omnipicker/configuration/robot_physics.usd",
+            "sha256": "1680e1dc7ea75a2585144eee33b1224284a80f5d25c9dacfd0caa0b9170040f2"
+          },
+          {
+            "path": "/data/tzq/DexAgent/GenieSimAssets/robot/G2_omnipicker/configuration/Cam_L.usd",
+            "sha256": "f9a76dcb1e5e451554917702cf03d5df52f7299bf7ab7e36e896109ca44ae8c8"
+          },
+          {
+            "path": "/data/tzq/DexAgent/GenieSimAssets/robot/G2_omnipicker/configuration/Cam_R.usd",
+            "sha256": "2dcb93e617198af75d53241782deceea454204758e58fd9d64028176d3371b7d"
+          },
+          {
+            "path": "/data/tzq/DexAgent/GenieSimAssets/robot/G2_omnipicker/configuration/robot_base.usd",
+            "sha256": "6abf3888859bc2385bd084bcdeec8fe464891110d61d3fa9ef1c7efd5a690488"
+          },
+          {
+            "path": "/data/tzq/DexAgent/GenieSimAssets/robot/G2_omnipicker/configuration/robot_sensor.usd",
+            "sha256": "d32e25c7daf3f7fdd008086f37e7f95dd2198a1bf94068c72defd7fdf81053f3"
+          },
+          {
+            "path": "/data/tzq/DexAgent/GenieSimAssets/robot/G2_omnipicker/configuration/robot_robot.usd",
+            "sha256": "a7f5238b029832980a6fd82a224a822781e7a121c15e4fcc29c8b71c32b4cae4"
+          }
+        ]
+      },
+      "report_sha256": "58642fce7884027191f246d16e1695c89c6d842d23f2e2bb475ab26c46dfa98c",
+      "elapsed_s": 143.433,
+      "status": "failed",
+      "import_options": {
+        "schema_resolvers": [
+          "SchemaResolverNewton",
+          "SchemaResolverPhysx"
+        ],
+        "collapse_fixed_joints": false,
+        "skip_mesh_approximation": false
+      },
+      "environment": {
+        "python": "/data/tzq/DexAgent/.workbench/geniesim-venv/bin/python",
+        "packages": {
+          "newton": "1.6.0",
+          "warp-lang": "1.18.0",
+          "usd-core": "26.8",
+          "newton-usd-schemas": "0.6.0"
+        }
+      },
+      "collision_shapes": 4076,
+      "shape_count": 4180,
+      "checks": [
+        {
+          "id": "exact_source_composes",
+          "status": "passed",
+          "required": true,
+          "evidence": []
+        },
+        {
+          "id": "native_rss_import",
+          "status": "passed",
+          "required": true,
+          "evidence": "robosimstudio.scene.build.imports.add_usd_stage"
+        },
+        {
+          "id": "named_joints_preserved",
+          "status": "passed",
+          "required": true,
+          "evidence": {
+            "missing": [],
+            "duplicates": [],
+            "disabled": []
+          }
+        },
+        {
+          "id": "joint_types_limits_loops_preserved",
+          "status": "passed",
+          "required": true,
+          "evidence": []
+        },
+        {
+          "id": "driver_follower_constraints_preserved",
+          "status": "passed",
+          "required": true,
+          "evidence": []
+        },
+        {
+          "id": "rigid_bodies_preserved",
+          "status": "passed",
+          "required": true,
+          "evidence": []
+        },
+        {
+          "id": "authored_mass_principal_inertia_preserved",
+          "status": "passed",
+          "required": true,
+          "evidence": []
+        },
+        {
+          "id": "declared_colliders_preserved",
+          "status": "passed",
+          "required": true,
+          "evidence": []
+        },
+        {
+          "id": "authored_self_collision_filters_preserved",
+          "status": "passed",
+          "required": true,
+          "evidence": [
+            {
+              "path": "/genie",
+              "self_collision_enabled": false,
+              "attribute": "physxArticulation:enabledSelfCollisions",
+              "expected_filtered_pairs": 6935434,
+              "missing_filtered_pairs": 0,
+              "examples": []
+            }
+          ]
+        },
+        {
+          "id": "authored_drive_targets_within_limits",
+          "status": "passed",
+          "required": true,
+          "evidence": []
+        },
+        {
+          "id": "drive_targets_within_limits",
+          "status": "passed",
+          "required": true,
+          "evidence": []
+        },
+        {
+          "id": "native_cpu_finalize",
+          "status": "passed",
+          "required": true,
+          "evidence": "cpu"
+        },
+        {
+          "id": "finalized_authored_mass_principal_inertia_preserved",
+          "status": "failed",
+          "required": true,
+          "evidence": [
+            {
+              "path": "/genie/head_base_link",
+              "field": "inertia_eigenvalues",
+              "source": [
+                9.999999747378752e-05,
+                9.999999747378752e-05,
+                9.999999747378752e-05
+              ],
+              "imported": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            {
+              "path": "/genie/arm_base_link",
+              "field": "inertia_eigenvalues",
+              "source": [
+                9.999999747378752e-05,
+                9.999999747378752e-05,
+                9.999999747378752e-05
+              ],
+              "imported": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            {
+              "path": "/genie/arm_l_end_link",
+              "field": "inertia_eigenvalues",
+              "source": [
+                9.999999747378752e-05,
+                9.999999747378752e-05,
+                9.999999747378752e-05
+              ],
+              "imported": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            {
+              "path": "/genie/gripper_l_center_link",
+              "field": "inertia_eigenvalues",
+              "source": [
+                9.999999747378752e-05,
+                9.999999747378752e-05,
+                9.999999747378752e-05
+              ],
+              "imported": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            {
+              "path": "/genie/arm_r_end_link",
+              "field": "inertia_eigenvalues",
+              "source": [
+                9.999999747378752e-05,
+                9.999999747378752e-05,
+                9.999999747378752e-05
+              ],
+              "imported": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            {
+              "path": "/genie/gripper_r_center_link",
+              "field": "inertia_eigenvalues",
+              "source": [
+                9.999999747378752e-05,
+                9.999999747378752e-05,
+                9.999999747378752e-05
+              ],
+              "imported": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            {
+              "path": "/genie/chassis_link",
+              "field": "inertia_eigenvalues",
+              "source": [
+                9.999999747378752e-05,
+                9.999999747378752e-05,
+                9.999999747378752e-05
+              ],
+              "imported": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          ]
+        },
+        {
+          "id": "native_cpu_solver_build",
+          "status": "passed",
+          "required": true,
+          "evidence": {
+            "nq": 53,
+            "nv": 52,
+            "neq": 6
+          }
+        },
+        {
+          "id": "source_entry_unchanged",
+          "status": "passed",
+          "required": true,
+          "evidence": []
+        },
+        {
+          "id": "source_layers_unchanged",
+          "status": "passed",
+          "required": true,
+          "evidence": []
+        },
+        {
+          "id": "remaining_physical_qualification",
+          "required": true,
+          "status": "skipped",
+          "evidence": [
+            "Joint axes/local frames, full inertia orientation, collision hull geometry and filtering, solver constraint enforcement, gripper dynamics and cameras are not qualified by this structural import audit"
+          ]
+        }
+      ],
+      "warnings": [
+        "LoadUsdPhysicsFromRange is deprecated, use UsdPhysicsLoadStageFromPrimRange instead.",
+        "Zero mass body for body '/genie/head_base_link' should have zero inertia, correcting",
+        "Zero mass body for body '/genie/arm_base_link' should have zero inertia, correcting",
+        "Zero mass body for body '/genie/arm_l_end_link' should have zero inertia, correcting",
+        "Zero mass body for body '/genie/gripper_l_center_link' should have zero inertia, correcting",
+        "Zero mass body for body '/genie/arm_r_end_link' should have zero inertia, correcting",
+        "Zero mass body for body '/genie/gripper_r_center_link' should have zero inertia, correcting",
+        "Zero mass body for body '/genie/chassis_link' should have zero inertia, correcting"
+      ],
+      "source_articulations": [
+        {
+          "path": "/genie",
+          "self_collision_enabled": false,
+          "attribute": "physxArticulation:enabledSelfCollisions"
+        }
+      ],
+      "previous_solver_failure": "FatalError: mj_stackAlloc: out of memory, stack overflow\n  max = 48248, available = 16664, requested = 16832\n nefc = 0, ncon = 30441",
+      "sweep_steps": 0
+    }
+  },
+  "source_diagnostics": {
+    "native_default_resolvers": [
+      "SchemaResolverNewton"
+    ],
+    "default_missing_internal_pairs": {
+      "G1": 133,
+      "G2": 211
+    },
+    "physx_resolver_missing_internal_pairs": {
+      "G1": 0,
+      "G2": 0
+    },
+    "external_filtered_pairs": {
+      "G1": 0,
+      "G2": 0
+    },
+    "diagnostic_scope": "No approximation/finalize in large USD pair diagnostic; small native USD tests separately confirm actual external contacts with the CPU solver."
+  },
+  "regression": {
+    "command": ".workbench/geniesim-venv/bin/python -m pytest -q tests/test_geniesim_import.py tests/test_geniesim_collision_semantics.py",
+    "passed": 23,
+    "skipped": 0,
+    "warnings": 16,
+    "duration_s": 4.71,
+    "log_sha256": "fc6610034e3c69647dbf9f6c4f4b7f00317345cbb5c0a7149fda626003cfeeec",
+    "warning_scope": "USD native parser deprecation in audit and installed Newton importer",
+    "physical_scope": "Native USD import, CPU solver construction and initial external contact detection; no simulation steps"
+  },
+  "native_membership_recheck": {
+    "G1_omnipicker": [
+      {
+        "path": "/G01",
+        "articulated_bodies": [
+          "/G01/arm_base_link",
+          "/G01/arm_l_base_link",
+          "/G01/arm_l_end_link",
+          "/G01/arm_l_link1",
+          "/G01/arm_l_link2",
+          "/G01/arm_l_link3",
+          "/G01/arm_l_link4",
+          "/G01/arm_l_link5",
+          "/G01/arm_l_link6",
+          "/G01/arm_r_base_link",
+          "/G01/arm_r_end_link",
+          "/G01/arm_r_link1",
+          "/G01/arm_r_link2",
+          "/G01/arm_r_link3",
+          "/G01/arm_r_link4",
+          "/G01/arm_r_link5",
+          "/G01/arm_r_link6",
+          "/G01/base_link",
+          "/G01/body_link1",
+          "/G01/body_link2",
+          "/G01/gripper_l_base_link",
+          "/G01/gripper_l_center_link",
+          "/G01/gripper_l_inner_link1",
+          "/G01/gripper_l_inner_link2",
+          "/G01/gripper_l_inner_link3",
+          "/G01/gripper_l_inner_link4",
+          "/G01/gripper_l_outer_link1",
+          "/G01/gripper_l_outer_link2",
+          "/G01/gripper_l_outer_link3",
+          "/G01/gripper_l_outer_link4",
+          "/G01/gripper_r_base_link",
+          "/G01/gripper_r_center_link",
+          "/G01/gripper_r_inner_link1",
+          "/G01/gripper_r_inner_link2",
+          "/G01/gripper_r_inner_link3",
+          "/G01/gripper_r_inner_link4",
+          "/G01/gripper_r_outer_link1",
+          "/G01/gripper_r_outer_link2",
+          "/G01/gripper_r_outer_link3",
+          "/G01/gripper_r_outer_link4",
+          "/G01/head_link1",
+          "/G01/head_link2"
+        ],
+        "collision_shapes_covered": 3134,
+        "expected_filtered_pairs": 3675353,
+        "matches_complete_import_audit": true
+      }
+    ],
+    "G2_omnipicker": [
+      {
+        "path": "/genie",
+        "articulated_bodies": [
+          "/genie/arm_base_link",
+          "/genie/arm_l_end_link",
+          "/genie/arm_l_link1",
+          "/genie/arm_l_link2",
+          "/genie/arm_l_link3",
+          "/genie/arm_l_link4",
+          "/genie/arm_l_link5",
+          "/genie/arm_l_link6",
+          "/genie/arm_l_link7",
+          "/genie/arm_r_end_link",
+          "/genie/arm_r_link1",
+          "/genie/arm_r_link2",
+          "/genie/arm_r_link3",
+          "/genie/arm_r_link4",
+          "/genie/arm_r_link5",
+          "/genie/arm_r_link6",
+          "/genie/arm_r_link7",
+          "/genie/base_link",
+          "/genie/body_link1",
+          "/genie/body_link2",
+          "/genie/body_link3",
+          "/genie/body_link4",
+          "/genie/body_link5",
+          "/genie/chassis_link",
+          "/genie/chassis_lwheel_front_link1",
+          "/genie/chassis_lwheel_front_link2",
+          "/genie/chassis_lwheel_rear_link1",
+          "/genie/chassis_lwheel_rear_link2",
+          "/genie/chassis_rwheel_front_link1",
+          "/genie/chassis_rwheel_front_link2",
+          "/genie/chassis_rwheel_rear_link1",
+          "/genie/chassis_rwheel_rear_link2",
+          "/genie/gripper_l_base_link",
+          "/genie/gripper_l_center_link",
+          "/genie/gripper_l_inner_link1",
+          "/genie/gripper_l_inner_link2",
+          "/genie/gripper_l_inner_link3",
+          "/genie/gripper_l_inner_link4",
+          "/genie/gripper_l_outer_link1",
+          "/genie/gripper_l_outer_link2",
+          "/genie/gripper_l_outer_link3",
+          "/genie/gripper_l_outer_link4",
+          "/genie/gripper_r_base_link",
+          "/genie/gripper_r_center_link",
+          "/genie/gripper_r_inner_link1",
+          "/genie/gripper_r_inner_link2",
+          "/genie/gripper_r_inner_link3",
+          "/genie/gripper_r_inner_link4",
+          "/genie/gripper_r_outer_link1",
+          "/genie/gripper_r_outer_link2",
+          "/genie/gripper_r_outer_link3",
+          "/genie/gripper_r_outer_link4",
+          "/genie/head_base_link",
+          "/genie/head_link1",
+          "/genie/head_link2",
+          "/genie/head_link3"
+        ],
+        "collision_shapes_covered": 4076,
+        "expected_filtered_pairs": 6935434,
+        "matches_complete_import_audit": true
+      }
+    ]
+  },
+  "studio_validation": {
+    "page_errors": [],
+    "reports": [
+      {
+        "robot": "G1",
+        "http_status": 200,
+        "shows_import_scope": true,
+        "shows_solver_check": true
+      },
+      {
+        "robot": "G2",
+        "http_status": 200,
+        "shows_import_scope": true,
+        "shows_solver_check": true
+      }
+    ],
+    "evidence_sha256": "fc479cdd573d6679cf1802011c6f6df1e2ba2b004babfea59c011b858b3d05cf"
+  }
+}

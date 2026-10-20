@@ -109,6 +109,10 @@ RoboSimStudio 已有 `robots/registry.py`、`EmbodimentSpec`、`ArmSpec`、`Grip
 
 ## 实际 RSS 导入检查与阻塞
 
+以下保留 10 月 20 日基线。后续已定位并修复遗漏 PhysX 属性解析的问题，
+G1/G2 完整导入的 CPU 求解器构建均已通过；辅助惯量及动态资格仍未通过。
+详见 [PhysX 导入修复与复验](GENIESIM_PHYSX_IMPORT_20261021.md)。
+
 新增 `python -m agent.geniesim_import`，复用 `robosimstudio.scene.build.imports.add_usd_stage` 与既有 `dexagent.step_report.v1` 报告。固定关节不折叠、不改底盘自由度、不简化夹爪机构；绑定入口及已加载 USD layer 的 SHA，并在结束时检查源文件未改动。此命令只做导入检查，不生成成功 Episode。
 
 | 检查 | G1 | G2 |

@@ -12,6 +12,7 @@ from pathlib import Path
 
 import mujoco
 import numpy as np
+import pytest
 
 from tool_library.common import armhand as AH
 from tool_library.common import episode as E
@@ -42,12 +43,13 @@ def _sha256(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def test_failed_human_seeds_recover_on_fixed_arm_and_pass_physical_audits(tmp_path, monkeypatch):
+@pytest.mark.parametrize("case_name", ["box_right", "tall_box_right_hamer"])
+def test_failed_human_seeds_recover_on_fixed_arm_and_pass_physical_audits(case_name, tmp_path, monkeypatch):
     for name in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
         monkeypatch.setenv(name, "1")
     monkeypatch.setenv("MUJOCO_GL", "egl")
     fixture = json.loads(FIXTURE.read_text())
-    case = fixture["cases"]["box_right"]
+    case = fixture["cases"][case_name]
     starts = copy.deepcopy(case["starts"])
     obj = case["object"]
     asset = tmp_path / "box.xml"
@@ -108,7 +110,7 @@ def test_failed_human_seeds_recover_on_fixed_arm_and_pass_physical_audits(tmp_pa
     _save(tmp_path / "task_evidence.json", {
         "objective": "transferable_task_generation",
         "robot": "I2RT YAM + Sharpa Wave",
-        "source": "synthetic box_right initial failed human seeds",
+        "source": f"synthetic {case_name} initial failed human seeds",
         "aggregate_complete": False,
         "other_robots": {"G1_omnipicker": "missing", "G2_omnipicker": "missing"},
         "budget": budget, "arm_waypoints": waypoints,

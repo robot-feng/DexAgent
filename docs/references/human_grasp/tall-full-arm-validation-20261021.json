@@ -1,0 +1,182 @@
+{
+  "objective": "transferable_task_generation",
+  "scope": "Synthetic tall_box_right_hamer grasp/lift on original fixed I2RT YAM + Sharpa Wave; not recorded HumanEgo data, faithful reconstruction or training acceptance.",
+  "aggregate_complete": false,
+  "robot_coverage": {
+    "yam_sharpa": "passed",
+    "g1_omnipicker": "missing",
+    "g2_omnipicker": "missing"
+  },
+  "local_evidence_root": ".workbench/previews/human-grasp-tall-full-arm-20261021",
+  "provenance": {
+    "launch_commit": "ea0f16677115d3efccf1dfe1b3fce7b390a7bf1d",
+    "note": "Launch HEAD plus worktree file hashes; not a claim of a clean snapshot. Full source/setup hashes remain in the hashed local manifest.",
+    "mujoco": "3.12.0",
+    "numpy": "1.26.4",
+    "source_files_changed_during_run": [],
+    "setup_files_changed_during_run": []
+  },
+  "object": {
+    "mass_kg": 0.1,
+    "half_extents_m": [
+      0.02,
+      0.024,
+      0.04
+    ],
+    "geom_offset_m": [
+      0,
+      0,
+      0.04
+    ],
+    "body_position_m": [
+      0.15,
+      0.44,
+      0
+    ],
+    "yaw_deg": 40,
+    "original_scene_bytes_and_fixed_mounts_preserved": true
+  },
+  "initial_screen": {
+    "ok": false,
+    "failed_at": "pre-grasp",
+    "approach_m": 0.08,
+    "residual_mm": 145.9,
+    "residual_deg": 74.63
+  },
+  "optimizer_budget": {
+    "family": "rigid",
+    "max_evals": 64,
+    "iterations": 4,
+    "population": 16,
+    "max_starts": 6,
+    "workers": 2,
+    "seed": 20261021
+  },
+  "lift_targets_m": [
+    0.06,
+    0.1,
+    0.15
+  ],
+  "held_waypoint_steps": 8,
+  "preview_experiment": {
+    "input": "One previously recovered hand-only candidate; replacement rigid-family poses generated during this run.",
+    "optimizer": {
+      "ok": true,
+      "n_evals": 17,
+      "n_tested": 1,
+      "n_arm_rejected": 3,
+      "n_screened_out": 13,
+      "seconds": 234.5,
+      "failure_classes": {
+        "screen:pads_off": 12,
+        "arm:arm_unreachable": 3,
+        "screen:overlap": 1
+      }
+    },
+    "independent_candidate_count": 1,
+    "all_candidates_passed_arm_lift_hold": true,
+    "total_seconds": 278.4
+  },
+  "fixed_arm_execution": {
+    "ok": true,
+    "robot_schema": "dexagent.rigid_robot.v1",
+    "frames": 172,
+    "video_fps": 30,
+    "video_duration_s": 5.733333333333333,
+    "default_min_rise_m": 0.075,
+    "default_expectations": [
+      "in_hand",
+      "no_slip",
+      "mandatory physics gates"
+    ],
+    "measured": {
+      "rise_m": 0.153,
+      "peak_rise_m": 0.1533,
+      "slip_in_hand_m": 0.0002,
+      "slip_in_hand_deg": 0.017,
+      "max_hand_pen_mm": 0.23,
+      "max_object_pen_mm": 0.16,
+      "max_track_pos_mm": 1.0,
+      "max_track_rot_deg": 0.3
+    },
+    "right_arm_peak_speed_deg_s": 87.39295208087233,
+    "timing_retries": 0
+  },
+  "independent_audits": {
+    "rigid_arm_hand_check": true,
+    "physics_recording_check": true,
+    "swept_collision_audit": true,
+    "object_visual_penetration_audit": true,
+    "contact_impulse_spike_audit": true,
+    "held_object_slip_audit": true
+  },
+  "physics_replay": {
+    "substeps": 2850,
+    "replayed_substeps": 2850,
+    "duration_s": 5.699999999999594,
+    "max_replay_qpos_error": 0.0,
+    "max_replay_qvel_error": 0.0
+  },
+  "selected_pose_stress": {
+    "ok": true,
+    "lift_ok": true,
+    "hold_ok": true,
+    "achieved_lift_mm": [
+      59.8,
+      99.8,
+      149.8
+    ],
+    "max_contact_mm": 0.465,
+    "pose_sha256": "c892816bb0dffd025ca3e7c8440e30383ffcfa4adaca96f868212201b9e9236d",
+    "hand_scene_sha256": "771fc5ae048f85a21ad2e15b3cd428eacc6aeb97bb30c4867ff9da6b42529fa8"
+  },
+  "portable_regression": {
+    "nodeid": "tool_library/tests/test_human_grasp_full_arm.py::test_failed_human_seeds_recover_on_fixed_arm_and_pass_physical_audits[tall_box_right_hamer]",
+    "fixture": "tool_library/tests/fixtures/human_grasp_recovery.json",
+    "fixture_sha256": "e0de1b7244f1446573b3a883ab095217656f58c291bdbf0a202abd1bf5ddb3b7",
+    "input": "Three original failed seeds from the fixture; no recorded successful pose or trajectory.",
+    "result": "1 passed",
+    "pytest_seconds": 270.01,
+    "log_name": "human-grasp-tall-full-arm-pytest.log",
+    "log_sha256": "b562d044ade123a703dabb0571b650ab6ef6c5058db3d6c1f306246d4262914e",
+    "optimizer": {
+      "ok": true,
+      "n_evals": 19,
+      "n_tested": 1,
+      "n_arm_rejected": 3,
+      "n_screened_out": 15,
+      "seconds": 222.6
+    },
+    "execution_ok": true,
+    "rise_m": 0.153,
+    "all_six_audits_ok": true,
+    "selected_pose_lift_hold_ok": true,
+    "box_case_rerun": false
+  },
+  "artifact_sha256": {
+    "manifest.json": "14812b9c3d4256cd9177fa89bd77cc39be42915c04279c535af97c6e8482cc10",
+    "summary.json": "4becc04ca2863afdc793026f82d136d2de5c280c54527e5a394742c9b4c07418",
+    "audits.json": "bac8474f17d4b6bd474ca47e5475b82795bbea8de479c55d3d064579c888992c",
+    "optimizer_report.json": "242a856f61984bf2ec6e4ee1e2f41fd1db71a0396f6bd4248230951c8d23a29d",
+    "selected_pose_stress_validation.json": "279bbe8e31c1f36bef26e996880d13ba99763858c394c1eb5c6cbfc98b8fde3f",
+    "episode/scene_physics.xml": "916c1aeb9bdb8ba9ca4dd07c2aa8cdaba19e9791f4fade549d853845e49bc64e",
+    "episode/trajectory.npz": "72d3d5a9d0cec758d545185e855d952d0b6b57d2b517742b8e9b6d9142e8f91e",
+    "rendered/preview.mp4": "aac124cfc8370cda746af5ca077fe467c84caac869fb22f86ec7f05bf5b7556e",
+    "rendered/keyframe.png": "424a53b9eb878c58842ea270a00d022c81169325f154d9bf7c1ea78869aada9c"
+  },
+  "studio_browser_check": {
+    "port": 8765,
+    "http_status": 200,
+    "video": {
+      "width": 1280,
+      "height": 720,
+      "duration": 5.733333,
+      "currentTime": 0.525161,
+      "error": null
+    },
+    "page_errors": [],
+    "evidence": ".workbench/previews/geniesim-physx-resolver-20261021/browser-check.json",
+    "evidence_sha256": "fc479cdd573d6679cf1802011c6f6df1e2ba2b004babfea59c011b858b3d05cf",
+    "screenshot": ".workbench/previews/human-grasp-tall-full-arm-20261021/studio.png"
+  }
+}

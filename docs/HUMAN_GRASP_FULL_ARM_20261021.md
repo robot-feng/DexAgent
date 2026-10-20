@@ -114,3 +114,11 @@ MUJOCO_GL=egl OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
 
 下一步仍需把同样的任务约束应用到高箱体和 G1/G2，并推进真实演示输入、
 完整任务 Episode 与训练数据验收。单次合成箱体举升不能替代这些要求。
+
+## 后续补充：高箱体单本体通过
+
+上述“高箱体未完成”是本阶段的历史状态。随后高箱体在原位、原固定安装的
+YAM + Sharpa 上完成实际 153.0 mm 举升、六项独立审计及选中姿态双验收；
+从原始失败 fixture 出发的参数化回归也通过。详见
+[高箱体全臂验证](HUMAN_GRASP_TALL_FULL_ARM_20261021.md)。
+G1/G2 尚缺同任务证据，整体完成仍为 **false**。
