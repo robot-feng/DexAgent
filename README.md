@@ -55,6 +55,8 @@ Edit [`dexagent.yaml`](dexagent.yaml) with your video, camera calibration, and r
 
 ### 3. Run
 
+[EmbodiForge Studio](workbench/README.md) provides a local task execution page at `http://127.0.0.1:8765/executions`: launch the existing CLI, inspect logs and native reports, stop a run, or retry from its frozen config into a new output directory. See [execution validation](docs/WORKBENCH_EXECUTIONS_20261020.md) for the verified scope.
+
 The RoboSimStudio backend is available for acceptance examples through the same entry point:
 
 ```bash

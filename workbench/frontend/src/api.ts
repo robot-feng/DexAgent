@@ -18,6 +18,8 @@ export type SceneRevision = components["schemas"]["SceneRevision"];
 export type CleanupCatalog = components["schemas"]["CleanupCatalog"];
 export type CleanupCreate = components["schemas"]["CleanupCreate"];
 export type CleanupJob = components["schemas"]["CleanupJob"];
+export type Execution = components["schemas"]["Execution"];
+export type ExecutionCreate = components["schemas"]["ExecutionCreate"];
 export const prefix = "/api/workbench/v1";
 
 export async function request<T>(path: string, body?: unknown): Promise<T> {
@@ -46,15 +48,34 @@ export const contentUrl = (artifact: Artifact, download = false) =>
   `${prefix}/artifacts/${artifact.id}/content${download ? "?download=true" : ""}`;
 
 export const api = {
+  executionCatalog: () =>
+    request<components["schemas"]["ExecutionCatalog"]>("/executions/catalog"),
+  executions: () => request<Execution[]>("/executions"),
+  createExecution: (body: ExecutionCreate) =>
+    request<Execution>("/executions", body),
+  stopExecution: (id: string) =>
+    request<Execution>(`/executions/${id}/stop`, {}),
+  retryExecution: (id: string) =>
+    request<Execution>(`/executions/${id}/retry`, {}),
+  executionLog: (id: string) =>
+    request<components["schemas"]["ExecutionLog"]>(`/executions/${id}/log`),
   scenes: () => request<components["schemas"]["ScenePage"]>("/scenes"),
   sceneRevisions: (id: string, offset: number) =>
-    request<components["schemas"]["SceneRevisionPage"]>(`/scenes/${id}/revisions?offset=${offset}&limit=10`),
+    request<components["schemas"]["SceneRevisionPage"]>(
+      `/scenes/${id}/revisions?offset=${offset}&limit=10`,
+    ),
   editors: () => request<EditorSession[]>("/editors"),
   editor: (id: string) => request<EditorSession>(`/editors/${id}`),
   createEditor: (scene_id: string, revision?: SceneRevision) =>
     request<EditorSession>("/editors", {
       scene_id,
-      revision: revision ? { editor_id: revision.editor_id, revision_id: revision.id, sha256: revision.sha256 } : null,
+      revision: revision
+        ? {
+            editor_id: revision.editor_id,
+            revision_id: revision.id,
+            sha256: revision.sha256,
+          }
+        : null,
     }),
   stopEditor: (id: string) => request<EditorSession>(`/editors/${id}/stop`, {}),
   health: () => request<Health>("/health"),
@@ -62,11 +83,15 @@ export const api = {
   studioLive: () => request<StudioLiveStatus>("/studio/live"),
   cleanupCatalog: () => request<CleanupCatalog>("/background-cleanups/catalog"),
   cleanupJobs: () => request<CleanupJob[]>("/background-cleanups/jobs"),
-  createCleanup: (body: CleanupCreate) => request<CleanupJob>("/background-cleanups", body),
+  createCleanup: (body: CleanupCreate) =>
+    request<CleanupJob>("/background-cleanups", body),
   cleanupJob: (id: string) => request<CleanupJob>(`/background-cleanups/${id}`),
-  approveCleanupMask: (id: string) => request<CleanupJob>(`/background-cleanups/${id}/approve-mask`, {}),
-  buildCleanupScene: (id: string) => request<CleanupJob>(`/background-cleanups/${id}/build-scene`, {}),
-  stopCleanup: (id: string) => request<CleanupJob>(`/background-cleanups/${id}/stop`, {}),
+  approveCleanupMask: (id: string) =>
+    request<CleanupJob>(`/background-cleanups/${id}/approve-mask`, {}),
+  buildCleanupScene: (id: string) =>
+    request<CleanupJob>(`/background-cleanups/${id}/build-scene`, {}),
+  stopCleanup: (id: string) =>
+    request<CleanupJob>(`/background-cleanups/${id}/stop`, {}),
   runs: (search: string) =>
     request<components["schemas"]["RunPage"]>(`/runs?${search}`),
   run: (id: string) => request<RunDetail>(`/runs/${id}`),
@@ -84,7 +109,9 @@ export const api = {
   episodes: (run: string) =>
     request<components["schemas"]["EpisodePage"]>(`/runs/${run}/episodes`),
   episodeCatalog: (search: string) =>
-    request<components["schemas"]["EpisodeCatalogPage"]>(`/episode-catalog?${search}`),
+    request<components["schemas"]["EpisodeCatalogPage"]>(
+      `/episode-catalog?${search}`,
+    ),
   logs: (run: string) =>
     request<components["schemas"]["ArtifactPage"]>(`/runs/${run}/logs`),
   tools: (search: string) =>

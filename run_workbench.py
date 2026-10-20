@@ -1,4 +1,4 @@
-"""Start EmbodiForge Studio locally without starting a generation pipeline."""
+"""Start EmbodiForge Studio; task execution begins on explicit requests."""
 from __future__ import annotations
 
 import argparse

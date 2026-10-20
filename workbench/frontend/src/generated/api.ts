@@ -58,6 +58,109 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workbench/v1/executions/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Execution Catalog */
+        get: operations["execution_catalog_api_workbench_v1_executions_catalog_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workbench/v1/executions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Execution Jobs */
+        get: operations["execution_jobs_api_workbench_v1_executions_get"];
+        put?: never;
+        /** Start Execution */
+        post: operations["start_execution_api_workbench_v1_executions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workbench/v1/executions/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Execution */
+        get: operations["execution_api_workbench_v1_executions__key__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workbench/v1/executions/{key}/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stop Execution */
+        post: operations["stop_execution_api_workbench_v1_executions__key__stop_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workbench/v1/executions/{key}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retry Execution */
+        post: operations["retry_execution_api_workbench_v1_executions__key__retry_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workbench/v1/executions/{key}/log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Execution Log */
+        get: operations["execution_log_api_workbench_v1_executions__key__log_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workbench/v1/background-cleanups/catalog": {
         parameters: {
             query?: never;
@@ -845,6 +948,127 @@ export interface components {
             total: number;
             recorded_trajectory: components["schemas"]["Artifact"] | null;
         };
+        /** Execution */
+        Execution: {
+            /** Id */
+            id: string;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "pipeline" | "rigid" | "towel" | "sharpa" | "grasp" | "reference" | "simfoundry";
+            /** Config Name */
+            config_name: string;
+            /** Profile */
+            profile: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "running" | "completed" | "failed" | "stopped" | "interrupted";
+            /** Message */
+            message: string;
+            /** Output Name */
+            output_name: string;
+            /** Run Id */
+            run_id: string | null;
+            /** Returncode */
+            returncode: number | null;
+            /** Created At */
+            created_at: string;
+            /** Finished At */
+            finished_at: string | null;
+            /** Retry Of */
+            retry_of: string | null;
+            agent_wait: components["schemas"]["ExecutionAgentWait"] | null;
+        };
+        /** ExecutionAgentWait */
+        ExecutionAgentWait: {
+            /** Request Id */
+            request_id: string;
+            /** Turn */
+            turn: number;
+            /** Request Path */
+            request_path: string;
+        };
+        /** ExecutionCatalog */
+        ExecutionCatalog: {
+            /** Available */
+            available: boolean;
+            /** Configs */
+            configs: components["schemas"]["ExecutionConfig"][];
+            /** Modes */
+            modes: ("pipeline" | "rigid" | "towel" | "sharpa" | "grasp" | "reference" | "simfoundry")[];
+            /** Detail */
+            detail: string;
+        };
+        /** ExecutionConfig */
+        ExecutionConfig: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** ExecutionCreate */
+        ExecutionCreate: {
+            /** Config Id */
+            config_id: string;
+            /**
+             * Mode
+             * @default pipeline
+             * @enum {string}
+             */
+            mode: "pipeline" | "rigid" | "towel" | "sharpa" | "grasp" | "reference" | "simfoundry";
+            /**
+             * Profile
+             * @default pipeline_eval
+             * @enum {string}
+             */
+            profile: "smoke" | "pipeline_eval" | "dataset_release";
+            /**
+             * Stop At
+             * @default stage4
+             * @enum {string}
+             */
+            stop_at: "stage1" | "stage2" | "stage3" | "stage4";
+            /**
+             * Video
+             * @default
+             */
+            video: string;
+            /**
+             * Prompt
+             * @default
+             */
+            prompt: string;
+            /** Reference Run Id */
+            reference_run_id?: string | null;
+            /**
+             * Stage8
+             * @default
+             */
+            stage8: string;
+            /**
+             * Stage11
+             * @default
+             */
+            stage11: string;
+            /**
+             * Stage12
+             * @default
+             */
+            stage12: string;
+            /**
+             * No Render
+             * @default false
+             */
+            no_render: boolean;
+        };
+        /** ExecutionLog */
+        ExecutionLog: {
+            /** Text */
+            text: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -1353,6 +1577,203 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StudioLiveStatus"];
+                };
+            };
+        };
+    };
+    execution_catalog_api_workbench_v1_executions_catalog_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExecutionCatalog"];
+                };
+            };
+        };
+    };
+    execution_jobs_api_workbench_v1_executions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Execution"][];
+                };
+            };
+        };
+    };
+    start_execution_api_workbench_v1_executions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExecutionCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Execution"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    execution_api_workbench_v1_executions__key__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Execution"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stop_execution_api_workbench_v1_executions__key__stop_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Execution"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retry_execution_api_workbench_v1_executions__key__retry_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Execution"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    execution_log_api_workbench_v1_executions__key__log_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExecutionLog"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

@@ -1414,6 +1414,12 @@ dd {
   color: var(--blue);
 }
 .cleanup-page { max-width: 1600px; }
+.execution-agent-wait > div { min-width: 0; }
+.execution-page .cleanup-review-header h3 { overflow-wrap: anywhere; }
+.execution-agent-wait p { margin: 8px 0; }
+.execution-request-path { display: block; overflow-wrap: anywhere; user-select: all; margin-bottom: 10px; }
+.execution-native-result { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: center; border: 1px solid var(--line); border-radius: 7px; padding: 12px; font-size: 12px; }
+.execution-native-result > span { display: flex; align-items: center; gap: 8px; }
 .cleanup-layout { display: grid; grid-template-columns: minmax(330px, 0.78fr) minmax(500px, 1.5fr); gap: 16px; align-items: start; }
 .cleanup-form-panel, .cleanup-results-panel { min-width: 0; padding: 18px; }
 .cleanup-form { display: grid; gap: 14px; margin-top: 16px; }

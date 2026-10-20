@@ -20,6 +20,7 @@ import {
   RefreshCw,
   Settings2,
   Wrench,
+  PlayCircle,
 } from "lucide-react";
 import { api } from "./api";
 import { ErrorNotice } from "./components";
@@ -27,6 +28,7 @@ import { EnvironmentPage, LibraryPage, ProjectsPage, ToolsPage } from "./pages";
 import { BackgroundCleanupPage } from "./BackgroundCleanupPage";
 import { OverviewPage } from "./OverviewPage";
 import { RunWorkbench } from "./RunWorkbench";
+import { ExecutionsPage } from "./ExecutionsPage";
 
 function Shell() {
   const client = useQueryClient();
@@ -46,6 +48,7 @@ function Shell() {
   const navigation = [
     { path: "/", title: "总览", icon: LayoutDashboard },
     { path: "/projects", title: "项目", icon: FolderOpen },
+    { path: "/executions", title: "任务执行", icon: PlayCircle },
     ...(lastRun
       ? [{ path: `/runs/${lastRun}`, title: "工作台", icon: Layers3 }]
       : []),
@@ -148,6 +151,7 @@ export const router = createBrowserRouter(
     <Route element={<Shell />}>
       <Route path="/" element={<OverviewPage />} />
       <Route path="/projects" element={<ProjectsPage />} />
+      <Route path="/executions" element={<ExecutionsPage />} />
       <Route path="/runs/:runId" element={<RunWorkbench />} />
       <Route path="/scenes" element={<LibraryPage mode="scenes" />} />
       <Route path="/datasets" element={<LibraryPage mode="episodes" />} />

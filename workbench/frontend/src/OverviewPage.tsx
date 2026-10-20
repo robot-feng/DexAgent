@@ -55,12 +55,13 @@ const capabilityLabels: Record<string, string> = {
   studio_feedback: "RSS 实时状态反馈",
   studio: "实时物理会话",
   scene_editor: "场景副本编辑",
-  execution: "Pipeline 执行",
+  execution: "任务执行",
   training_export: "训练格式导出",
 };
 
 const capabilityStatus = (level: string, available: boolean) => {
   if (level === "configured") return "已配置";
+  if (level === "integrated" && available) return "已接入";
   if (available) return level === "implemented" ? "已实现" : "环境可用";
   if (level === "not_verified") return "未验收";
   return level === "out_of_scope" ? "未接入此工作台" : "尚未接入";
@@ -121,12 +122,12 @@ export function OverviewPage() {
           <p className="eyebrow">EMBODIFORGE STUDIO</p>
           <h1>工作空间总览</h1>
           <p className="muted">
-            从一个入口查看现有运行、场景和数据；各页面读取原生项目产物。
+            启动任务、检查场景、追踪执行与验收，浏览生成的数据。
           </p>
         </div>
-        <Link className="button primary" to="/projects">
+        <Link className="button primary" to="/executions">
           <PlayCircle size={16} />
-          打开项目与运行
+          新建运行
         </Link>
       </div>
 
@@ -290,7 +291,7 @@ export function OverviewPage() {
             </ul>
           )}
           <p className="overview-boundary">
-            当前工作台用于检查和可视化已有结果。Pipeline 执行、实时物理验收和训练格式导出仍未接入。
+            任务执行已接入既有 CLI；实时物理交互和训练格式导出仍需单独验收。
           </p>
         </section>
       </div>

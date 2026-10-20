@@ -20,6 +20,8 @@ from .previews import PreviewBusy, Previews
 from .reports import read_object
 from .rss_live import RssLiveInspector
 from .background_cleanups import BackgroundCleanups, CleanupBusy, CleanupUnavailable
+from .executions import Executions, ExecutionBusy
+from .models import Execution, ExecutionCatalog, ExecutionCreate, ExecutionLog
 
 PREFIX = '/api/workbench/v1'
 LOGGER = logging.getLogger(__name__)
@@ -40,6 +42,7 @@ def create_app(repo: Path | None = None, *, runs_root: Path | None = None,
                       python=editor_python, robot_assets=robot_assets)
     rss_live = RssLiveInspector(repo, rss_run_dir)
     cleanups = BackgroundCleanups(repo, state_dir or repo / '.workbench', source_roots=cleanup_video_roots)
+    executions = Executions(index, state_dir or repo / '.workbench', input_roots=cleanup_video_roots)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -63,6 +66,7 @@ def create_app(repo: Path | None = None, *, runs_root: Path | None = None,
                 await asyncio.to_thread(previews.poll)
                 await asyncio.to_thread(editors.poll)
                 await asyncio.to_thread(cleanups.poll)
+                await asyncio.to_thread(executions.poll)
 
         await refresh(force=True)
         watcher = asyncio.create_task(watch()) if refresh_interval > 0 else None
@@ -78,6 +82,7 @@ def create_app(repo: Path | None = None, *, runs_root: Path | None = None,
             await asyncio.to_thread(previews.close)
             await asyncio.to_thread(editors.close)
             await asyncio.to_thread(cleanups.close)
+            await asyncio.to_thread(executions.close)
             await proxy.aclose()
 
     app = FastAPI(title='EmbodiForge Studio', version='0.1.0', lifespan=lifespan)
@@ -86,6 +91,7 @@ def create_app(repo: Path | None = None, *, runs_root: Path | None = None,
     app.state.editors = editors
     app.state.rss_live = rss_live
     app.state.background_cleanups = cleanups
+    app.state.executions = executions
     app.state.index_error = None
 
     @app.exception_handler(KeyError)
@@ -131,8 +137,8 @@ def create_app(repo: Path | None = None, *, runs_root: Path | None = None,
                        level='environment_detected' if editors.available else 'missing_dependencies',
                        reason='使用独立 Light Editor 进程编辑场景副本并保存候选；逐次启动核对模型和代理，物理验收另行执行。'
                        if editors.available else '需要独立编辑器解释器；见工作台安装说明。'),
-            Capability(id='execution', title='Pipeline 执行', available=False, level='out_of_scope',
-                       reason='本工作台当前仅负责可视化，执行优化由独立工作流处理。'),
+            Capability(id='execution', title='任务执行', available=executions.catalog().available, level='integrated',
+                       reason='复用既有 DexAgent/RSS CLI 启动、停止和创建新运行重试；运行环境与验收结果由原生报告判断。'),
             Capability(id='training_export', title='训练格式导出', available=False, level='not_verified',
                        reason='原生 episode 记录不等于 LeRobot/RLDS 格式已验收。'),
         ]
@@ -141,6 +147,40 @@ def create_app(repo: Path | None = None, *, runs_root: Path | None = None,
     def studio_live():
         """Read the configured RSS live session status without controlling it."""
         return StudioLiveStatus(**rss_live.read())
+
+    @app.get(f'{PREFIX}/executions/catalog', response_model=ExecutionCatalog)
+    def execution_catalog():
+        return executions.catalog()
+
+    @app.get(f'{PREFIX}/executions', response_model=list[Execution])
+    def execution_jobs():
+        return executions.jobs()
+
+    @app.post(f'{PREFIX}/executions', response_model=Execution, status_code=202)
+    def start_execution(body: ExecutionCreate):
+        try:
+            return executions.start(body)
+        except ExecutionBusy as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.get(f'{PREFIX}/executions/{{key}}', response_model=Execution)
+    def execution(key: str):
+        return executions.state(key)
+
+    @app.post(f'{PREFIX}/executions/{{key}}/stop', response_model=Execution)
+    def stop_execution(key: str):
+        return executions.stop(key)
+
+    @app.post(f'{PREFIX}/executions/{{key}}/retry', response_model=Execution, status_code=202)
+    def retry_execution(key: str):
+        try:
+            return executions.retry(key)
+        except ExecutionBusy as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.get(f'{PREFIX}/executions/{{key}}/log', response_model=ExecutionLog)
+    def execution_log(key: str):
+        return ExecutionLog(text=executions.log(key))
 
     @app.get(f'{PREFIX}/background-cleanups/catalog', response_model=CleanupCatalog)
     def background_cleanup_catalog():

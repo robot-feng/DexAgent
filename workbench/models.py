@@ -1,4 +1,4 @@
-"""Public read contracts, shared by the API and its generated TypeScript client."""
+"""Public Studio contracts, shared by the API and its generated TypeScript client."""
 from __future__ import annotations
 
 from typing import Any, Literal
@@ -298,6 +298,62 @@ class Preview(ReadModel):
     duration_s: float | None = None
     state_source: str | None = None
     stale: bool = False
+
+
+ExecutionMode = Literal['pipeline', 'rigid', 'towel', 'sharpa', 'grasp', 'reference', 'simfoundry']
+
+
+class ExecutionConfig(ReadModel):
+    id: str
+    name: str
+
+
+class ExecutionCatalog(ReadModel):
+    available: bool
+    configs: list[ExecutionConfig]
+    modes: list[ExecutionMode]
+    detail: str
+
+
+class ExecutionCreate(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    config_id: str = Field(pattern='^[a-f0-9]{24}$')
+    mode: ExecutionMode = 'pipeline'
+    profile: Literal['smoke', 'pipeline_eval', 'dataset_release'] = 'pipeline_eval'
+    stop_at: Literal['stage1', 'stage2', 'stage3', 'stage4'] = 'stage4'
+    video: str = Field(default='', max_length=1000)
+    prompt: str = Field(default='', max_length=4000)
+    reference_run_id: str | None = None
+    stage8: str = Field(default='', max_length=1000)
+    stage11: str = Field(default='', max_length=1000)
+    stage12: str = Field(default='', max_length=1000)
+    no_render: bool = False
+
+
+class ExecutionAgentWait(ReadModel):
+    request_id: str
+    turn: int
+    request_path: str
+
+
+class Execution(ReadModel):
+    id: str
+    mode: ExecutionMode
+    config_name: str
+    profile: str | None = None
+    status: Literal['running', 'completed', 'failed', 'stopped', 'interrupted']
+    message: str
+    output_name: str
+    run_id: str | None = None
+    returncode: int | None = None
+    created_at: str
+    finished_at: str | None = None
+    retry_of: str | None = None
+    agent_wait: ExecutionAgentWait | None = None
+
+
+class ExecutionLog(ReadModel):
+    text: str
 
 
 class SceneFile(ReadModel):
