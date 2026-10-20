@@ -9,6 +9,7 @@ const modes: Record<Execution["mode"], string> = {
   pipeline: "视频 → 任务与数据流程",
   simfoundry: "SimFoundry 刚体资产验收",
   reference: "已有 DexAgent 轨迹在 RSS 中验收",
+  candidate: "任务场景候选 · RSS 落稳验收",
   grasp: "RSS Sharpa 抓取验收",
   sharpa: "RSS Sharpa 运动验收",
   rigid: "RSS 刚体基础验收",
@@ -29,12 +30,13 @@ export function ExecutionsPage() {
   const [params, setParams] = useSearchParams();
   const [form, setForm] = useState<ExecutionCreate>({
     config_id: "",
-    mode: "pipeline",
+    mode: params.get("mode") === "candidate" ? "candidate" : "pipeline",
     profile: "pipeline_eval",
     stop_at: "stage4",
     video: "",
     prompt: "",
-    reference_run_id: null,
+    reference_run_id: params.get("source"),
+    scene_offsets: [],
     stage8: "",
     stage11: "",
     stage12: "",
@@ -57,7 +59,15 @@ export function ExecutionsPage() {
   const referenceRuns = useQuery({
     queryKey: ["execution-references"],
     queryFn: () => api.runs("limit=200"),
-    enabled: mode === "reference",
+    enabled: mode === "reference" || mode === "candidate",
+  });
+  const configId = form.config_id || catalog.data?.configs[0]?.id || "";
+  const candidateScene = useQuery({
+    queryKey: ["candidate-scene", form.reference_run_id, configId],
+    queryFn: () => api.executionScene(form.reference_run_id!, configId),
+    enabled: mode === "candidate" && !!form.reference_run_id && !!configId,
+    retry: false,
+    refetchOnWindowFocus: false,
   });
   const selected = params.get("job")
     ? jobs.data?.find((job) => job.id === params.get("job"))
@@ -101,7 +111,6 @@ export function ExecutionsPage() {
   });
   const active = jobs.data?.some((job) => job.status === "running");
   const busy = create.isPending || action.isPending;
-  const configId = form.config_id || catalog.data?.configs[0]?.id || "";
   return (
     <div className="page cleanup-page execution-page">
       <div className="page-heading">
@@ -121,7 +130,13 @@ export function ExecutionsPage() {
             className="cleanup-form"
             onSubmit={(event) => {
               event.preventDefault();
-              create.mutate({ ...form, config_id: configId });
+              create.mutate({
+                ...form,
+                config_id: configId,
+                scene_sha256:
+                  mode === "candidate" ? candidateScene.data?.sha256 : null,
+                scene_offsets: mode === "candidate" ? form.scene_offsets : [],
+              });
             }}
           >
             <label>
@@ -144,7 +159,13 @@ export function ExecutionsPage() {
               <select
                 required
                 value={configId}
-                onChange={(e) => patch("config_id", e.target.value)}
+                onChange={(e) =>
+                  setForm((old) => ({
+                    ...old,
+                    config_id: e.target.value,
+                    scene_offsets: [],
+                  }))
+                }
               >
                 {!catalog.data?.configs.length && (
                   <option value="">暂无配置</option>
@@ -215,13 +236,19 @@ export function ExecutionsPage() {
                 </p>
               </>
             )}
-            {mode === "reference" && (
+            {(mode === "reference" || mode === "candidate") && (
               <label>
                 参考运行
                 <select
                   required
                   value={form.reference_run_id ?? ""}
-                  onChange={(e) => patch("reference_run_id", e.target.value)}
+                  onChange={(e) =>
+                    setForm((old) => ({
+                      ...old,
+                      reference_run_id: e.target.value,
+                      scene_offsets: [],
+                    }))
+                  }
                 >
                   <option value="">选择已有 DexAgent 运行</option>
                   {referenceRuns.data?.items.map((r) => (
@@ -232,8 +259,85 @@ export function ExecutionsPage() {
                 </select>
               </label>
             )}
-            {mode === "reference" && (
+            {(mode === "reference" || mode === "candidate") && (
               <ErrorNotice error={referenceRuns.error} />
+            )}
+            {mode === "candidate" && (
+              <div className="candidate-fields">
+                <p className="small muted">
+                  选择已打包 MJCF 场景的 DexAgent
+                  运行。按世界坐标平移自由物体（米，Z
+                  向上），复用 DexAgent 既有刚体执行模型。启动后保存独立候选并检查落稳；任务成功需后续动作规划与验收。
+                </p>
+                {candidateScene.isFetching && <Loading />}
+                <ErrorNotice error={candidateScene.error} />
+                {candidateScene.data && (
+                  <>
+                    <p className="small muted">
+                      场景与资产版本{" "}
+                      <code>{candidateScene.data.sha256.slice(0, 12)}</code>
+                    </p>
+                    {candidateScene.data.objects.map((object) => (
+                      <fieldset key={object.name} className="candidate-object">
+                        <legend>{object.name}</legend>
+                        <p className="small muted">
+                          原始位置{" "}
+                          {object.position_m
+                            .map((v) => v.toFixed(4))
+                            .join(", ")}{" "}
+                          m
+                        </p>
+                        <div className="candidate-offsets">
+                          {(["X", "Y", "Z"] as const).map((axis, index) => (
+                            <label key={axis}>
+                              {axis} 平移（米）
+                              <input
+                                type="number"
+                                step="0.001"
+                                min="-1"
+                                max="1"
+                                required
+                                aria-label={`${object.name} ${axis} 平移（米）`}
+                                value={
+                                  form.scene_offsets?.find(
+                                    (value) => value.name === object.name,
+                                  )?.translation_m[index] ?? 0
+                                }
+                                onChange={(e) => {
+                                  const translation: [number, number, number] =
+                                    [
+                                      ...(form.scene_offsets?.find(
+                                        (value) => value.name === object.name,
+                                      )?.translation_m ?? [0, 0, 0]),
+                                    ];
+                                  translation[index] = e.target.valueAsNumber;
+                                  patch("scene_offsets", [
+                                    ...(form.scene_offsets ?? []).filter(
+                                      (value) => value.name !== object.name,
+                                    ),
+                                    {
+                                      name: object.name,
+                                      translation_m: translation,
+                                    },
+                                  ]);
+                                }}
+                              />
+                            </label>
+                          ))}
+                        </div>
+                      </fieldset>
+                    ))}
+                    <button
+                      type="button"
+                      className="button"
+                      disabled={candidateScene.isFetching}
+                      onClick={() => candidateScene.refetch()}
+                    >
+                      重新读取场景版本
+                    </button>
+                  </>
+                )}
+              </div>
             )}
             {mode === "simfoundry" && (
               <>
@@ -283,7 +387,16 @@ export function ExecutionsPage() {
             )}
             <button
               className="button primary"
-              disabled={busy || active || !catalog.data?.available || !configId}
+              disabled={
+                busy ||
+                active ||
+                !catalog.data?.available ||
+                !configId ||
+                (mode === "candidate" &&
+                  (!candidateScene.data ||
+                    candidateScene.isFetching ||
+                    !!candidateScene.error))
+              }
               type="submit"
             >
               <PlayCircle size={15} />
@@ -369,6 +482,19 @@ export function ExecutionsPage() {
                   </span>
                 </section>
               )}
+              {selected.mode === "candidate" && (
+                <div className="notice execution-candidate-result">
+                  <strong>场景候选物理验收</strong>
+                  {selected.candidate_sha256 && (
+                    <code className="execution-request-path">
+                      {selected.candidate_sha256}
+                    </code>
+                  )}
+                  <p>
+                    此结果检查当前布局的落稳、漂移、旋转、速度与穿透。前往原生报告查看各物体指标和录制回放；任务成功与训练数据资格尚未评估。
+                  </p>
+                </div>
+              )}
               {selected.agent_wait && (
                 <div className="notice execution-agent-wait" role="status">
                   <div>
@@ -411,6 +537,22 @@ export function ExecutionsPage() {
                 </p>
               )}
               <div className="cleanup-actions">
+                {selected.mode === "candidate" && selected.run_id && (
+                  <Link
+                    className="button"
+                    to={`/executions?mode=candidate&source=${selected.run_id}`}
+                    onClick={() =>
+                      setForm((old) => ({
+                        ...old,
+                        mode: "candidate",
+                        reference_run_id: selected.run_id,
+                        scene_offsets: [],
+                      }))
+                    }
+                  >
+                    从此候选继续调整
+                  </Link>
+                )}
                 {selected.run_id && (
                   <Link
                     className="button primary"

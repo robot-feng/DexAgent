@@ -44,7 +44,7 @@ def test_missing_dependency_blocks_start_before_job_creation(manager, tmp_path, 
     monkeypatch.setattr(manager, '_conda', lambda: tmp_path / 'conda')
     video = manager.catalog().videos[0]
     with pytest.raises(CleanupUnavailable, match='embodiforge_absent_dependency'):
-        manager.start(CleanupCreate(video_id=video.id, proposal_backend='manual', include_objects=['robot arm']))
+        manager.start(CleanupCreate(video_id=video.id, proposal_backend='manual', include_objects=['robot arm'], propagation_model='sam3'))
     assert not manager.catalog().preview_available
     assert not list(manager.jobs_root.iterdir())
 
@@ -93,7 +93,7 @@ def test_cached_catalog_is_rechecked_when_starting_work(manager, tmp_path, monke
     module.unlink()
     assert manager.catalog().preview_available  # the short-lived UI cache
     with pytest.raises(CleanupUnavailable, match='embodiforge_probe_marker'):
-        manager._require(phase='mask', proposal_backend='manual')
+        manager._require(phase='mask', proposal_backend='manual', propagation_model='sam3')
     assert not manager.catalog().preview_available
 
 

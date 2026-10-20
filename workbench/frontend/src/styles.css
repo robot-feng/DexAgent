@@ -2508,3 +2508,24 @@ dd {
     padding-inline: 2px;
   }
 }
+.candidate-object {
+  min-width: 0;
+  margin: 0 0 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.candidate-offsets {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.candidate-offsets input { min-width: 0; width: 100%; }
+.candidate-fields { min-width: 0; }
+.execution-page .cleanup-job-list {
+  max-height: min(30vh, 300px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.execution-candidate-result { display: block; }
+.execution-candidate-result strong { display: block; margin-bottom: 6px; }

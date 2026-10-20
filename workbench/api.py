@@ -21,7 +21,7 @@ from .reports import read_object
 from .rss_live import RssLiveInspector
 from .background_cleanups import BackgroundCleanups, CleanupBusy, CleanupUnavailable
 from .executions import Executions, ExecutionBusy
-from .models import Execution, ExecutionCatalog, ExecutionCreate, ExecutionLog
+from .models import CandidateScene, Execution, ExecutionCatalog, ExecutionCreate, ExecutionLog
 
 PREFIX = '/api/workbench/v1'
 LOGGER = logging.getLogger(__name__)
@@ -131,8 +131,8 @@ def create_app(repo: Path | None = None, *, runs_root: Path | None = None,
                        level='configured' if rss_live.configured else 'not_configured',
                        reason='只读连接 RoboSimStudio 状态 socket；环境、步数、时间和实体位姿可视化，不发控制命令。'
                        if rss_live.configured else '设置 WORKBENCH_RSS_RUN_DIR 指向 RSS live 页面的 run 目录后启用。'),
-            Capability(id='studio', title='实时物理控制与验收', available=False, level='not_integrated',
-                       reason='Workbench 尚未接入仿真控制命令和正式物理验收；当前 RSS 接入仅提供只读状态反馈。'),
+            Capability(id='studio', title='实时仿真控制', available=False, level='not_integrated',
+                       reason='任务执行页已接入任务与 MJCF 候选的离线 RSS 验收；实时交互控制命令尚未接入。'),
             Capability(id='scene_editor', title='原生场景布局编辑', available=editors.available,
                        level='environment_detected' if editors.available else 'missing_dependencies',
                        reason='使用独立 Light Editor 进程编辑场景副本并保存候选；逐次启动核对模型和代理，物理验收另行执行。'
@@ -151,6 +151,10 @@ def create_app(repo: Path | None = None, *, runs_root: Path | None = None,
     @app.get(f'{PREFIX}/executions/catalog', response_model=ExecutionCatalog)
     def execution_catalog():
         return executions.catalog()
+
+    @app.get(f'{PREFIX}/executions/scenes/{{run_id}}', response_model=CandidateScene)
+    def execution_scene(run_id: str, config_id: str = Query(pattern='^[a-f0-9]{24}$')):
+        return executions.inspect_scene(run_id, config_id)
 
     @app.get(f'{PREFIX}/executions', response_model=list[Execution])
     def execution_jobs():

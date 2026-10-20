@@ -17,7 +17,7 @@ DexAgent keeps every skill and verifier it develops in a self-evolving tool libr
 
 ## Quick start
 
-For a unified local view of runs, videos, stage checks, native episode curves and recorded 3D scenes, see **[EmbodiForge Studio](workbench/README.md)** (implemented under the existing `workbench/` path). Start it with `python run_workbench.py` after installing its optional dependencies and building the frontend. It reads existing outputs without starting the generation pipeline.
+For a unified local view of runs, videos, stage checks, native episode curves and recorded 3D scenes, see **[EmbodiForge Studio](workbench/README.md)** (implemented under the existing `workbench/` path). Start it with `python run_workbench.py` after installing its optional dependencies and building the frontend. The task page can explicitly launch existing CLI workflows and validate frozen MJCF layout candidates in RSS; browsing existing outputs does not launch a pipeline.
 
 Maintainers can optionally install the [Feishu CLI](docs/FEISHU_CLI_SETUP.md) to sync project progress to the Feishu knowledge base; it is not required to run DexAgent or EmbodiForge Studio.
 

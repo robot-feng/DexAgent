@@ -146,6 +146,9 @@ def run(args, out, report):
     if args.task == "reference":
         from agent.rss_episode import run_reference
         return run_reference(args, out, report)
+    if args.task == "candidate":
+        from agent.rss_candidate import run_candidate
+        return run_candidate(args, out, report)
     commit = subprocess.check_output(["git", "-C", str(ROOT / "robosimstudio"), "rev-parse", "HEAD"], text=True).strip()
     report["model_identity"] = {"robosimstudio": {"path": str(ROOT / "robosimstudio"), "commit": commit}}
     report["metrics"].update({"versions": {n: version(n) for n in ("numpy", "mujoco", "newton", "warp-lang", "jax")},
@@ -419,7 +422,8 @@ def run_sharpa_motion(bridge, recorder, record, out, limits):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("task", choices=("rigid", "towel", "sharpa", "grasp", "reference", "simfoundry"))
+    parser.add_argument("task", choices=("rigid", "towel", "sharpa", "grasp", "reference", "simfoundry", "candidate"))
+    parser.add_argument("--scene-request", type=Path, help="immutable MJCF candidate creation or retry request")
     parser.add_argument("--simfoundry-stage8", type=Path, help="Stage 8 output containing canonical_mesh/ and info/")
     parser.add_argument("--simfoundry-stage11", type=Path, help="Stage 11 output containing scene_objects_info.json and objects/")
     parser.add_argument("--simfoundry-stage12", type=Path, help="Stage 12 output containing pb_scene_poses.json")
@@ -436,6 +440,8 @@ def main(argv=None):
     parser.add_argument("--fps", type=int, default=15)
     parser.add_argument("--config", type=Path, default=ROOT / "dexagent.yaml")
     args = parser.parse_args(argv)
+    if args.task == "candidate" and args.scene_request is None:
+        parser.error("candidate requires --scene-request")
     if args.task == "reference" and args.reference_run is None:
         parser.error("reference requires --reference-run")
     if args.task == "simfoundry" and not all((args.simfoundry_stage8, args.simfoundry_stage11, args.simfoundry_stage12)):
@@ -458,11 +464,21 @@ def main(argv=None):
                          "max_slip_m": 0.015, "min_contact_fraction": 0.9, "max_release_force_n": 0.05,
                          "max_settle_speed_mps": 0.02, "max_cpu_object_error_m": 0.03,
                          **args.thresholds.get("grasp", {})}
-    args.physics_device = args.physics_device or ("cpu" if args.task == "simfoundry" else
+    args.physics_device = args.physics_device or ("cpu" if args.task in {"simfoundry", "candidate"} else
                         args.grasp_limits.get("physics_device", "cpu") if args.task in {"grasp", "reference"} else "gpu")
     args.simfoundry_limits = {"seconds": 3., "rest_window_s": .5, "max_drift_m": .01,
                              "max_rotation_rad": .05, "max_speed_mps": .02, "max_angular_speed_rad_s": .05,
                              "max_penetration_m": .004, **args.thresholds.get("simfoundry", {})}
+    args.candidate_limits = {"seconds": 3., "rest_window_s": .5, "max_drift_m": .01,
+                             "max_rotation_rad": .05, "max_rest_speed_mps": .02,
+                             "max_rest_angular_speed_rad_s": .05, "max_penetration_m": .004,
+                             "max_robot_error_rad": .05, **args.thresholds.get("candidate", {})}
+    if args.task == "candidate":
+        for name, value in args.candidate_limits.items():
+            if not isinstance(value, (float, int)) or not math.isfinite(value) or value <= 0:
+                parser.error(f"evaluation.robosimstudio.candidate.{name} must be positive and finite")
+        if args.candidate_limits["rest_window_s"] > args.candidate_limits["seconds"]:
+            parser.error("candidate rest_window_s must not exceed seconds")
     if args.task == "simfoundry":
         for name, value in args.simfoundry_limits.items():
             if not isinstance(value, (float, int)) or not math.isfinite(value) or value <= 0:

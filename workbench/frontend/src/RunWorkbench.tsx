@@ -358,6 +358,9 @@ export function RunWorkbench() {
           </div>
         </div>
         <div className="run-header-right">
+          {run.available_actions.includes("adjust_layout") && (
+            <Link className="button" to={`/executions?mode=candidate&source=${run.id}`}>调整物体布局</Link>
+          )}
           <select
             aria-label="归属项目"
             title="归属项目"

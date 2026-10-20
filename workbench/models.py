@@ -1,7 +1,7 @@
 """Public Studio contracts, shared by the API and its generated TypeScript client."""
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -300,7 +300,27 @@ class Preview(ReadModel):
     stale: bool = False
 
 
-ExecutionMode = Literal['pipeline', 'rigid', 'towel', 'sharpa', 'grasp', 'reference', 'simfoundry']
+ExecutionMode = Literal['pipeline', 'rigid', 'towel', 'sharpa', 'grasp', 'reference', 'simfoundry', 'candidate']
+
+
+class SceneOffset(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    name: str = Field(min_length=1, max_length=200)
+    translation_m: tuple[Annotated[float, Field(ge=-1, le=1, allow_inf_nan=False)],
+                         Annotated[float, Field(ge=-1, le=1, allow_inf_nan=False)],
+                         Annotated[float, Field(ge=-1, le=1, allow_inf_nan=False)]]
+
+
+class CandidateObject(ReadModel):
+    name: str
+    joint: str
+    position_m: tuple[float, float, float]
+    quaternion_wxyz: tuple[float, float, float, float]
+
+
+class CandidateScene(ReadModel):
+    sha256: str
+    objects: list[CandidateObject]
 
 
 class ExecutionConfig(ReadModel):
@@ -324,6 +344,8 @@ class ExecutionCreate(BaseModel):
     video: str = Field(default='', max_length=1000)
     prompt: str = Field(default='', max_length=4000)
     reference_run_id: str | None = None
+    scene_sha256: str | None = Field(default=None, pattern='^[a-f0-9]{64}$')
+    scene_offsets: list[SceneOffset] = Field(default_factory=list, max_length=100)
     stage8: str = Field(default='', max_length=1000)
     stage11: str = Field(default='', max_length=1000)
     stage12: str = Field(default='', max_length=1000)
@@ -350,6 +372,7 @@ class Execution(ReadModel):
     finished_at: str | None = None
     retry_of: str | None = None
     agent_wait: ExecutionAgentWait | None = None
+    candidate_sha256: str | None = None
 
 
 class ExecutionLog(ReadModel):

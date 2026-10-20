@@ -347,7 +347,9 @@ class Index:
                          stages=stages, reports=reports, issues=issues, semantics=semantics,
                          task=input_info.get('task') or (semantics or {}).get('task_success'),
                          input_video=input_video, sessions=aggregate.get('sessions', []), media=media,
-                         recorded_3d_available=preview_kind(directory) is not None)
+                         recorded_3d_available=preview_kind(directory) is not None,
+                         available_actions=['adjust_layout'] if any(p.is_file() for p in
+                             (directory / 'stage3/stage4_task/scene.xml', directory / 'candidate/scene.xml')) else [])
 
     def artifacts(self, run_id: str) -> list[Artifact]:
         directory, _ = self.run_path(run_id)
@@ -409,9 +411,10 @@ class Index:
                 missing_fields=[key for key in ('task', 'embodiment') if not data.get(key)]
                                + ([] if (path.parent.parent / 'run_meta.json').is_file() else ['run_meta']))
             try:
+                metrics = data.get('metrics') if isinstance(data.get('metrics'), dict) else {}
                 episode = Episode.model_validate(dict(files,
                     task=data.get('task') or None, embodiment=data.get('embodiment') or None,
-                    success=data.get('success'), sim_s=data.get('sim_s'),
+                    success=None if metrics.get('task_success_evaluated') is False else data.get('success'), sim_s=data.get('sim_s'),
                     recorded_steps=data.get('recorded_steps'), issues=issues), strict=True)
             except ValueError as exc:
                 # Preserve the native files for diagnosis, without certifying invalid metadata.

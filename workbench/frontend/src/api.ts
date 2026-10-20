@@ -50,6 +50,10 @@ export const contentUrl = (artifact: Artifact, download = false) =>
 export const api = {
   executionCatalog: () =>
     request<components["schemas"]["ExecutionCatalog"]>("/executions/catalog"),
+  executionScene: (runId: string, configId: string) =>
+    request<components["schemas"]["CandidateScene"]>(
+      `/executions/scenes/${runId}?config_id=${configId}`,
+    ),
   executions: () => request<Execution[]>("/executions"),
   createExecution: (body: ExecutionCreate) =>
     request<Execution>("/executions", body),

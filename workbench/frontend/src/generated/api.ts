@@ -75,6 +75,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workbench/v1/executions/scenes/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Execution Scene */
+        get: operations["execution_scene_api_workbench_v1_executions_scenes__run_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workbench/v1/executions": {
         parameters: {
             query?: never;
@@ -670,6 +687,33 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** CandidateObject */
+        CandidateObject: {
+            /** Name */
+            name: string;
+            /** Joint */
+            joint: string;
+            /** Position M */
+            position_m: [
+                number,
+                number,
+                number
+            ];
+            /** Quaternion Wxyz */
+            quaternion_wxyz: [
+                number,
+                number,
+                number,
+                number
+            ];
+        };
+        /** CandidateScene */
+        CandidateScene: {
+            /** Sha256 */
+            sha256: string;
+            /** Objects */
+            objects: components["schemas"]["CandidateObject"][];
+        };
         /** Capability */
         Capability: {
             /** Id */
@@ -956,7 +1000,7 @@ export interface components {
              * Mode
              * @enum {string}
              */
-            mode: "pipeline" | "rigid" | "towel" | "sharpa" | "grasp" | "reference" | "simfoundry";
+            mode: "pipeline" | "rigid" | "towel" | "sharpa" | "grasp" | "reference" | "simfoundry" | "candidate";
             /** Config Name */
             config_name: string;
             /** Profile */
@@ -981,6 +1025,8 @@ export interface components {
             /** Retry Of */
             retry_of: string | null;
             agent_wait: components["schemas"]["ExecutionAgentWait"] | null;
+            /** Candidate Sha256 */
+            candidate_sha256: string | null;
         };
         /** ExecutionAgentWait */
         ExecutionAgentWait: {
@@ -998,7 +1044,7 @@ export interface components {
             /** Configs */
             configs: components["schemas"]["ExecutionConfig"][];
             /** Modes */
-            modes: ("pipeline" | "rigid" | "towel" | "sharpa" | "grasp" | "reference" | "simfoundry")[];
+            modes: ("pipeline" | "rigid" | "towel" | "sharpa" | "grasp" | "reference" | "simfoundry" | "candidate")[];
             /** Detail */
             detail: string;
         };
@@ -1018,7 +1064,7 @@ export interface components {
              * @default pipeline
              * @enum {string}
              */
-            mode: "pipeline" | "rigid" | "towel" | "sharpa" | "grasp" | "reference" | "simfoundry";
+            mode: "pipeline" | "rigid" | "towel" | "sharpa" | "grasp" | "reference" | "simfoundry" | "candidate";
             /**
              * Profile
              * @default pipeline_eval
@@ -1043,6 +1089,10 @@ export interface components {
             prompt: string;
             /** Reference Run Id */
             reference_run_id?: string | null;
+            /** Scene Sha256 */
+            scene_sha256?: string | null;
+            /** Scene Offsets */
+            scene_offsets?: components["schemas"]["SceneOffset"][];
             /**
              * Stage8
              * @default
@@ -1312,6 +1362,17 @@ export interface components {
             objects: number;
             /** Issue */
             issue: string | null;
+        };
+        /** SceneOffset */
+        SceneOffset: {
+            /** Name */
+            name: string;
+            /** Translation M */
+            translation_m: [
+                number,
+                number,
+                number
+            ];
         };
         /** ScenePage */
         ScenePage: {
@@ -1597,6 +1658,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExecutionCatalog"];
+                };
+            };
+        };
+    };
+    execution_scene_api_workbench_v1_executions_scenes__run_id__get: {
+        parameters: {
+            query: {
+                config_id: string;
+            };
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateScene"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

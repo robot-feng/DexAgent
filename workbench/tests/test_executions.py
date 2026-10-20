@@ -16,6 +16,8 @@ from workbench.api import PREFIX, create_app
 from workbench.executions import Executions, ExecutionBusy, process_birth
 from workbench.index import Index
 from workbench.models import ExecutionCreate
+from agent.scene_candidate import digest
+from agent.run_reports import sha256_file
 
 PROGRAM = """import sys,time,json,subprocess
 from pathlib import Path
@@ -311,3 +313,89 @@ def test_execution_api_busy_stop_and_retry_have_real_processes(workspace):
         latest = retry.json()["id"]
         data = client.app.state.executions._read(latest)
     assert process_birth(data["pid"]) is None
+
+
+def frozen_fixture(directory):
+    """An identity fixture only; no claim of physical validity."""
+    directory.mkdir(parents=True)
+    (directory / "scene.xml").write_text("<mujoco/>")
+    manifest = {
+        "schema": "embodiforge.scene_candidate.v1",
+        "files": {"scene.xml": sha256_file(directory / "scene.xml")},
+    }
+    manifest["candidate_sha256"] = digest(manifest)
+    atomic_json(directory / "manifest.json", manifest)
+    return manifest["candidate_sha256"]
+
+
+def test_candidate_launch_and_retry_bind_the_frozen_version(workspace):
+    manager, _ = workspace
+    source_run = manager.index.runs_root / "source"
+    scene = source_run / "stage3/stage4_task/scene.xml"
+    scene.parent.mkdir(parents=True)
+    scene.write_text("identity fixture")
+    atomic_json(
+        source_run / "stage_report.json",
+        {"schema": "dexagent.step_report.v1", "status": "passed"},
+    )
+    manager.index.refresh()
+    source_id = manager.index.runs()[0].id
+    body = ExecutionCreate(
+        config_id=manager.catalog().configs[0].id,
+        mode="candidate",
+        reference_run_id=source_id,
+        scene_sha256="a" * 64,
+        scene_offsets=[{"name": "cup", "translation_m": [0.01, 0, 0]}],
+    )
+    first = manager.start(body)
+    finished(manager, first.id)
+    first_request = json.loads(
+        (manager.directory(first.id) / "scene_request.json").read_text()
+    )
+    assert first_request["source"] == str(scene)
+    assert first_request["offsets"][0]["translation_m"] == [0.01, 0, 0]
+    output = manager.index.runs_root / first.output_name
+    candidate_sha = frozen_fixture(output / "candidate")
+    report_path = output / "stage_report.json"
+    report = json.loads(report_path.read_text())
+    report["inputs"] = {"candidate": {"sha256": candidate_sha}}
+    atomic_json(report_path, report)
+    assert manager.state(first.id).candidate_sha256 == candidate_sha
+    scene.write_text("changed upstream")
+    retry = manager.retry(first.id)
+    retry_request = json.loads(
+        (manager.directory(retry.id) / "scene_request.json").read_text()
+    )
+    assert retry_request == {
+        "snapshot": str(output / "candidate"),
+        "candidate_sha256": candidate_sha,
+    }
+    finished(manager, retry.id)
+    (output / "candidate/scene.xml").write_text("changed candidate")
+    with pytest.raises(ValueError, match="身份不匹配"):
+        manager.retry(first.id)
+
+
+def test_candidate_source_must_match_the_native_report(workspace):
+    manager, _ = workspace
+    output = manager.index.runs_root / "candidate-source"
+    frozen_fixture(output / "candidate")
+    atomic_json(
+        output / "stage_report.json",
+        {"schema": "dexagent.step_report.v1", "status": "failed"},
+    )
+    manager.index.refresh()
+    key = manager.index.runs()[0].id
+    with pytest.raises(ValueError, match="原生报告"):
+        manager.candidate_source(key)
+    manifest = json.loads((output / "candidate/manifest.json").read_text())
+    atomic_json(
+        output / "stage_report.json",
+        {
+            "schema": "dexagent.step_report.v1",
+            "status": "failed",
+            "inputs": {"candidate": {"sha256": manifest["candidate_sha256"]}},
+        },
+    )
+    # Failed layouts can be inspected and corrected; they are not promoted.
+    assert manager.candidate_source(key) == output / "candidate/scene.xml"

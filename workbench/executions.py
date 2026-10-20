@@ -18,7 +18,13 @@ import uuid
 from agent.run_reports import atomic_json, sha256_file
 
 from .index import Index, identity
-from .models import Execution, ExecutionCatalog, ExecutionConfig, ExecutionCreate
+from .models import (
+    CandidateScene,
+    Execution,
+    ExecutionCatalog,
+    ExecutionConfig,
+    ExecutionCreate,
+)
 
 
 def now() -> str:
@@ -99,7 +105,15 @@ class Executions:
         if (self.repo / "run_dexagent.py").is_file():
             modes.append("pipeline")
         if (self.repo / "run_robosimstudio.py").is_file():
-            modes += ["rigid", "towel", "sharpa", "grasp", "reference", "simfoundry"]
+            modes += [
+                "rigid",
+                "towel",
+                "sharpa",
+                "grasp",
+                "reference",
+                "simfoundry",
+                "candidate",
+            ]
         ready = bool(configs and modes and importlib.util.find_spec("yaml"))
         return ExecutionCatalog(
             available=ready,
@@ -117,6 +131,64 @@ class Executions:
         if not (path / "launch.json").is_file():
             raise KeyError(key)
         return path
+
+    def candidate_source(self, run_id: str) -> Path:
+        run, _ = self.index.run_path(run_id)
+        source = run / "stage3/stage4_task/scene.xml"
+        if not source.is_file() and (run / "candidate/manifest.json").is_file():
+            from agent.scene_candidate import verify_snapshot
+
+            try:
+                candidate = verify_snapshot(run / "candidate")
+            except OSError as exc:
+                raise ValueError("候选快照文件不完整，请检查原生失败报告。") from exc
+            report = json.loads((run / "stage_report.json").read_text())
+            if candidate["candidate_sha256"] != report.get("inputs", {}).get(
+                "candidate", {}
+            ).get("sha256"):
+                raise ValueError("候选场景与原生报告的身份不一致")
+            source = run / "candidate/scene.xml"
+        if not source.is_file() or not source.resolve().is_relative_to(run.resolve()):
+            raise ValueError(
+                "该运行没有完整的 DexAgent MJCF 任务场景；请选择已完成场景打包的运行。"
+            )
+        return source.resolve()
+
+    def inspect_scene(self, run_id: str, config_id: str) -> CandidateScene:
+        """Compile in the configured native environment, outside the API process."""
+        from agent.config import load_config
+
+        config = self.config_paths().get(config_id)
+        if config is None:
+            raise ValueError("配置已移除，请刷新后重新选择")
+        cfg = load_config(config)
+        python = Path(cfg.get("environments", {}).get("pipeline") or sys.executable)
+        try:
+            result = subprocess.run(
+                [
+                    str(python),
+                    "-m",
+                    "agent.scene_candidate",
+                    str(self.candidate_source(run_id)),
+                ],
+                cwd=self.repo,
+                stdin=subprocess.DEVNULL,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise ValueError(
+                "场景读取超过 30 秒；未启动物理任务，请检查场景规模或环境。"
+            ) from exc
+        except OSError as exc:
+            raise ValueError("无法启动配置中的场景读取解释器") from exc
+        if result.returncode:
+            raise ValueError("无法读取任务场景：" + result.stderr[-1200:])
+        try:
+            return CandidateScene.model_validate_json(result.stdout)
+        except ValueError as exc:
+            raise ValueError("场景读取器未返回有效的物体与版本信息") from exc
 
     def _read(self, key: str) -> dict:
         return json.loads((self.directory(key) / "launch.json").read_text())
@@ -207,6 +279,7 @@ class Executions:
                 raise ValueError(f"配置中的运行解释器不存在：{python}")
             directory = self.root / key
             snapshot = directory / "config.yaml"
+            scene_request = None
             if request.mode == "pipeline":
                 runner = self.repo / "run_dexagent.py"
                 command = [
@@ -237,6 +310,50 @@ class Executions:
                         raise ValueError("请选择已有 DexAgent 参考运行")
                     reference, _ = self.index.run_path(request.reference_run_id)
                     command += ["--reference-run", str(reference)]
+                if request.mode == "candidate":
+                    if previous:
+                        from agent.scene_candidate import verify_snapshot
+
+                        if not previous.get("candidate_sha256"):
+                            raise ValueError(
+                                "原运行尚未形成完整候选快照；请重新读取任务场景创建候选。"
+                            )
+                        candidate_path = (
+                            self.index.runs_root / previous["output_name"] / "candidate"
+                        )
+                        try:
+                            candidate = verify_snapshot(candidate_path)
+                        except OSError as exc:
+                            raise ValueError(
+                                "原候选快照文件不完整，不能用于重试。"
+                            ) from exc
+                        if candidate["candidate_sha256"] != previous.get(
+                            "candidate_sha256"
+                        ):
+                            raise ValueError("原候选身份发生变化，不能用于重试")
+                        scene_request = {
+                            "snapshot": str(candidate_path),
+                            "candidate_sha256": candidate["candidate_sha256"],
+                        }
+                    else:
+                        if not request.reference_run_id or not request.scene_sha256:
+                            raise ValueError(
+                                "请先读取已有任务场景，确认物体与版本后再创建候选"
+                            )
+                        scene_request = {
+                            "source": str(
+                                self.candidate_source(request.reference_run_id)
+                            ),
+                            "source_run_id": request.reference_run_id,
+                            "source_sha256": request.scene_sha256,
+                            "offsets": [
+                                item.model_dump() for item in request.scene_offsets
+                            ],
+                        }
+                    command += [
+                        "--scene-request",
+                        str(directory / "scene_request.json"),
+                    ]
                 if request.mode == "simfoundry":
                     for stage in ("stage8", "stage11", "stage12"):
                         value = getattr(request, stage).strip()
@@ -253,6 +370,9 @@ class Executions:
                 yaml.safe_dump(cfg, allow_unicode=True, sort_keys=False)
             )
             snapshot.chmod(0o600)
+            if scene_request is not None:
+                atomic_json(directory / "scene_request.json", scene_request)
+                (directory / "scene_request.json").chmod(0o600)
             data = dict(
                 id=key,
                 mode=request.mode,
@@ -419,6 +539,23 @@ class Executions:
             except KeyError:
                 run_id = None
             waiting = self._agent_wait(data) if data["status"] == "running" else None
+            if data["mode"] == "candidate" and not data.get("candidate_sha256"):
+                try:
+                    report = json.loads(
+                        (
+                            self.index.runs_root
+                            / data["output_name"]
+                            / "stage_report.json"
+                        ).read_text()
+                    )
+                    candidate_sha = (
+                        report.get("inputs", {}).get("candidate", {}).get("sha256", "")
+                    )
+                    if re.fullmatch("[a-f0-9]{64}", candidate_sha):
+                        data["candidate_sha256"] = candidate_sha
+                        self._write(data)
+                except (OSError, ValueError, TypeError):
+                    pass
             return Execution(
                 **{
                     **data,
