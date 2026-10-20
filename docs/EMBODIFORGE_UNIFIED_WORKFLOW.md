@@ -66,4 +66,6 @@ flowchart TD
 
 用户提出的 ARSTAG 任务驱动、Dex-One2Many 关系约束/RL、Video2World 功能正确性作为后续参考方向；具体采用必须回到源码与实验证据，本文件不构成这些工作的复现声明。
 
+HumanEgo 的数据处理、ICT 关系表示和 Policy Sim 可分别补充 Demo 输入、策略动作源与闭环诊断；其 Real2Sim 页面另走 DexAgent 路径。沿用以上统一边界，区分图像去臂与三维背景清理、策略终止与物理成功、渲染变体与独立物理样本。源码与公开数据核验见 [HumanEgo 审阅](HUMANEGO_SOURCE_REVIEW_20261020.md)；当前尚未完成模型和物理任务复现。
+
 当前已具备运行管理、原生回放、部分场景/任务执行与门禁、数据打包；整场景坐标接入见[验证记录](WORKBENCH_RIG_FRAME_ALIGNMENT_20261020.md)，逐帧相机接入见[单目演示改进](MONOCULAR_MOVING_CAMERA_20261020.md)。通用 TaskSpec 实例化、独立扫描与示范自动配准、真实机器人数据完整恢复、G1/G2 动态任务、自动扩增训练及真机反馈闭环尚未全部完成，不能将现有局部验证当作统一主流程已通过。

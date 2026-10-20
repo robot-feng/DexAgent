@@ -1,0 +1,36 @@
+{
+  "scope": "Exact source methods; manually configured objects; no weights, camera, robot or physics. Contract probes only.",
+  "anchor_frame": {
+    "initial_anchor_x": 1.0,
+    "latched_anchor_x": 1.2999999523162842,
+    "hand_x": 1.4,
+    "encoded_hand_x": 0.10000002384185791,
+    "decode_against_initial_anchor_x": 1.100000023841858,
+    "coordinate_roundtrip_error_m": 0.299999976158142
+  },
+  "released_object_x": 1.0,
+  "controller_first_target_x": 1.0,
+  "controller_second_increment_m": 0.04999995231628418,
+  "grasp_flow_target_vs_sigmoid": [
+    {
+      "target": 0.0,
+      "sigmoid": 0.5,
+      "strict_threshold_0_5": false
+    },
+    {
+      "target": 0.01,
+      "sigmoid": 0.5024999791668749,
+      "strict_threshold_0_5": true
+    },
+    {
+      "target": 0.49,
+      "sigmoid": 0.6201064323430902,
+      "strict_threshold_0_5": true
+    },
+    {
+      "target": 1.0,
+      "sigmoid": 0.7310585786300049,
+      "strict_threshold_0_5": true
+    }
+  ]
+}

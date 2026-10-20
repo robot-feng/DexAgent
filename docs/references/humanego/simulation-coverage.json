@@ -1,0 +1,1495 @@
+[
+  {
+    "path": "simulation/.gitignore",
+    "bytes": 576,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/README.md",
+    "bytes": 45812,
+    "status": "content_review_partial_output_truncated",
+    "lines": 685
+  },
+  {
+    "path": "simulation/autotune/__init__.py",
+    "bytes": 0,
+    "status": "implementation_review",
+    "lines": 0,
+    "symbols": []
+  },
+  {
+    "path": "simulation/autotune/decision.py",
+    "bytes": 2967,
+    "status": "implementation_review",
+    "lines": 65,
+    "symbols": [
+      "spearman:22",
+      "batch_evidence:30",
+      "decide:47"
+    ]
+  },
+  {
+    "path": "simulation/autotune/loop.py",
+    "bytes": 10554,
+    "status": "implementation_review",
+    "lines": 212,
+    "symbols": [
+      "score_of:50",
+      "AutoTuner:55"
+    ]
+  },
+  {
+    "path": "simulation/autotune/params.py",
+    "bytes": 7091,
+    "status": "implementation_review",
+    "lines": 132,
+    "symbols": [
+      "ParamSpec:20",
+      "space_from_names:103",
+      "params_to_overrides:111",
+      "spec_dict:131"
+    ]
+  },
+  {
+    "path": "simulation/autotune/search.py",
+    "bytes": 2653,
+    "status": "implementation_review",
+    "lines": 62,
+    "symbols": [
+      "RankCEM:19"
+    ]
+  },
+  {
+    "path": "simulation/build_web_soft.log",
+    "bytes": 15907,
+    "status": "inventory_only",
+    "lines": 177
+  },
+  {
+    "path": "simulation/build_web_v1.log",
+    "bytes": 10005,
+    "status": "inventory_only",
+    "lines": 116
+  },
+  {
+    "path": "simulation/configs/serve_bread.yaml",
+    "bytes": 7928,
+    "status": "content_review",
+    "lines": 149
+  },
+  {
+    "path": "simulation/configs/tuned/franka_panda.json",
+    "bytes": 2226,
+    "status": "inventory_only",
+    "lines": 97
+  },
+  {
+    "path": "simulation/configs/tuned/trossen_wxai.json",
+    "bytes": 2410,
+    "status": "inventory_only",
+    "lines": 106
+  },
+  {
+    "path": "simulation/configs/tuned/ur5e.json",
+    "bytes": 2137,
+    "status": "inventory_only",
+    "lines": 90
+  },
+  {
+    "path": "simulation/docs/physics_params.md",
+    "bytes": 9143,
+    "status": "content_review",
+    "lines": 75
+  },
+  {
+    "path": "simulation/docs/real_vs_sim.md",
+    "bytes": 27405,
+    "status": "content_review_partial_output_truncated",
+    "lines": 333
+  },
+  {
+    "path": "simulation/docs/upgrade/controller.md",
+    "bytes": 12855,
+    "status": "content_review",
+    "lines": 176
+  },
+  {
+    "path": "simulation/docs/upgrade/eng.md",
+    "bytes": 15396,
+    "status": "content_review",
+    "lines": 305
+  },
+  {
+    "path": "simulation/docs/upgrade/physics.md",
+    "bytes": 15940,
+    "status": "content_review",
+    "lines": 207
+  },
+  {
+    "path": "simulation/docs/upgrade/real.md",
+    "bytes": 4907,
+    "status": "inventory_only",
+    "lines": 61
+  },
+  {
+    "path": "simulation/docs/upgrade/real_notes/human_object_stats.md",
+    "bytes": 48488,
+    "status": "inventory_only",
+    "lines": 608
+  },
+  {
+    "path": "simulation/docs/upgrade/real_notes/human_object_stats_summary.json",
+    "bytes": 74712,
+    "status": "inventory_only",
+    "lines": 1
+  },
+  {
+    "path": "simulation/docs/upgrade/real_notes/paper_real_numbers.md",
+    "bytes": 29567,
+    "status": "content_review_partial_output_truncated",
+    "lines": 307
+  },
+  {
+    "path": "simulation/docs/upgrade/real_notes/video_inventory.md",
+    "bytes": 17288,
+    "status": "inventory_only",
+    "lines": 146
+  },
+  {
+    "path": "simulation/docs/upgrade/report.md",
+    "bytes": 9518,
+    "status": "content_review",
+    "lines": 181
+  },
+  {
+    "path": "simulation/docs/upgrade/robust.md",
+    "bytes": 12431,
+    "status": "inventory_only",
+    "lines": 196
+  },
+  {
+    "path": "simulation/humanego_sim/__init__.py",
+    "bytes": 0,
+    "status": "api_and_docstring_review",
+    "lines": 0,
+    "symbols": []
+  },
+  {
+    "path": "simulation/humanego_sim/assets/objects/bun/bun.obj",
+    "bytes": 1044669,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/objects/bun/bun.png",
+    "bytes": 2083551,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/objects/bun/bun_col0.obj",
+    "bytes": 17237,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/objects/bun/bun_flex.obj",
+    "bytes": 18500,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/objects/bun/bun_flex_fine.obj",
+    "bytes": 65207,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/objects/bun/bun_meta.json",
+    "bytes": 82,
+    "status": "inventory_only",
+    "lines": 9
+  },
+  {
+    "path": "simulation/humanego_sim/assets/objects/bun/bun_vis.npz",
+    "bytes": 336408,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/objects/croissant/croissant.obj",
+    "bytes": 1047505,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/objects/croissant/croissant.png",
+    "bytes": 1527126,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/objects/croissant/croissant_col0.obj",
+    "bytes": 17500,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/objects/croissant/croissant_flex.obj",
+    "bytes": 18581,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/objects/croissant/croissant_flex_fine.obj",
+    "bytes": 65463,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/objects/croissant/croissant_meta.json",
+    "bytes": 83,
+    "status": "inventory_only",
+    "lines": 9
+  },
+  {
+    "path": "simulation/humanego_sim/assets/objects/croissant/croissant_vis.npz",
+    "bytes": 315449,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/objects/plate/plate.obj",
+    "bytes": 163858,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/objects/plate/plate_meta.json",
+    "bytes": 136,
+    "status": "inventory_only",
+    "lines": 13
+  },
+  {
+    "path": "simulation/humanego_sim/assets/objects/table/maple.png",
+    "bytes": 487041,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/robot_poses.json",
+    "bytes": 473,
+    "status": "inventory_only",
+    "lines": 44
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/LICENSE",
+    "bytes": 1524,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/materials/1k_textures/trossen_BaseColor.png",
+    "bytes": 262281,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/d405/camera_mount_d405.obj",
+    "bytes": 1212395,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/d405/camera_mount_d405_collision.001.obj",
+    "bytes": 6409,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/d405/camera_mount_d405_collision.obj",
+    "bytes": 6096,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/d405/d405.stl",
+    "bytes": 194684,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/base_link.obj",
+    "bytes": 56201,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/base_link_collision.001.obj",
+    "bytes": 9851,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/base_link_collision.002.obj",
+    "bytes": 8850,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/base_link_collision.003.obj",
+    "bytes": 9182,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/base_link_collision.obj",
+    "bytes": 8902,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/carriage_left.obj",
+    "bytes": 35859,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/carriage_left_collision.obj",
+    "bytes": 733,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/carriage_right.obj",
+    "bytes": 35274,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/carriage_right_collision.obj",
+    "bytes": 720,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/gripper_left.obj",
+    "bytes": 488076,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/gripper_left_collision.obj",
+    "bytes": 2331,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/gripper_right.obj",
+    "bytes": 483168,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/gripper_right_collision.obj",
+    "bytes": 2324,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/link_1.obj",
+    "bytes": 51462,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/link_1_collision.001.obj",
+    "bytes": 8206,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/link_1_collision.002.obj",
+    "bytes": 2584,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/link_1_collision.003.obj",
+    "bytes": 4432,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/link_1_collision.obj",
+    "bytes": 6478,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/link_2.obj",
+    "bytes": 254985,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/link_2_collision.001.obj",
+    "bytes": 7280,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/link_2_collision.002.obj",
+    "bytes": 6940,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/link_2_collision.003.obj",
+    "bytes": 7083,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/link_2_collision.obj",
+    "bytes": 6795,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/link_3.obj",
+    "bytes": 313355,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/link_3_collision.001.obj",
+    "bytes": 3964,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/link_3_collision.002.obj",
+    "bytes": 7890,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/link_3_collision.003.obj",
+    "bytes": 2747,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/link_3_collision.004.obj",
+    "bytes": 3934,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/link_3_collision.obj",
+    "bytes": 5673,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/link_4.obj",
+    "bytes": 137997,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/link_4_collision.001.obj",
+    "bytes": 5990,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/link_4_collision.002.obj",
+    "bytes": 7571,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/link_4_collision.obj",
+    "bytes": 12254,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/link_5.obj",
+    "bytes": 210162,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/link_5_collision.obj",
+    "bytes": 7390,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/link_6.obj",
+    "bytes": 83945,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/assets/meshes/wxai/link_6_collision.obj",
+    "bytes": 3393,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/assets/robots/trossen_wxai/wxai_follower.xml",
+    "bytes": 15064,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/humanego_sim/cameras.py",
+    "bytes": 2881,
+    "status": "implementation_review",
+    "lines": 75,
+    "symbols": [
+      "CameraSpec:20",
+      "_crop_resize:44",
+      "get_camera:72"
+    ]
+  },
+  {
+    "path": "simulation/humanego_sim/controller.py",
+    "bytes": 24872,
+    "status": "implementation_review",
+    "lines": 444,
+    "symbols": [
+      "SimController:27"
+    ]
+  },
+  {
+    "path": "simulation/humanego_sim/dinosam_client.py",
+    "bytes": 2454,
+    "status": "implementation_review",
+    "lines": 62,
+    "symbols": [
+      "DinoSamClient:23",
+      "client:58"
+    ]
+  },
+  {
+    "path": "simulation/humanego_sim/driver.py",
+    "bytes": 21584,
+    "status": "implementation_review",
+    "lines": 485,
+    "symbols": [
+      "T_from:41",
+      "p_to_T:48",
+      "T_to_p:53",
+      "_quintic_coeffs:57",
+      "_quintic_eval:75",
+      "CartesianInterpolator:82",
+      "JointInterpolator:132",
+      "SimArm:154"
+    ]
+  },
+  {
+    "path": "simulation/humanego_sim/env.py",
+    "bytes": 12968,
+    "status": "implementation_review",
+    "lines": 284,
+    "symbols": [
+      "load_config:32",
+      "deep_update:52",
+      "ServeBreadSim:62"
+    ]
+  },
+  {
+    "path": "simulation/humanego_sim/evaluate.py",
+    "bytes": 8097,
+    "status": "implementation_review",
+    "lines": 187,
+    "symbols": [
+      "_worker_init:25",
+      "variant_overrides:50",
+      "apply_runtime_variation:63",
+      "apply_scene_variation:79",
+      "_worker_run:95",
+      "evaluate:111",
+      "classify_failure:149",
+      "summarize:165"
+    ]
+  },
+  {
+    "path": "simulation/humanego_sim/glb_tools.py",
+    "bytes": 2868,
+    "status": "api_and_docstring_review",
+    "lines": 84,
+    "symbols": [
+      "_read_glb:12",
+      "_write_glb:30",
+      "jpeg_textures:41",
+      "set_pbr:75"
+    ]
+  },
+  {
+    "path": "simulation/humanego_sim/live_export.py",
+    "bytes": 4926,
+    "status": "implementation_review",
+    "lines": 104,
+    "symbols": [
+      "_object_entry:22",
+      "export_live:36"
+    ]
+  },
+  {
+    "path": "simulation/humanego_sim/perception.py",
+    "bytes": 18815,
+    "status": "implementation_review",
+    "lines": 380,
+    "symbols": [
+      "_make_lifter:60",
+      "postprocess_kpts_3d:67",
+      "split_mask_by_x:87",
+      "fuse_masks:113",
+      "SideObjects:128",
+      "SimPerception:135"
+    ]
+  },
+  {
+    "path": "simulation/humanego_sim/profiles.py",
+    "bytes": 3847,
+    "status": "implementation_review",
+    "lines": 97,
+    "symbols": [
+      "tuned_path:32",
+      "load_tuned:36",
+      "dotted_to_nested:46",
+      "profile_overrides:68",
+      "profile_info:81",
+      "add_profile_arg:94"
+    ]
+  },
+  {
+    "path": "simulation/humanego_sim/replay.py",
+    "bytes": 2791,
+    "status": "implementation_review",
+    "lines": 68,
+    "symbols": [
+      "_put:14",
+      "render_episode_video:19"
+    ]
+  },
+  {
+    "path": "simulation/humanego_sim/robots.py",
+    "bytes": 9507,
+    "status": "implementation_review",
+    "lines": 197,
+    "symbols": [
+      "RobotSpec:31",
+      "get_robot:182"
+    ]
+  },
+  {
+    "path": "simulation/humanego_sim/robustness.py",
+    "bytes": 16407,
+    "status": "implementation_review",
+    "lines": 322,
+    "symbols": [
+      "params:60",
+      "child_rng:67",
+      "smooth_field:73",
+      "signed_distance:85",
+      "MaskNoise:94",
+      "DepthArtifacts:147",
+      "camera_error:183",
+      "set_policy_camera:191",
+      "set_lights:215",
+      "add_distractor_geoms:242",
+      "distractor_masks:268",
+      "combined_condition:306",
+      "condition:317"
+    ]
+  },
+  {
+    "path": "simulation/humanego_sim/runner.py",
+    "bytes": 35720,
+    "status": "implementation_review",
+    "lines": 647,
+    "symbols": [
+      "_fresh_hand_state:45",
+      "SideCtx:51",
+      "EpisodeResult:68",
+      "load_policy:78",
+      "EpisodeRunner:87"
+    ]
+  },
+  {
+    "path": "simulation/humanego_sim/sampling.py",
+    "bytes": 8336,
+    "status": "implementation_review",
+    "lines": 161,
+    "symbols": [
+      "sample_scene:22",
+      "scene_grid:42",
+      "_var_rng:85",
+      "_sample_distractors:89",
+      "apply_variation:111",
+      "sample_scenes:153"
+    ]
+  },
+  {
+    "path": "simulation/humanego_sim/scene.py",
+    "bytes": 25570,
+    "status": "implementation_review",
+    "lines": 582,
+    "symbols": [
+      "_quat_wxyz:35",
+      "yaw_quat:40",
+      "RigGeometry:45",
+      "rig_geometry:51",
+      "_rel:74",
+      "_spec_with_rel_paths:78",
+      "_load_robot_spec:97",
+      "_add_box:157",
+      "build_scene:179",
+      "_breads:562",
+      "_bread_scale:569",
+      "_scaled:574",
+      "_mesh_extents:579"
+    ]
+  },
+  {
+    "path": "simulation/humanego_sim/softbody.py",
+    "bytes": 12299,
+    "status": "implementation_review",
+    "lines": 253,
+    "symbols": [
+      "grid_nodes:33",
+      "trilinear_binding:45",
+      "add_soft_bread:66",
+      "SoftBody:133",
+      "PlasticSet:199"
+    ]
+  },
+  {
+    "path": "simulation/humanego_sim/stats.py",
+    "bytes": 6828,
+    "status": "implementation_review",
+    "lines": 150,
+    "symbols": [
+      "wilson:23",
+      "fmt_rate:34",
+      "_binom_two_sided:43",
+      "per_scene_outcomes:53",
+      "scene_bootstrap_ci:64",
+      "summarize_ci:76",
+      "paired:96",
+      "fmt_paired:129",
+      "check_seed:145"
+    ]
+  },
+  {
+    "path": "simulation/humanego_sim/web_export.py",
+    "bytes": 14593,
+    "status": "implementation_review",
+    "lines": 303,
+    "symbols": [
+      "_r:45",
+      "glb_node_name:49",
+      "export_mesh_glb:56",
+      "export_model:89",
+      "_full_grid:177",
+      "frame_layout:185",
+      "_soft_tracks:195",
+      "export_rollout:230"
+    ]
+  },
+  {
+    "path": "simulation/humanego_sim/web_manifest.py",
+    "bytes": 12308,
+    "status": "implementation_review",
+    "lines": 224,
+    "symbols": [
+      "pct:26",
+      "side_rate:30",
+      "summary_rows:35",
+      "results_note:55",
+      "tuning_section:79",
+      "assemble:109",
+      "validate:125",
+      "readme_results:192"
+    ]
+  },
+  {
+    "path": "simulation/humanego_sim/web_pack.py",
+    "bytes": 32070,
+    "status": "api_and_docstring_review",
+    "lines": 699,
+    "symbols": [
+      "_decimals:42",
+      "_ints:52",
+      "_Payload:56",
+      "_width:68",
+      "_pack_frames:78",
+      "_pack_deform:99",
+      "_pack_policy:128",
+      "pack_rollout:178",
+      "unpack_rollout:197",
+      "_same:275",
+      "pack_rollout_file:287",
+      "encode_policy_video:300",
+      "policy_tiles:313",
+      "reencode_policy_video:333",
+      "_read_accessor:364",
+      "_GlbWriter:379",
+      "_read_glb:425",
+      "_write_glb:430",
+      "_quantize_uv:435",
+      "_flat_normals:441",
+      "quantize_glb:454",
+      "_webp:538",
+      "webp_glb:550",
+      "webp_texture:605",
+      "pack_web:615",
+      "deploy_skip:687"
+    ]
+  },
+  {
+    "path": "simulation/pytest.ini",
+    "bytes": 183,
+    "status": "inventory_only",
+    "lines": 6
+  },
+  {
+    "path": "simulation/requirements-ci.txt",
+    "bytes": 310,
+    "status": "content_review",
+    "lines": 13
+  },
+  {
+    "path": "simulation/requirements.txt",
+    "bytes": 322,
+    "status": "content_review",
+    "lines": 13
+  },
+  {
+    "path": "simulation/scripts/autotune.py",
+    "bytes": 2874,
+    "status": "implementation_review",
+    "lines": 62,
+    "symbols": []
+  },
+  {
+    "path": "simulation/scripts/autotune_validate.py",
+    "bytes": 3948,
+    "status": "implementation_review",
+    "lines": 82,
+    "symbols": [
+      "candidates:30"
+    ]
+  },
+  {
+    "path": "simulation/scripts/bread_gen.py",
+    "bytes": 15654,
+    "status": "api_and_docstring_review",
+    "lines": 358,
+    "symbols": [
+      "_value_noise:32",
+      "_smoothstep:55",
+      "_srgb:60",
+      "BreadSpec:66",
+      "_section:79",
+      "_scale_to_box:100",
+      "tube_mesh:106",
+      "uv_mesh:143",
+      "paint_textures:181",
+      "_croissant:203",
+      "_bun:269",
+      "build:348"
+    ]
+  },
+  {
+    "path": "simulation/scripts/build_assets.py",
+    "bytes": 11460,
+    "status": "api_and_docstring_review",
+    "lines": 251,
+    "symbols": [
+      "_export_mujoco_parts:46",
+      "_export_glb:65",
+      "build_bread:98",
+      "plate_profile:141",
+      "build_plate:161",
+      "make_butcher_block:195",
+      "make_table_texture:235"
+    ]
+  },
+  {
+    "path": "simulation/scripts/build_web.py",
+    "bytes": 10613,
+    "status": "api_and_docstring_review",
+    "lines": 221,
+    "symbols": [
+      "mirror_pose:45",
+      "T_free:50",
+      "rollout_extras:58",
+      "build_config:92",
+      "_git_rev:125",
+      "write_manifest:134",
+      "parse_spec:171",
+      "main:181"
+    ]
+  },
+  {
+    "path": "simulation/scripts/compare_params.py",
+    "bytes": 6348,
+    "status": "implementation_review",
+    "lines": 118,
+    "symbols": [
+      "set_overrides:34",
+      "line:45"
+    ]
+  },
+  {
+    "path": "simulation/scripts/deploy_web.py",
+    "bytes": 4122,
+    "status": "api_and_docstring_review",
+    "lines": 92,
+    "symbols": [
+      "plan:26",
+      "main:57"
+    ]
+  },
+  {
+    "path": "simulation/scripts/diagnose_episode.py",
+    "bytes": 3153,
+    "status": "implementation_review",
+    "lines": 81,
+    "symbols": [
+      "load_state:22",
+      "diagnose:36"
+    ]
+  },
+  {
+    "path": "simulation/scripts/dinosam_server.py",
+    "bytes": 2681,
+    "status": "implementation_review",
+    "lines": 70,
+    "symbols": [
+      "main:41"
+    ]
+  },
+  {
+    "path": "simulation/scripts/drop_test.py",
+    "bytes": 3633,
+    "status": "implementation_review",
+    "lines": 69,
+    "symbols": [
+      "on_plate:27"
+    ]
+  },
+  {
+    "path": "simulation/scripts/evaluate.py",
+    "bytes": 2870,
+    "status": "implementation_review",
+    "lines": 69,
+    "symbols": [
+      "parse_sets:26"
+    ]
+  },
+  {
+    "path": "simulation/scripts/export_onnx.py",
+    "bytes": 7878,
+    "status": "implementation_review",
+    "lines": 167,
+    "symbols": [
+      "Rollout:28",
+      "Full:93",
+      "main:103"
+    ]
+  },
+  {
+    "path": "simulation/scripts/fetch_robots.py",
+    "bytes": 2023,
+    "status": "api_and_docstring_review",
+    "lines": 60,
+    "symbols": [
+      "sparse_clone:25",
+      "main:30"
+    ]
+  },
+  {
+    "path": "simulation/scripts/fit_robot_poses.py",
+    "bytes": 2174,
+    "status": "api_and_docstring_review",
+    "lines": 49,
+    "symbols": []
+  },
+  {
+    "path": "simulation/scripts/grasp_audit.py",
+    "bytes": 5635,
+    "status": "implementation_review",
+    "lines": 139,
+    "symbols": [
+      "audit_episode:34",
+      "main:111"
+    ]
+  },
+  {
+    "path": "simulation/scripts/grasp_height.py",
+    "bytes": 5020,
+    "status": "implementation_review",
+    "lines": 96,
+    "symbols": []
+  },
+  {
+    "path": "simulation/scripts/grasp_test.py",
+    "bytes": 5360,
+    "status": "implementation_review",
+    "lines": 130,
+    "symbols": [
+      "grasp_poses:31",
+      "run_test:62"
+    ]
+  },
+  {
+    "path": "simulation/scripts/parity_test.py",
+    "bytes": 20664,
+    "status": "implementation_review",
+    "lines": 372,
+    "symbols": [
+      "browser_main:76",
+      "_rot_err_deg:98",
+      "compare:104",
+      "compare_full:191",
+      "save_images:228",
+      "_free_port:242",
+      "main:251"
+    ]
+  },
+  {
+    "path": "simulation/scripts/physics_bench.py",
+    "bytes": 7407,
+    "status": "implementation_review",
+    "lines": 176,
+    "symbols": [
+      "parse_sets:38",
+      "_robot_items:50",
+      "strip_robots:56",
+      "Bench:65",
+      "add_mocap_box:161"
+    ]
+  },
+  {
+    "path": "simulation/scripts/physics_compress.py",
+    "bytes": 12114,
+    "status": "implementation_review",
+    "lines": 257,
+    "symbols": [
+      "add_cube:40",
+      "run:71"
+    ]
+  },
+  {
+    "path": "simulation/scripts/physics_drop.py",
+    "bytes": 4707,
+    "status": "implementation_review",
+    "lines": 105,
+    "symbols": [
+      "drop_once:35"
+    ]
+  },
+  {
+    "path": "simulation/scripts/physics_gripper.py",
+    "bytes": 6790,
+    "status": "implementation_review",
+    "lines": 180,
+    "symbols": [
+      "block_fixture:40",
+      "setup:55",
+      "reset:65",
+      "finger_geoms:96",
+      "_is_descendant:108",
+      "run:116"
+    ]
+  },
+  {
+    "path": "simulation/scripts/physics_pinch.py",
+    "bytes": 10185,
+    "status": "implementation_review",
+    "lines": 224,
+    "symbols": [
+      "build:40",
+      "run_one:97"
+    ]
+  },
+  {
+    "path": "simulation/scripts/physics_report.py",
+    "bytes": 1944,
+    "status": "implementation_review",
+    "lines": 53,
+    "symbols": [
+      "rate:21",
+      "cells:26"
+    ]
+  },
+  {
+    "path": "simulation/scripts/real/real_video_annotations.json",
+    "bytes": 3136,
+    "status": "inventory_only",
+    "lines": 29
+  },
+  {
+    "path": "simulation/scripts/real/replay_real.py",
+    "bytes": 40631,
+    "status": "implementation_review",
+    "lines": 829,
+    "symbols": [
+      "read_depth_png:61",
+      "_jsonl:65",
+      "load_log:79",
+      "sides_of:98",
+      "_p_to_T:104",
+      "perceived_points_world:112",
+      "footprint:126",
+      "yaw_diff:138",
+      "fit_table_plane:143",
+      "reconstruct_scene:186",
+      "bread_types:207",
+      "make_cfg:222",
+      "sim_perceive:236",
+      "_object_keys:249",
+      "refine_scene:255",
+      "mode_scene:287",
+      "_speed:357",
+      "real_phases:366",
+      "perceived_bread_world:456",
+      "sim_tcp_trace:468",
+      "dtw_cm:482",
+      "_resample:500",
+      "compare_phases:507",
+      "TraceInterp:517",
+      "served:530",
+      "mode_kinematic:542",
+      "mode_closed:634",
+      "mode_policy:683",
+      "main:779"
+    ]
+  },
+  {
+    "path": "simulation/scripts/real/sim_as_real.py",
+    "bytes": 10739,
+    "status": "implementation_review",
+    "lines": 217,
+    "symbols": [
+      "_r:40",
+      "_depth_png:44",
+      "Recorder:48",
+      "RecController:61",
+      "RecRunner:72",
+      "main:127"
+    ]
+  },
+  {
+    "path": "simulation/scripts/real/sim_phases.py",
+    "bytes": 11691,
+    "status": "implementation_review",
+    "lines": 250,
+    "symbols": [
+      "_smooth:46",
+      "ldlj:54",
+      "n_peaks:68",
+      "seg_stats:73",
+      "analyse_side:86",
+      "analyse_dir:176",
+      "summarise:192"
+    ]
+  },
+  {
+    "path": "simulation/scripts/real/video_timing.py",
+    "bytes": 4849,
+    "status": "implementation_review",
+    "lines": 107,
+    "symbols": [
+      "speed_factor:24",
+      "real_rows:39",
+      "sim_rows:70"
+    ]
+  },
+  {
+    "path": "simulation/scripts/rebuild_site.py",
+    "bytes": 9580,
+    "status": "api_and_docstring_review",
+    "lines": 184,
+    "symbols": [
+      "free_port:52",
+      "featured:63",
+      "record_videos:70",
+      "main:111"
+    ]
+  },
+  {
+    "path": "simulation/scripts/robust_audit.py",
+    "bytes": 4287,
+    "status": "implementation_review",
+    "lines": 96,
+    "symbols": [
+      "perception_error:28",
+      "audit_run:51",
+      "report:72"
+    ]
+  },
+  {
+    "path": "simulation/scripts/robust_batch.sh",
+    "bytes": 1568,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/scripts/robust_mask_calib.py",
+    "bytes": 5850,
+    "status": "implementation_review",
+    "lines": 117,
+    "symbols": [
+      "instance_stats:29",
+      "main:47"
+    ]
+  },
+  {
+    "path": "simulation/scripts/robust_perception.py",
+    "bytes": 8071,
+    "status": "implementation_review",
+    "lines": 159,
+    "symbols": [
+      "_EnvOnly:36",
+      "_rebuild:42",
+      "gt_bread:52",
+      "run_condition:60"
+    ]
+  },
+  {
+    "path": "simulation/scripts/robust_report.py",
+    "bytes": 8255,
+    "status": "implementation_review",
+    "lines": 159,
+    "symbols": [
+      "tuned_overrides:36",
+      "run:46",
+      "load:77",
+      "table:87",
+      "compare:114"
+    ]
+  },
+  {
+    "path": "simulation/scripts/run_episode.py",
+    "bytes": 2695,
+    "status": "implementation_review",
+    "lines": 66,
+    "symbols": [
+      "main:26"
+    ]
+  },
+  {
+    "path": "simulation/scripts/smoke_test.py",
+    "bytes": 1448,
+    "status": "implementation_review",
+    "lines": 41,
+    "symbols": [
+      "main:21"
+    ]
+  },
+  {
+    "path": "simulation/tests/conftest.py",
+    "bytes": 1333,
+    "status": "implementation_review",
+    "lines": 41,
+    "symbols": [
+      "robot_available:29",
+      "robots_with_assets:33",
+      "sim_root:40"
+    ]
+  },
+  {
+    "path": "simulation/tests/test_config_profiles.py",
+    "bytes": 6277,
+    "status": "implementation_review",
+    "lines": 139,
+    "symbols": [
+      "test_defaults_are_the_real_rig:16",
+      "test_deep_update_merges_nested_and_copies:28",
+      "test_per_robot_calibration_applies_to_that_robot_only:37",
+      "test_explicit_overrides_beat_per_robot:49",
+      "test_production_profile_is_the_default:54",
+      "test_tuned_profile_applies_tuned_params_and_skill:62",
+      "test_tuned_profile_equals_the_old_set_route:76",
+      "test_overrides_apply_on_top_of_the_profile:87",
+      "test_profile_errors:94",
+      "test_dotted_to_nested_handles_list_elements:101",
+      "test_tuned_file_schema:111",
+      "test_cli_scripts_accept_profile:129"
+    ]
+  },
+  {
+    "path": "simulation/tests/test_driver_ik.py",
+    "bytes": 3470,
+    "status": "implementation_review",
+    "lines": 81,
+    "symbols": [
+      "env_for:15",
+      "test_pose_vector_round_trip:23",
+      "test_cam_base_conversions_are_inverse:33",
+      "test_ik_round_trip:46",
+      "test_move_p_reaches_the_commanded_pose:66"
+    ]
+  },
+  {
+    "path": "simulation/tests/test_grasp_skill.py",
+    "bytes": 7211,
+    "status": "implementation_review",
+    "lines": 174,
+    "symbols": [
+      "FakeArm:15",
+      "make:46",
+      "feed:59",
+      "step:63",
+      "refined:69",
+      "test_refine_projects_onto_the_bread:79",
+      "test_close_on_arrival_hold_then_holding:90",
+      "test_approach_times_out_into_closing:107",
+      "test_empty_grip_regrasps_lower_and_more_central:120",
+      "test_regrasp_attempts_are_capped:149",
+      "test_policy_letting_go_aborts_the_approach:159",
+      "test_skill_off_closes_on_the_policy_flag:168"
+    ]
+  },
+  {
+    "path": "simulation/tests/test_perception_geometry.py",
+    "bytes": 7259,
+    "status": "implementation_review",
+    "lines": 153,
+    "symbols": [
+      "FakeEnv:25",
+      "perceived:63",
+      "_main_axis:69",
+      "test_split_mask_by_x:74",
+      "test_postprocess_drops_outliers:87",
+      "test_bread_keypoints_lie_on_the_bread:95",
+      "test_pca_frame_follows_the_long_axis:109",
+      "test_left_arm_sees_the_mirrored_world:122",
+      "test_runner_bread_geometry_in_world:135"
+    ]
+  },
+  {
+    "path": "simulation/tests/test_smoke_episode.py",
+    "bytes": 1962,
+    "status": "implementation_review",
+    "lines": 44,
+    "symbols": [
+      "policy:15",
+      "test_five_second_episode:27"
+    ]
+  },
+  {
+    "path": "simulation/tests/test_web_build.py",
+    "bytes": 13233,
+    "status": "implementation_review",
+    "lines": 249,
+    "symbols": [
+      "synthetic_rollout:18",
+      "test_pack_rollout_is_bit_exact:44",
+      "test_pack_rollout_keeps_unknown_sections_as_json:58",
+      "test_built_rollouts_round_trip:67",
+      "_box_scene:78",
+      "_world_positions:99",
+      "test_quantize_glb:110",
+      "test_webp_glb_keeps_float_positions:135",
+      "_configs:151",
+      "test_manifest_numbers_come_from_data:167",
+      "test_manifest_validation_catches_errors:185",
+      "test_tuning_section_from_run:199",
+      "test_built_manifest_is_valid:216",
+      "test_deploy_plan_ships_only_what_the_site_loads:221",
+      "test_readme_results_table_is_generated:245"
+    ]
+  },
+  {
+    "path": "simulation/web/assets/favicon.png",
+    "bytes": 14897,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/web/css/style.css",
+    "bytes": 14582,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/web/index.html",
+    "bytes": 13166,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/web/js/app.js",
+    "bytes": 26974,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/web/js/live/controller.js",
+    "bytes": 13089,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/web/js/live/driver.js",
+    "bytes": 11852,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/web/js/live/live.js",
+    "bytes": 4492,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/web/js/live/math.js",
+    "bytes": 7338,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/web/js/live/parity.js",
+    "bytes": 6473,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/web/js/live/perception.js",
+    "bytes": 19700,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/web/js/live/policy.js",
+    "bytes": 5523,
+    "status": "implementation_review"
+  },
+  {
+    "path": "simulation/web/js/live/runner.js",
+    "bytes": 18997,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/web/js/rollout.js",
+    "bytes": 3972,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/web/js/softbread.js",
+    "bytes": 10035,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/web/js/viewer.js",
+    "bytes": 29417,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/web/tools/check_rollouts.py",
+    "bytes": 3008,
+    "status": "api_and_docstring_review",
+    "lines": 66,
+    "symbols": []
+  },
+  {
+    "path": "simulation/web/tools/compare_shots.py",
+    "bytes": 5452,
+    "status": "api_and_docstring_review",
+    "lines": 97,
+    "symbols": [
+      "diff:53"
+    ]
+  },
+  {
+    "path": "simulation/web/tools/live_test.html",
+    "bytes": 1970,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/web/tools/measure_load.py",
+    "bytes": 7890,
+    "status": "api_and_docstring_review",
+    "lines": 145,
+    "symbols": [
+      "classify:37",
+      "summarize:116"
+    ]
+  },
+  {
+    "path": "simulation/web/tools/ort_test.html",
+    "bytes": 1559,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/web/tools/ort_test2.html",
+    "bytes": 1143,
+    "status": "inventory_only"
+  },
+  {
+    "path": "simulation/web/tools/record.py",
+    "bytes": 5166,
+    "status": "api_and_docstring_review",
+    "lines": 89,
+    "symbols": []
+  },
+  {
+    "path": "simulation/web/tools/serve.py",
+    "bytes": 3756,
+    "status": "api_and_docstring_review",
+    "lines": 96,
+    "symbols": [
+      "_compressible:22",
+      "RangeHandler:28"
+    ]
+  },
+  {
+    "path": "simulation/web/tools/shot.py",
+    "bytes": 2388,
+    "status": "api_and_docstring_review",
+    "lines": 61,
+    "symbols": []
+  }
+]

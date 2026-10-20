@@ -1,0 +1,87 @@
+{
+  "review_date": "2026-10-20",
+  "code_commit": "239affbc24b8b4a3ab2987cdd76436bea7ca9411",
+  "dataset_revision": "f0aa87fade6a41316d65322512f56f066dec62e3",
+  "checkpoint_revision": "9d14cb0f7dfbfdba47e83925c9db3ab9b37cca2b",
+  "dataset_recordings": 122,
+  "checkpoint_contract": {
+    "frame_mode": "camera_frame",
+    "action_mode": "absolute",
+    "single_hand": true,
+    "single_hand_side": "right",
+    "pred_horizon": 50,
+    "use_aux_obj_dynamics": false,
+    "use_aux_visual_foresight": false,
+    "use_aux_temporal_contrastive": false
+  },
+  "upstream_real2sim_totals": {
+    "rendered_episodes": 1403,
+    "frames": 365988,
+    "physics_samples": 609,
+    "datasets": {
+      "serve_bread_040_diverse_tianji": {
+        "episodes": 142,
+        "ok": 142,
+        "frames": 32204
+      },
+      "serve_bread_040_diverse_tianji_hq": {
+        "episodes": 71,
+        "ok": 71,
+        "frames": 16102
+      },
+      "serve_bread_040_mirror_tianji": {
+        "episodes": 290,
+        "ok": 290,
+        "frames": 97850
+      },
+      "serve_bread_040_mirror_tianji_hq": {
+        "episodes": 6,
+        "ok": 6,
+        "frames": 2022
+      },
+      "serve_bread_040_soft_tianji": {
+        "episodes": 70,
+        "ok": 70,
+        "frames": 15310
+      },
+      "serve_bread_040_soft_tianji_hq": {
+        "episodes": 35,
+        "ok": 35,
+        "frames": 7655
+      },
+      "serve_bread_040_tianji": {
+        "episodes": 618,
+        "ok": 618,
+        "frames": 135346
+      },
+      "serve_bread_040_tianji_hq": {
+        "episodes": 24,
+        "ok": 24,
+        "frames": 5256
+      },
+      "water_flowers_000_tianji": {
+        "episodes": 98,
+        "ok": 98,
+        "frames": 36162
+      },
+      "water_flowers_000_tianji_hq": {
+        "episodes": 49,
+        "ok": 49,
+        "frames": 18081
+      }
+    }
+  },
+  "remote_download_scope": "Public JSON metadata and web sources only; no weights or full recordings. Not rerun results.",
+  "metadata_sha256": {
+    "real2sim-summary.json": "08eb126e0d6b81d9890d667c14cfe838faa9d9b580a6dd6f1f29d1be44077c29",
+    "checkpoint-stats.json": "8c8f066d215baffe2bb2fcdbd8d95d1f2df1d2bc7e5a28d80a818199837e4ee5",
+    "real2sim-manifest.json": "1eb261a910f90f1e481f2d7c9b3337bacaf7eae5e95638807d8a43a33324e3c5",
+    "checkpoint-config.json": "52727aa93d6bc1d75a39e3b583b2fb9b6b507995dabd90c80e4c87855898fb78",
+    "sim-manifest.json": "be00515585911f6b4ce5bed545a9cb22fce5e05f9b1e361ba98a4cb9e83295f9",
+    "datasets-info.json": "5ca96569845111386c9521311b80dbcf86dba6d9cc925f1229088d72bfc78ac9",
+    "sample040-camera.json": "91d61a3337c6fc43b14ed17e818d109e1416229f90ece2a783127d3dfebbc0dd",
+    "real2sim-water.json": "b8c6087435d0f8dbd6b70df235eaabe9429347642d94cbfb7900d004538db35e",
+    "sample040-objects.json": "bc7131c992176abf9260f44131939a78ed5e09adc0889d07b0e853cf4ca82468",
+    "models-info.json": "10044631a47f811091a4c8394e79ce0e2d53c4d07d395c078188a082a6406cc9"
+  }
+}
