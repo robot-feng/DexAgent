@@ -60,6 +60,21 @@ silently reinterpret old trajectories or shift only the displayed mesh.
 Align wheeled robots using their wheel contact geometry, not an assumed USD
 root origin. The user's static appearance reference is not a dynamic task pass.
 
+Keep environment, embodiment and task definitions separate; compose them through
+RSS `Binding` / `Scene` / `BuildRequest`. A declared pairing is not a passed
+physical task. Preserve monolithic source imports for faithful reconstruction
+using the existing scene-resident semantics; never import a duplicate robot.
+Do not replace Sharpa's 56-joint mapping with another robot's name or create a
+second scene/robot registry. See the adoption review for the source-backed plan.
+
+Keep task intent and acceptance independent of action generation. Ego traces
+provide retargeting references; planning, skills, policies and RL are alternative
+or complementary action sources. Missing demonstrations do not mandate RL.
+Each source must use the selected embodiment's control semantics and the same
+physical execution, task verification and episode recording path. Reuse existing
+interfaces rather than adding a parallel pipeline framework. See
+`docs/ENVIRONMENT_EMBODIMENT_SOURCE_REVIEW_20261020.md` for audited boundaries.
+
 ## Shared workbench
 
 Use the existing default port 8765 for user-facing updates. Check actual active
