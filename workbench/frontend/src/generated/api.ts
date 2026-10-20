@@ -916,6 +916,7 @@ export interface components {
             proposed_objects: string[];
             /** Detected Objects */
             detected_objects: string[];
+            mask_summary: components["schemas"]["CleanupMaskSummary"] | null;
             /** Mask Preview Url */
             mask_preview_url: string | null;
             /** Mask Video Url */
@@ -935,6 +936,31 @@ export interface components {
             log_url: string;
             /** Updated At */
             updated_at: string;
+        };
+        /** CleanupMaskSummary */
+        CleanupMaskSummary: {
+            /** Segmentation Model */
+            segmentation_model: string | null;
+            /** Propagation Model */
+            propagation_model: string | null;
+            /** Device */
+            device: string | null;
+            /** Frame Count */
+            frame_count: number | null;
+            /** Resolution Hw */
+            resolution_hw: number[];
+            /** Prompt Resolutions */
+            prompt_resolutions: {
+                [key: string]: string;
+            };
+            /** Seed Frame Indices */
+            seed_frame_indices: {
+                [key: string]: number;
+            };
+            /** Seed Scores */
+            seed_scores: {
+                [key: string]: number;
+            };
         };
         /** CleanupRequirement */
         CleanupRequirement: {

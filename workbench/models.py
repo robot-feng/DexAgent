@@ -284,6 +284,17 @@ class CleanupCreate(BaseModel):
     proposal_backend: Literal['codex_external', 'gemini', 'manual'] = 'codex_external'
 
 
+class CleanupMaskSummary(ReadModel):
+    segmentation_model: str | None = None
+    propagation_model: str | None = None
+    device: str | None = None
+    frame_count: int | None = None
+    resolution_hw: list[int] = Field(default_factory=list)
+    prompt_resolutions: dict[str, str] = Field(default_factory=dict)
+    seed_frame_indices: dict[str, int] = Field(default_factory=dict)
+    seed_scores: dict[str, float] = Field(default_factory=dict)
+
+
 class CleanupJob(ReadModel):
     id: str
     scene_name: str
@@ -300,6 +311,7 @@ class CleanupJob(ReadModel):
     proposal_transport_dir: str | None = None
     proposed_objects: list[str] = Field(default_factory=list)
     detected_objects: list[str] = Field(default_factory=list)
+    mask_summary: CleanupMaskSummary | None = None
     mask_preview_url: str | None = None
     mask_video_url: str | None = None
     source_video_url: str

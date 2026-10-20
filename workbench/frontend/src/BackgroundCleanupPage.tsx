@@ -289,6 +289,28 @@ function CleanupReview({ job, onApprove, onBuild, onStop, busy, canBuild, canInp
         <>
           <div className="notice warning cleanup-warning"><AlertTriangle size={16} /><span>确认彩色区域只覆盖要移除的对象，并检查黑白视频中的运动、遮挡和自动选取的种子帧。播放、暂停或拖动任一侧都会同步另一侧；mask 不正确时请调整对象提示词后重新生成。</span></div>
           {job.detected_objects.length > 0 && <div className="cleanup-object-tags">{job.detected_objects.map((name) => <span key={name}>{name}</span>)}</div>}
+          {job.mask_summary && <section className="cleanup-mask-diagnostics" data-testid="cleanup-mask-diagnostics" aria-label="Mask 分割诊断">
+            <div className="cleanup-mask-models">
+              <strong>本次分割诊断</strong>
+              <span>{job.mask_summary.segmentation_model ?? "SAM 模型未知"}</span>
+              {job.mask_summary.propagation_model && <span>跨帧跟踪：{job.mask_summary.propagation_model}</span>}
+              <small>{job.mask_summary.frame_count != null && `${job.mask_summary.frame_count} 帧`}{job.mask_summary.resolution_hw.length === 2 && ` · ${job.mask_summary.resolution_hw[1]}×${job.mask_summary.resolution_hw[0]}`}{job.mask_summary.device && ` · ${job.mask_summary.device}`}</small>
+            </div>
+            <div className="cleanup-mask-object-details">
+              {job.detected_objects.map((name) => {
+                const prompt = job.mask_summary!.prompt_resolutions[name];
+                const seedFrame = job.mask_summary!.seed_frame_indices[name];
+                const score = job.mask_summary!.seed_scores[name];
+                return <div key={name} className="cleanup-mask-object-row">
+                  <strong>{name}</strong>
+                  {prompt && <span>分割提示词：{prompt}{prompt !== name && `（原始提示词：${name}）`}</span>}
+                  {seedFrame != null && <span>播种帧：{seedFrame}</span>}
+                  {score != null && <span>SAM 分割分数：{score.toFixed(3)}</span>}
+                </div>;
+              })}
+            </div>
+            <small className="muted">分数只反映关键帧播种结果；整段视频仍需检查运动、遮挡和漏检。</small>
+          </section>}
           {job.mask_preview_url && (
             <div className="cleanup-preview-grid mask-review-keyframe">
               <figure><img src={job.mask_preview_url} alt="SAM 关键帧对象分割 overlay" /><figcaption>关键帧分割 overlay</figcaption></figure>

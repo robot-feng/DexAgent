@@ -1470,6 +1470,13 @@ dd {
 .cleanup-status.preparing, .cleanup-status.inpainting, .cleanup-status.building { color: var(--blue); border-color: #405b83; }
 .cleanup-object-tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .cleanup-object-tags span { border: 1px solid #40536e; border-radius: 16px; padding: 4px 8px; background: var(--selected); color: #d4e4fa; font-size: 11px; }
+.cleanup-mask-diagnostics { display: grid; gap: 10px; border: 1px solid var(--line); border-radius: 7px; padding: 11px; background: #121821; }
+.cleanup-mask-models, .cleanup-mask-object-details { display: flex; flex-wrap: wrap; align-items: baseline; gap: 7px 13px; }
+.cleanup-mask-models strong { color: #dce7f5; }
+.cleanup-mask-models span, .cleanup-mask-object-row span { color: #aebdd0; font-size: 11px; }
+.cleanup-mask-models small, .cleanup-mask-diagnostics > small { color: var(--muted); font-size: 10px; }
+.cleanup-mask-object-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 5px 10px; border-left: 2px solid #536f98; padding-left: 9px; }
+.cleanup-mask-object-row strong { color: #dce7f5; font-size: 11px; }
 .cleanup-preview-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .mask-review-keyframe { grid-template-columns: minmax(0, 1fr); max-width: 720px; }
 .cleanup-synchronized-pair { grid-template-columns: repeat(2, minmax(0, 1fr)); }

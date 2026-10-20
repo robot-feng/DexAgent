@@ -47,9 +47,10 @@ test("background cleanup defaults to native SAM3 LiteText tracking and keeps mod
 
 test("background cleanup mask review synchronizes the source and mask timelines", async ({ page, request }) => {
   const jobs = await (await request.get(`${prefix}/background-cleanups/jobs`)).json();
-  const reviewJob = jobs.find((job: { status: string }) => job.status === "review_mask");
+  const reviewJob = jobs.find((job: { status: string; mask_summary?: unknown }) =>
+    job.status === "review_mask" && job.mask_summary);
   if (!reviewJob) {
-    test.skip(true, "requires a real cleanup task waiting at the mask review gate");
+    test.skip(true, "requires a cleanup task with mask metadata waiting at the human review gate");
     return;
   }
 
@@ -63,6 +64,22 @@ test("background cleanup mask review synchronizes the source and mask timelines"
   const source = page.getByTestId("mask-review-source");
   const mask = page.getByTestId("mask-review-output");
   await expect(page.getByTestId("cleanup-synchronized-review")).toBeVisible();
+  const diagnostics = page.getByTestId("cleanup-mask-diagnostics");
+  await expect(diagnostics).toBeVisible();
+  await expect(diagnostics).toContainText(reviewJob.mask_summary.segmentation_model);
+  await expect(diagnostics).toContainText(reviewJob.mask_summary.propagation_model);
+  for (const [object, prompt] of Object.entries(reviewJob.mask_summary.prompt_resolutions)) {
+    await expect(diagnostics).toContainText(object);
+    await expect(diagnostics).toContainText(`分割提示词：${prompt}`);
+  }
+  for (const [object, seedFrame] of Object.entries(reviewJob.mask_summary.seed_frame_indices)) {
+    await expect(diagnostics).toContainText(`${object}`);
+    await expect(diagnostics).toContainText(`播种帧：${seedFrame}`);
+  }
+  for (const [object, score] of Object.entries(reviewJob.mask_summary.seed_scores)) {
+    await expect(diagnostics).toContainText(object);
+    await expect(diagnostics).toContainText(`SAM 分割分数：${score.toFixed(3)}`);
+  }
   await expect(page.getByRole("button", { name: "确认 mask，运行 VOID 补洞" })).toBeDisabled();
   await expect(page.getByText(/补洞环境未就绪.*CogVideoX-Fun-V1\.5-5b-InP/)).toBeVisible();
   await expect(source).toHaveAttribute("src", reviewJob.source_video_url);
@@ -136,7 +153,7 @@ test("workspace overview links to real runs, scenes, editor sessions and capabil
   await expect(page.locator(".studio-live-panel")).toContainText(
     "WORKBENCH_RSS_RUN_DIR",
   );
-  await page.getByRole("link", { name: /打开项目与运行/ }).click();
+  await page.getByRole("link", { name: /项目与运行/ }).click();
   await expect(page).toHaveURL(/\/projects$/);
   await expect(
     page.getByRole("heading", { name: "从一次运行，看到完整过程" }),

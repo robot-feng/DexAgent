@@ -42,6 +42,8 @@ SimFoundry 的 Stage 1b、Hydra mask stage、对象提案、VOID 补洞、人工
 
 mask 人审界面现在将原始视频与 mask 视频并排同步播放，任一侧的播放、暂停、进度拖动和速度调整都会同步到另一侧；VOID 复核界面复用同一组件对照输入与清理结果。默认 8765 上的真实浏览器回归验证了当前 `review_mask` 任务两边拖动时间轴的同步；测试没有调用确认接口，因此任务仍停在人审门。当前缺少 VOID 真实产物，清理前后视图尚未有运行数据可做端到端验证。
 
+复核卡现在从 `quadmask_meta.json` 读取真实模型与跟踪器、设备、帧数和分辨率，并按对象显示原始提示词、实际命中的提示词、播种帧与 SAM 分割分数。分数只表示关键帧播种，不作为整段视频跟踪置信度；旧任务缺少这些元数据时仍可正常复核。当前机器人示例在页面显示 `gripper → end effector`、种子帧 0、分数 `0.750`，机器人本体分数 `0.805`；任务保持 `review_mask`。
+
 ## VOID 补洞依赖预检
 
 补洞启动门现在按 SimFoundry 实际执行路径检查 Pass 1/2 driver、VOID 推理源码和配置、`auto_bg.yaml` 中配置的两份 VOID checkpoint，以及本地 CogVideoX-Fun 基础模型的配置、分词器、调度器和 transformer/VAE/text-encoder 权重文件。这样 Conda 环境里模块可导入、但模型未下载完整时，Workbench 会明确报缺项并阻止创建昂贵的补洞任务；mask 复核页也使用同一预检禁用补洞按钮并显示原因，后端启动检查继续作为最终门禁。自动背景流程实际调用本地模型目录；仅有 Hugging Face 缓存或权重文件名不能代替该目录。
@@ -73,6 +75,9 @@ hf download netflix/void-model void_pass2.safetensors \
 - `npm run build`：TypeScript 与 Vite 生产构建通过。
 - `npm run test:e2e -- --grep 'background cleanup defaults'`：1 passed；默认 LiteText 可提交，页面展示 VOID 基础模型和两份 checkpoint 的真实缺项；其他传播组合按依赖预检禁用或启用；操作演示提示准确说明其不保证完整场景覆盖，不再误称固定机位。
 - `npm run test:e2e -- --grep 'background cleanup'`：2 passed；在真实 `review_mask` 任务上验证缺少 VOID 模型时补洞按钮禁用、缺项说明可见，并验证原视频与 mask 视频双向拖动同步；未推进人工确认门。
+- `.workbench/venv/bin/python -m pytest -q workbench/tests/test_cleanup_mask_summary.py workbench/tests/test_workbench.py`：41 passed；覆盖真实 mask 元数据映射及缺失/损坏兼容。
+- `npm run build` 与 `npm run test:e2e -- --grep 'background cleanup mask review'`：前端构建通过，真实人审页验证模型、实际提示词、播种帧和分数可见，并验证同步播放和确认门保持关闭。
+- 全量 E2E 首轮为 21 passed、4 skipped、1 failed；失败来自总览入口测试仍查找旧文案“打开项目与运行”，改为页面实际入口“项目与运行”后，该用例单独重跑通过。
 - Workbench API 冒烟：Stage 1b → SAM3 LiteText 原生双向跟踪 → 400 帧 mask → 人工复核状态。
 - 机械臂单目标冒烟：`ThrowAwayTrash.mp4` → 400 帧 mask → 画外区间与入镜恢复检查、非空帧相邻 IoU 统计 → 人工复核状态。
 - `Fruits.mp4` scene-scan 冒烟：SAM3 LiteText 原生双向跟踪 → 400 帧 mask → 11 个视角样本视觉检查和整段 mask 面积 / 相邻帧 IoU 检查 → 人工复核状态。

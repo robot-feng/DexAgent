@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 from pathlib import Path
 import shutil
@@ -13,7 +14,7 @@ import time
 import uuid
 
 from .index import identity
-from .models import CleanupCatalog, CleanupCreate, CleanupJob, CleanupRequirement, CleanupVideo
+from .models import CleanupCatalog, CleanupCreate, CleanupJob, CleanupMaskSummary, CleanupRequirement, CleanupVideo
 
 VIDEO_SUFFIXES = {'.mp4', '.mov', '.mkv', '.webm'}
 ACTIVE = {'preparing', 'inpainting', 'building'}
@@ -557,6 +558,51 @@ print(json.dumps({"missing": missing}))
         temp.write_text(json.dumps(job, ensure_ascii=False, indent=2))
         temp.replace(directory / 'job.json')
 
+    @staticmethod
+    def _mask_summary(path: Path) -> CleanupMaskSummary | None:
+        try:
+            metadata = json.loads(path.read_text())
+        except (OSError, UnicodeError, ValueError):
+            return None
+        if not isinstance(metadata, dict):
+            return None
+
+        segmentation = metadata.get('segmentation_identity')
+        propagation = metadata.get('propagation_identity')
+        segmentation = segmentation if isinstance(segmentation, dict) else {}
+        propagation = propagation if isinstance(propagation, dict) else {}
+        frame_count = metadata.get('num_frames')
+        if isinstance(frame_count, bool) or not isinstance(frame_count, int) or frame_count < 0:
+            frame_count = None
+        resolution = metadata.get('resolution_hw')
+        if not (isinstance(resolution, list) and len(resolution) == 2 and
+                all(isinstance(item, int) and not isinstance(item, bool) and item > 0 for item in resolution)):
+            resolution = []
+
+        prompts = metadata.get('prompt_resolutions')
+        prompts = {key: value for key, value in prompts.items()
+                   if isinstance(key, str) and isinstance(value, str)} if isinstance(prompts, dict) else {}
+        seeds = metadata.get('seed_frame_indices')
+        seeds = {key: value for key, value in seeds.items()
+                 if isinstance(key, str) and isinstance(value, int) and not isinstance(value, bool) and value >= 0} \
+            if isinstance(seeds, dict) else {}
+        scores = metadata.get('seed_scores')
+        scores = {key: float(value) for key, value in scores.items()
+                  if isinstance(key, str) and isinstance(value, (int, float)) and not isinstance(value, bool)
+                  and math.isfinite(value)} if isinstance(scores, dict) else {}
+        summary = CleanupMaskSummary(
+            segmentation_model=segmentation.get('model') if isinstance(segmentation.get('model'), str) else None,
+            propagation_model=propagation.get('model') if isinstance(propagation.get('model'), str) else None,
+            device=propagation.get('device') if isinstance(propagation.get('device'), str) else None,
+            frame_count=frame_count,
+            resolution_hw=resolution,
+            prompt_resolutions=prompts,
+            seed_frame_indices=seeds,
+            seed_scores=scores,
+        )
+        return summary if any((summary.segmentation_model, summary.propagation_model, summary.frame_count,
+                               summary.prompt_resolutions, summary.seed_scores)) else None
+
     def job(self, job_id: str) -> CleanupJob:
         directory = self.directory(job_id)
         job = self._read(directory)
@@ -564,6 +610,7 @@ print(json.dumps({"missing": missing}))
         data = self.simfoundry / 'Data' / scene
         mask = data / 'auto_bg/void/input/keyframe_masks_debug/all_objects_overlay.png'
         mask_video = data / 'auto_bg/void/input/quadmask_0.mp4'
+        mask_summary = self._mask_summary(data / 'auto_bg/void/input/quadmask_meta.json')
         source = Path(job['source_copy'])
         clean = data / 'auto_bg/void/pass2/pass2.mp4'
         final_scene = self.simfoundry / 'assets/scenes' / scene / f'{scene}_scene_state_auto_bg.json'
@@ -577,6 +624,7 @@ print(json.dumps({"missing": missing}))
             proposal_transport_dir=job.get('proposal_transport_dir'),
             proposed_objects=job.get('proposed_objects', []),
             detected_objects=job.get('detected_objects', []),
+            mask_summary=mask_summary,
             mask_preview_url=f'/api/workbench/v1/background-cleanups/{job_id}/media/mask' if mask.is_file() else None,
             mask_video_url=f'/api/workbench/v1/background-cleanups/{job_id}/media/quadmask' if mask_video.is_file() else None,
             source_video_url=f'/api/workbench/v1/background-cleanups/{job_id}/media/source' if source.is_file() else '',
