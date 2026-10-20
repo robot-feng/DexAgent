@@ -20,6 +20,7 @@ limit, and the plan never knew a pose was out of reach). Here the arm is part of
 """
 from __future__ import annotations
 
+import copy
 import numpy as np
 import mujoco
 
@@ -622,7 +623,8 @@ def screen_poses(model, side, poses, q_base, probe=None, arm_seed=None, cfg=None
     """Rank hand poses by whether the station's arm can hold them: for each pose (pos, euler, finger_targets; the
     grasp tools' format) the arm is solved at the grasp and at the pre-grasp (`approach_m` out along the pose's
     approach), and the arm (probe) is checked against the scene at both. Returns [{index, ok, residual_mm,
-    residual_deg, arm_hits, reason}] in the input order; duplicates (same wrist pose within 1 mm / 1 deg) are marked.
+    residual_deg, arm_hits, reason}] in the input order. Exactly repeated geometric inputs reuse the reach result,
+    but retain their candidate indices: different grip controls can have different physical outcomes.
     Waypoints accept legacy wrist translation offsets, or held-object target
     dictionaries consumed by _held_waypoint_states. This is a necessary reach
     screen; execution still checks continuous motion, contact and stability."""
@@ -645,11 +647,11 @@ def screen_poses(model, side, poses, q_base, probe=None, arm_seed=None, cfg=None
         approach = float(approach_m if np.ndim(approach_m) == 0 else approach_m[i])
         shape = (pz.get("finger_targets") or {}, pz.get("finger_targets_open") or {})
         dup = next((j for j, (p2, e2, a2, dist2, shape2) in seen
-                    if np.linalg.norm(p2 - pos) < 1e-3 and np.abs(e2 - eul).max() < np.radians(1.0)
-                    and np.linalg.norm(a2 - ap) < 1e-6 and abs(dist2 - approach) < 1e-6 and shape2 == shape), None)
+                    if np.array_equal(p2, pos) and np.array_equal(e2, eul)
+                    and np.array_equal(a2, ap) and dist2 == approach and shape2 == shape), None)
         seen.append((i, (pos, eul, ap, approach, shape)))
         if dup is not None:
-            out.append({"index": i, "ok": False, "duplicate_of": dup, "reason": "duplicate wrist pose"})
+            out.append(dict(copy.deepcopy(out[dup]), index=i, family=pz.get("family"), kinematic_reuse_of=dup))
             continue
         q = np.asarray(q_base, float).copy()
         d = S.data

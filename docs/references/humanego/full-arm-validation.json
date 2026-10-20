@@ -1,0 +1,1027 @@
+{
+  "objective": "transferable_task_generation",
+  "scope": "Synthetic box grasp/lift on original fixed YAM + Sharpa, not HumanEgo dataset or full pipeline completion.",
+  "aggregate_complete": false,
+  "robot_coverage": {
+    "yam_sharpa": "box_right physical execution + six audits + selected pose dual acceptance passed; tall not executed",
+    "g1_omnipicker": "missing",
+    "g2_omnipicker": "missing"
+  },
+  "launch_commit": "87bde66f74269a1da36d42b9058ba5983c4e7a13",
+  "source_version_note": "source_commit identifies HEAD at launch; screening used the shared current worktree, not a frozen clean commit snapshot.",
+  "local_evidence_root": ".workbench/previews/human-grasp-full-arm-20261021",
+  "studio_url": "http://127.0.0.1:8765/runs/87a7e22241f723e78aa98030",
+  "initial_screen_failures": {
+    "box_right": [
+      {
+        "index": 0,
+        "ok": false,
+        "residual_mm": 85.56,
+        "residual_deg": 60.54,
+        "arm_hits": [
+          {
+            "frame": 0,
+            "label": "",
+            "depth_mm": 56.3,
+            "geoms": [
+              "robot_right_collision_hand_right_palm_0",
+              "robot_right_arm_link4"
+            ]
+          }
+        ],
+        "reason": "arm cannot hold it (85.6 mm / 60.5 deg off)",
+        "family": "human",
+        "failed_at": "pre-grasp",
+        "approach_m": 0.08
+      },
+      {
+        "index": 1,
+        "ok": false,
+        "residual_mm": 84.54,
+        "residual_deg": 60.65,
+        "arm_hits": [
+          {
+            "frame": 0,
+            "label": "",
+            "depth_mm": 62.9,
+            "geoms": [
+              "robot_right_collision_hand_right_hand_C_MC_hull",
+              "robot_right_arm_link4"
+            ]
+          }
+        ],
+        "reason": "arm cannot hold it (84.5 mm / 60.7 deg off)",
+        "family": "human",
+        "failed_at": "pre-grasp",
+        "approach_m": 0.08
+      }
+    ],
+    "tall_box_right_hamer": [
+      {
+        "index": 0,
+        "ok": false,
+        "residual_mm": 145.9,
+        "residual_deg": 74.63,
+        "arm_hits": [],
+        "reason": "arm cannot hold it (145.9 mm / 74.6 deg off)",
+        "family": "human",
+        "failed_at": "pre-grasp",
+        "approach_m": 0.08
+      }
+    ]
+  },
+  "optimizer": {
+    "ok": true,
+    "family": "rigid",
+    "n_evals": 18,
+    "n_tested": 3,
+    "n_arm_rejected": 7,
+    "n_screened_out": 8,
+    "seconds": 115.2,
+    "tests": [
+      "grasp_lift_test",
+      "grasp_hold_test"
+    ]
+  },
+  "optimizer_budget": {
+    "max_evals": 64,
+    "iterations": 4,
+    "population": 16,
+    "max_starts": 6,
+    "workers": 2,
+    "seed": 20261021
+  },
+  "independent_candidate_results": [
+    {
+      "index": 0,
+      "ok": true,
+      "arm": {
+        "index": 0,
+        "ok": true,
+        "residual_mm": 0.01,
+        "residual_deg": 0.0,
+        "arm_hits": [],
+        "reason": null,
+        "family": "pinch3",
+        "failed_at": null,
+        "approach_m": 0.08
+      },
+      "lift_ok": true,
+      "hold_ok": true
+    },
+    {
+      "index": 1,
+      "ok": true,
+      "arm": {
+        "index": 0,
+        "ok": true,
+        "residual_mm": 0.01,
+        "residual_deg": 0.0,
+        "arm_hits": [],
+        "reason": null,
+        "family": "pinch",
+        "failed_at": null,
+        "approach_m": 0.08
+      },
+      "lift_ok": true,
+      "hold_ok": true
+    },
+    {
+      "index": 2,
+      "ok": true,
+      "arm": {
+        "index": 0,
+        "ok": true,
+        "residual_mm": 0.0,
+        "residual_deg": 0.0,
+        "arm_hits": [],
+        "reason": null,
+        "family": "pinch",
+        "failed_at": null,
+        "approach_m": 0.08
+      },
+      "lift_ok": true,
+      "hold_ok": true
+    }
+  ],
+  "execution": {
+    "ok": true,
+    "dry_run": false,
+    "n_frames": 174,
+    "duration_s": 5.8,
+    "robot_schema": "dexagent.rigid_robot.v1",
+    "scene_sha256": "3e8552dd4482656ab5ac4998586697def6a967adaa64360c60978c678d68ee0f",
+    "trajectory_sha256": "8ec718c390fac4e0d0cf4821b0e3b6f3c610130a3de1d0bc79f2131d5cdedeac",
+    "settle_resets": 0
+  },
+  "checks": {
+    "rise": true,
+    "in_hand": true,
+    "no_slip": true,
+    "hand_penetration": true,
+    "object_penetration": true,
+    "servo_tracking": true
+  },
+  "measured": {
+    "object_start": [
+      0.12,
+      0.4,
+      0.0
+    ],
+    "object_end": [
+      0.1284,
+      0.3936,
+      0.1535
+    ],
+    "object_moved_m": 0.1539,
+    "object_rotated_deg": 13.34,
+    "object_tilt_end_deg": 5.32,
+    "rise_m": 0.1535,
+    "peak_rise_m": 0.1537,
+    "hand_links_touching": [
+      "robot_right_right_index_DP",
+      "robot_right_right_middle_MP",
+      "robot_right_right_thumb_DP"
+    ],
+    "slip_in_hand_m": 0.0017,
+    "slip_peak_frame": 173,
+    "slip_in_hand_deg": 1.897,
+    "slip_rotation_peak_frame": 173,
+    "slip_held_body": "box_box",
+    "slip_contact_point_local": null,
+    "slip_turn_judged": true,
+    "max_hand_pen_mm": 0.15,
+    "max_object_pen_mm": 0.15,
+    "max_track_pos_mm": 0.9,
+    "max_track_rot_deg": 0.2,
+    "arm": {
+      "plan": {
+        "left": {
+          "mount": "home keyframe",
+          "frames": 174,
+          "free_leg_frames": 0,
+          "ik_residual_mm_max": 0.0,
+          "ik_residual_deg_max": 0.0,
+          "projected_frames": 0,
+          "projected_mm_max": 0.0,
+          "infeasible_frames": 0,
+          "branch_jumps": [],
+          "branch_jump_labels": [],
+          "peak_speed_deg_s": 0.0
+        },
+        "right": {
+          "mount": "home keyframe",
+          "frames": 174,
+          "free_leg_frames": 61,
+          "ik_residual_mm_max": 0.01,
+          "ik_residual_deg_max": 0.0,
+          "projected_frames": 0,
+          "projected_mm_max": 0.0,
+          "infeasible_frames": 0,
+          "branch_jumps": [],
+          "branch_jump_labels": [],
+          "peak_speed_deg_s": 79.7
+        },
+        "plan": {
+          "planned_legs": [],
+          "failed_legs": [],
+          "parked": [],
+          "checked_legs": 1,
+          "seconds": 0.07
+        }
+      },
+      "retimed_s": 0.0,
+      "runtime": {
+        "left": {
+          "residual_mm_max": 4.771789511519341e-10,
+          "residual_deg_max": 7.131056250415291e-05,
+          "peak_speed_deg_s": 0.020325026733539663,
+          "speed_source": "substep_qvel",
+          "speed_sample": 0,
+          "speed_time_s": 0.002,
+          "speed_frame": 1,
+          "mount": "fixed runtime flange"
+        },
+        "right": {
+          "residual_mm_max": 2.3529243400361764e-10,
+          "residual_deg_max": 4.671992382535989e-05,
+          "peak_speed_deg_s": 81.17077384745882,
+          "speed_source": "substep_qvel",
+          "speed_sample": 490,
+          "speed_time_s": 0.9820000000000008,
+          "speed_frame": 30,
+          "mount": "fixed runtime flange"
+        }
+      },
+      "timing_retries": []
+    }
+  },
+  "expect": {
+    "rise_m": 0.075,
+    "in_hand": true,
+    "no_slip": true,
+    "hand": "right",
+    "object": "box_box",
+    "involved": [
+      "box_box"
+    ],
+    "untouched": [],
+    "_motion_no_slip": true,
+    "slip_from_rel": 128
+  },
+  "independent_audits": {
+    "rigid_arm_hand_check": {
+      "ok": true,
+      "issues": [],
+      "sides": {
+        "left": {
+          "max_position_error_m": 4.771691621147487e-13,
+          "max_rotation_error_deg": 7.131056247671613e-05,
+          "rigid": true
+        },
+        "right": {
+          "max_position_error_m": 2.352687707278558e-13,
+          "max_rotation_error_deg": 4.671992380520254e-05,
+          "rigid": true
+        }
+      },
+      "frames_checked": 174
+    },
+    "physics_recording_check": {
+      "ok": true,
+      "issues": [],
+      "frames": 174,
+      "substeps": 2883,
+      "duration_s": 5.765999999999587,
+      "replayed_substeps": 2883,
+      "max_replay_qpos_error": 0.0,
+      "max_replay_qvel_error": 0.0
+    },
+    "swept_collision_audit": {
+      "ok": true,
+      "issues": [],
+      "worst": null,
+      "events": [],
+      "n_events": 0,
+      "frame_pairs_subdivided": 0,
+      "substeps": 0,
+      "frames": [
+        0,
+        2883
+      ]
+    },
+    "object_visual_penetration_audit": {
+      "ok": true,
+      "issues": [],
+      "worst": null,
+      "pairs": {},
+      "table": {
+        "box_box": {
+          "depth_mm": 0.02,
+          "frame": 1726
+        }
+      },
+      "n_events": 0,
+      "open_meshes": [],
+      "stride": 2,
+      "frames": [
+        0,
+        2883
+      ]
+    },
+    "contact_impulse_spike_audit": {
+      "ok": true,
+      "issues": [],
+      "worst": null,
+      "objects": {
+        "box_box": {
+          "peak_force_ratio": 1.23,
+          "frame": 131
+        }
+      },
+      "hands": {
+        "left": {
+          "peak_contact_acc_m_s2": 0.0,
+          "frame": null
+        },
+        "right": {
+          "peak_contact_acc_m_s2": 2.36,
+          "frame": 136
+        }
+      },
+      "logs": {
+        "wrist_force_n[0]": {
+          "peak_n": 18.39,
+          "frame": 130
+        },
+        "hand_object_force_n[0]": {
+          "peak_n": 0.0,
+          "frame": 0
+        },
+        "hand_object_force_n[1]": {
+          "peak_n": 4.31,
+          "frame": 116
+        }
+      },
+      "n_events": 0,
+      "frames": [
+        0,
+        173
+      ]
+    },
+    "held_object_slip_audit": {
+      "ok": true,
+      "issues": [],
+      "worst": null,
+      "windows": [
+        {
+          "side": "right",
+          "object": "box_box",
+          "body": "box_box",
+          "frames": [
+            128,
+            173
+          ],
+          "labels": [
+            "right: lift box_box #1",
+            "right: lift box_box #1"
+          ],
+          "drift_mm": 1.7,
+          "drift_deg": 1.9,
+          "turn_judged": true,
+          "peak_frame": 173,
+          "fail": false
+        }
+      ],
+      "n_windows": 1,
+      "note": null,
+      "frames": [
+        0,
+        173
+      ]
+    }
+  },
+  "reviewer_recording_check": {
+    "ok": true,
+    "issues": [],
+    "frames": 174,
+    "substeps": 2883,
+    "duration_s": 5.765999999999587,
+    "replayed_substeps": 2883,
+    "max_replay_qpos_error": 0.0,
+    "max_replay_qvel_error": 0.0
+  },
+  "selected_pose_stress_tests": {
+    "lift": {
+      "ok": true,
+      "lifts": [
+        {
+          "commanded_mm": 60.0,
+          "achieved_mm": 60.0
+        },
+        {
+          "commanded_mm": 100.0,
+          "achieved_mm": 100.0
+        },
+        {
+          "commanded_mm": 150.0,
+          "achieved_mm": 150.0
+        }
+      ],
+      "first_fail": null,
+      "penetration": {
+        "name": "penetration",
+        "ok": true,
+        "max_contact_mm": 1.589,
+        "max_visual_floor_mm": 0.0,
+        "limit_mm": 3.0,
+        "steps": 2554,
+        "worst_pair": [
+          "hand_right_index_elastomer_visual",
+          "hand_right_middle_DP_visual"
+        ],
+        "first_bad": null
+      },
+      "grip": {
+        "fingers": [
+          "index",
+          "middle",
+          "thumb"
+        ],
+        "force_N": 24.2
+      },
+      "phases": [
+        {
+          "name": "approach_open",
+          "object_nudged_mm": 0.0,
+          "penetration_mm": 0.0,
+          "ok": true
+        },
+        {
+          "name": "seated",
+          "held_before_full_press": true,
+          "finger_contacts": 3,
+          "fingers": [
+            "index",
+            "middle",
+            "thumb"
+          ],
+          "contact_force_N": 24.2,
+          "ok": true
+        },
+        {
+          "name": "lift_0.06",
+          "commanded_mm": 60.0,
+          "achieved_mm": 60.0,
+          "drift_mm": 0.2,
+          "ok": true
+        },
+        {
+          "name": "lift_0.10",
+          "commanded_mm": 100.0,
+          "achieved_mm": 100.0,
+          "drift_mm": 0.2,
+          "ok": true
+        },
+        {
+          "name": "lift_0.15",
+          "commanded_mm": 150.0,
+          "achieved_mm": 150.0,
+          "drift_mm": 0.2,
+          "ok": true
+        },
+        {
+          "name": "servo_reserve",
+          "judged": 32,
+          "saturated_frac": 0.0,
+          "median_s": 0.057,
+          "peak_s": 0.061,
+          "limiting_joint": "thumb_CMC_AA",
+          "ok": true
+        },
+        {
+          "name": "penetration",
+          "ok": true,
+          "max_contact_mm": 1.589,
+          "max_visual_floor_mm": 0.0,
+          "limit_mm": 3.0,
+          "steps": 2554,
+          "worst_pair": [
+            "hand_right_index_elastomer_visual",
+            "hand_right_middle_DP_visual"
+          ],
+          "first_bad": null
+        }
+      ]
+    },
+    "hold": {
+      "ok": true,
+      "slip_mm_s": 0.03,
+      "first_fail": null,
+      "penetration": {
+        "name": "penetration",
+        "ok": true,
+        "max_contact_mm": 1.589,
+        "max_visual_floor_mm": 0.0,
+        "limit_mm": 3.0,
+        "steps": 2204,
+        "worst_pair": [
+          "hand_right_index_elastomer_visual",
+          "hand_right_middle_DP_visual"
+        ],
+        "first_bad": null
+      },
+      "contact_force_N": 24.5,
+      "fingers": 3,
+      "lifted": true,
+      "phases": [
+        {
+          "name": "approach_open",
+          "object_nudged_mm": 0.0,
+          "penetration_mm": 0.0,
+          "ok": true
+        },
+        {
+          "name": "seated",
+          "held_before_full_press": true,
+          "finger_contacts": 3,
+          "fingers": [
+            "index",
+            "middle",
+            "thumb"
+          ],
+          "contact_force_N": 24.2,
+          "ok": true
+        },
+        {
+          "name": "lift_0.08",
+          "commanded_mm": 80.0,
+          "achieved_mm": 80.0,
+          "drift_mm": 0.2,
+          "ok": true
+        },
+        {
+          "name": "hold",
+          "drift_mm": 0.2,
+          "slip_mm_s": 0.03,
+          "finger_contacts": 3,
+          "held_slip": {
+            "body": "box_box",
+            "body_id": 1,
+            "contact_point_local": null,
+            "contact_frame": null,
+            "turn_judged": true,
+            "drift_m": 2.4859996584959515e-05,
+            "turn_deg": 0.03281218321346212,
+            "translation_peak_frame": 400,
+            "rotation_peak_frame": 400,
+            "frames": [
+              0,
+              400
+            ]
+          },
+          "contact_force_N": 24.5,
+          "ok": true
+        },
+        {
+          "name": "servo_reserve",
+          "judged": 22,
+          "saturated_frac": 0.0,
+          "median_s": 0.056,
+          "peak_s": 0.059,
+          "limiting_joint": "thumb_CMC_AA",
+          "ok": true
+        },
+        {
+          "name": "penetration",
+          "ok": true,
+          "max_contact_mm": 1.589,
+          "max_visual_floor_mm": 0.0,
+          "limit_mm": 3.0,
+          "steps": 2204,
+          "worst_pair": [
+            "hand_right_index_elastomer_visual",
+            "hand_right_middle_DP_visual"
+          ],
+          "first_bad": null
+        }
+      ]
+    },
+    "selected_pose_sha256": "0d4eb2311c930fc8e65a4411170f19d60068b6b58fc631eaec8fadf959322f79",
+    "selected_hand_scene_sha256": "744d06b46fbf53a9bf84670d53b40449f5004579ba4df888de80fda15c7b15d3",
+    "seconds": 5.481216192245483,
+    "ok": true
+  },
+  "video_validation": {
+    "free0.mp4": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "width": 1280,
+          "height": 720,
+          "r_frame_rate": "30/1",
+          "duration": "5.800000",
+          "nb_frames": "174"
+        }
+      ]
+    },
+    "preview.mp4": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "width": 1280,
+          "height": 720,
+          "r_frame_rate": "30/1",
+          "duration": "5.800000",
+          "nb_frames": "174"
+        }
+      ]
+    }
+  },
+  "artifact_sha256": {
+    "REPORT.md": "11abd4f5da2f4929fe9c8e2474a09f5fa05825643784a92a5d6659743ec89aa8",
+    "box_right/bench_aware_recovery/best_pose.json": "551c9ddefbcdc283cfbd8b21ce61cc9ee920f538d3ceb47a8ae82b22581874a8",
+    "box_right/bench_aware_recovery/best_pose_passing.json": "affa7f79623fa40bf81f01db0c78a192867b9718d0e39ac395de515820f4e68e",
+    "box_right/bench_aware_recovery/independent_validation.json": "ccf849210533d7e09334f040f4b4033814337f0d645377d523c9be471d2cc895",
+    "box_right/bench_aware_recovery/invocation.json": "9343640737dddcfde62b312ae93117a1f1be8e76cfc395933c73b305872b7e85",
+    "box_right/bench_aware_recovery/manifest.json": "109e586a7663e4abdaf02199da03dd0d7c4094f94e68fc38a504f29aa050c6e7",
+    "box_right/bench_aware_recovery/optimizer_report.json": "e21f6e6f17c679a0b7a141165c83e52077e0c9b7bccd83a32b9f1fd773dffc93",
+    "box_right/candidates.json": "131c538e9bafab67dc1889d4ff2374a7255dffafb67d0967e87651553ae5c336",
+    "box_right/hand_scene.json": "b84782c45706b81e44b8aad676678d4b21711e80cfc3e3a43d92c39d2d0b73ea",
+    "box_right/object.xml": "be985326d1aa2667ee691667b4fdc186d7aada5ff803b059030d401d9f71b9cc",
+    "box_right/physical_execution/acceptance.json": "90b6e1642b282f40d888ea09e562f2ab4c09f7060f3b9a997b7bc37700105245",
+    "box_right/physical_execution/audits.json": "bf1d609c77ee7ec508d9c51b45a4110207318e6fb1ed6d3ba49933879461d2e5",
+    "box_right/physical_execution/episode/execution_report.json": "5213f64680c5728fa41a895cd55693635d831d8685561d6df5754f8dfd54df43",
+    "box_right/physical_execution/episode/outcomes.json": "eeaca20a02cfdc6e27e9cb1e54d7dd2247d0d3a39f2baae4c708098ac60a3ed6",
+    "box_right/physical_execution/episode/phases.json": "80b0067a196dd33b9f2e47f3c50240fa48d06be27b8e428d2b145718b0cd9556",
+    "box_right/physical_execution/episode/scene_physics.xml": "3e8552dd4482656ab5ac4998586697def6a967adaa64360c60978c678d68ee0f",
+    "box_right/physical_execution/episode/scene_proposal.xml": "6fcee719a6cd8d454e9aeafd0d704f072e17a5c5b39ac89280e4bcb6f832b762",
+    "box_right/physical_execution/episode/state.json": "4225df379bae8bfc96de6b783168ea4214b487570c8fd09c5dd04c0ef9752fb5",
+    "box_right/physical_execution/episode/subgoal_01/hand_scene_used_right.json": "744d06b46fbf53a9bf84670d53b40449f5004579ba4df888de80fda15c7b15d3",
+    "box_right/physical_execution/episode/subgoal_01/keyframes.json": "13fd27ab356f1b28b7cfef65d9d193630b3c7fe6fa889975d38a09c7280b296e",
+    "box_right/physical_execution/episode/subgoal_01/outcome.json": "1d55a7890d7cd8b7d5fab9f1ca8ff28a4e4a587952cea937ccbc6ed95be66093",
+    "box_right/physical_execution/episode/subgoal_01/phases.json": "f9e14ceaca4eced3d14467b94862868736cf7fd86cdfafe47adb310639acd913",
+    "box_right/physical_execution/episode/subgoal_01/pose_used.json": "0d4eb2311c930fc8e65a4411170f19d60068b6b58fc631eaec8fadf959322f79",
+    "box_right/physical_execution/episode/subgoal_01/pose_used_right.json": "0d4eb2311c930fc8e65a4411170f19d60068b6b58fc631eaec8fadf959322f79",
+    "box_right/physical_execution/episode/subgoal_01/rollout.npz": "5c7a7eefe9e3cb0ae2c7f3a6cb716e105f5ac7630c6bcca45bc55d502e1f7cf2",
+    "box_right/physical_execution/episode/subgoal_01/rollout_runtime.npz": "697562cc694ee60036ecab1ecff838b62f48c606b3cb977f7fca266d25ed0e3e",
+    "box_right/physical_execution/episode/subgoal_01/selected_pose_stress_validation.json": "39a8099ca8a6ec70680252397827428836da86939d28507cafe9460596663093",
+    "box_right/physical_execution/episode/subgoal_01/start_state_proposal.npz": "3ed96dad12bae06eb0c95ef5f3d533cc861894f37cf85d165e35436f03b51948",
+    "box_right/physical_execution/episode/subgoal_01/state.json": "4225df379bae8bfc96de6b783168ea4214b487570c8fd09c5dd04c0ef9752fb5",
+    "box_right/physical_execution/episode/trajectory.npz": "8ec718c390fac4e0d0cf4821b0e3b6f3c610130a3de1d0bc79f2131d5cdedeac",
+    "box_right/physical_execution/episode/trajectory_proposal.npz": "70d22a3262dc870f0abd3d2ceafca21d103299f1363ca02da12da04dc45f155c",
+    "box_right/physical_execution/plan.json": "31fe33c6c26df8f8e47cd9a442e6805948820a35728c2001ca579838978ef87b",
+    "box_right/physical_execution/qualified_candidates.json": "70df78d962aa71bd6ca5b2a57ed154f045feb2fa75b1f330f12f253291fb6b8a",
+    "box_right/physical_execution/result.json": "93b03e6b611adb6b9c17b75ef3ef08516fc800fbdd22f32e27b00543745b9ccc",
+    "box_right/physical_execution/summary.json": "05af23161741c5894ef4f43dc1105adf68efd060ddb5e4b63f93aa2c28d34492",
+    "box_right/placement.json": "4b1ab437232cf52c0c411a0867b4d2a0f2bdcece9a8112b6dd17e701578deac3",
+    "box_right/qualification.json": "ac254da817aea6b5b91dd0d7e18bc2165bb58b9c5980c2f733a793c98ce5a115",
+    "box_right/reach_screen.json": "276e267efe7f30fbfaa963edfd33469737eed91a56bc526aad6c4c2843eb2624",
+    "box_right/rendered/README.md": "7176cc6c89f8bb0e42a8d695f713e961af3767d7e177a82dd228ee4a210eac84",
+    "box_right/rendered/free0.mp4": "9cb1484111b033b624f8d0c427cd22976b42efc1e6116ebb0c8e96c3d49e8d05",
+    "box_right/rendered/invocation.json": "589e4c945927926224e13135b2ed6e42951e3a66efc113cb9f538d9fbb662ae2",
+    "box_right/rendered/keyframe_173.png": "e6fc6449a0863928e808bb706e8bba79966b51ad23caa33a3d56d36555bd61d4",
+    "box_right/rendered/preview.mp4": "6d0dc811964d14cb2f06fdbb5e517664379d894eece2f8e8b92055d5410bb4df",
+    "box_right/rendered/result.json": "c4a813150637bcb74d8db7174f50e0fea9b0e3a0aa317a9562d530e5d77a84d9",
+    "box_right/rendered/video_validation.json": "e182d5a5a425332f303b86bb60d951d92df144ecefbcbd3891f18c06a3111383",
+    "box_right/scene.xml": "0d3bc2ee0bd1bab1b43824e2536b1341d77a46985bffb27927d727a999f6a580",
+    "box_right/scene_recon.json": "8adf489772e89e5b4363971a9e54f59d04cfa57066f0cc77bd4f26737bcc7d29",
+    "box_right/scene_rigid_qualification.xml": "3e8552dd4482656ab5ac4998586697def6a967adaa64360c60978c678d68ee0f",
+    "execute_box.log": "d93617151a7b874b28b6b6438265267f77be4359c5113c5e863dd3248ae1a8b0",
+    "execute_box.py": "a1f40aefd401175e2464bb1fb32d0025cc62d84ab7fe128dae18e9ca95d59e87",
+    "manifest.json": "855df7669233733a28a54767626a1e57d809ea841a69da332d625339178146eb",
+    "optimize_box.log": "3ac16237d1ea5e87b85aad955588cb3c3b1b0df10feb13594c01a5d5e9b17173",
+    "optimize_box.py": "11456bb4f4e84cb55c456d6d529a8ef846fd24e21705fadc9890880fb9e6e2dd",
+    "screen.log": "20188921a28fda6d3ec8306bd77a04ff7b7b0f9c0a2e35e27429fa2ecc2bda91",
+    "screen_candidates.py": "1bd0f8c94db7a825fdbf88160e96b13ffd16f06955548b92bcad2ac662e8665e",
+    "tall_box_right_hamer/candidates.json": "e142d73c7c707f95b9fe641ba758d2099a8ba5f5a0f2a4a6472eca3aa43ab12f",
+    "tall_box_right_hamer/hand_scene.json": "bf1d91fe1f191f896aa1ac73b5ffb60ad0a8c976c928db29cc0b583275916bf2",
+    "tall_box_right_hamer/object.xml": "ae3afd800ff5fbf66d6460d96fdc1ca4725a939f9771b689896450b787f02437",
+    "tall_box_right_hamer/placement.json": "5d9a3e5879ae1d8af5b5e54b5f0d292cdee1b345d14d50717908e82eadaa4911",
+    "tall_box_right_hamer/qualification.json": "50707251b8c00f03baaab220213fc767cec8385c07ebad2bee5ce1e5785ac797",
+    "tall_box_right_hamer/reach_screen.json": "3eef57c4191c7aa0a21d5d2c2ee6224abda208e2c0270994b232878639e9f876",
+    "tall_box_right_hamer/scene.xml": "b51503deccfbfe28636f7b758ce149170ed6803fe72b16dc8bc439aebf25e2c6",
+    "tall_box_right_hamer/scene_recon.json": "54c31bc5a2bbbf6dd7395e6ce04d79afa9012a8794a68cab21366c5aedcbe454",
+    "tall_box_right_hamer/scene_rigid_qualification.xml": "916c1aeb9bdb8ba9ca4dd07c2aa8cdaba19e9791f4fade549d853845e49bc64e"
+  },
+  "optimization_source_snapshot": {
+    "objective": "transferable_task_generation",
+    "scope": "original YAM + Sharpa only; no aggregate task pass",
+    "pid": 3635170,
+    "source_commit": "87bde66f74269a1da36d42b9058ba5983c4e7a13",
+    "source_hashes": {
+      "tool_library/common/armhand.py": "2bd60bcedb72955102fe03eaded2e77c9084019b0c7d1ec5a1690db071028a0b",
+      "tool_library/skills/optimize_grasp_pose.py": "07f1614308e7c3b03e4a7b081d668c0e65d327026f2abef8b17e0beb333080ae",
+      "tool_library/skills/generate_rigid_grasps.py": "9b03d01e1d1fb3880977140efe3e7fac72f9b350d2353d18a10dc1fb5dfc09f5"
+    },
+    "checkpoint": null,
+    "reason": "Current shared source, no checkpoint code binding while unrelated tool edits may occur."
+  },
+  "browser_playback_check": {
+    "url": "http://127.0.0.1:8765/runs/87a7e22241f723e78aa98030",
+    "width": 1280,
+    "height": 720,
+    "duration_s": 5.8,
+    "observed_current_time_s": 0.526262,
+    "media_error": null,
+    "page_errors": [],
+    "run_validation": "not_evaluated",
+    "scope_complete": false,
+    "release": "not_evaluated"
+  },
+  "portable_regression": {
+    "test": "tool_library/tests/test_human_grasp_full_arm.py",
+    "fixture": "tool_library/tests/fixtures/human_grasp_recovery.json",
+    "fixture_sha256": "e0de1b7244f1446573b3a883ab095217656f58c291bdbf0a202abd1bf5ddb3b7",
+    "source": "Original failed synthetic seeds; no successful saved pose loaded",
+    "pytest_result": "1 passed in 169.34s",
+    "optimizer": {
+      "ok": true,
+      "n_evals": 19,
+      "n_tested": 2,
+      "n_arm_rejected": 7,
+      "n_screened_out": 10
+    },
+    "task": {
+      "objective": "transferable_task_generation",
+      "robot": "I2RT YAM + Sharpa Wave",
+      "source": "synthetic box_right initial failed human seeds",
+      "aggregate_complete": false,
+      "other_robots": {
+        "G1_omnipicker": "missing",
+        "G2_omnipicker": "missing"
+      },
+      "budget": {
+        "family": "rigid",
+        "max_evals": 64,
+        "iterations": 4,
+        "population": 16,
+        "workers": 2,
+        "seed": 20261021,
+        "max_starts": 6
+      },
+      "arm_waypoints": [
+        {
+          "object": "box_box",
+          "target_pos": [
+            0.12,
+            0.4,
+            0.06
+          ],
+          "steps": 8
+        },
+        {
+          "object": "box_box",
+          "target_pos": [
+            0.12,
+            0.4,
+            0.1
+          ],
+          "steps": 8
+        },
+        {
+          "object": "box_box",
+          "target_pos": [
+            0.12,
+            0.4,
+            0.15
+          ],
+          "steps": 8
+        }
+      ]
+    },
+    "measured": {
+      "object_start": [
+        0.12,
+        0.4,
+        0.0
+      ],
+      "object_end": [
+        0.1284,
+        0.3936,
+        0.1535
+      ],
+      "object_moved_m": 0.1539,
+      "object_rotated_deg": 13.34,
+      "object_tilt_end_deg": 5.32,
+      "rise_m": 0.1535,
+      "peak_rise_m": 0.1537,
+      "hand_links_touching": [
+        "robot_right_right_index_DP",
+        "robot_right_right_middle_MP",
+        "robot_right_right_thumb_DP"
+      ],
+      "slip_in_hand_m": 0.0017,
+      "slip_peak_frame": 173,
+      "slip_in_hand_deg": 1.897,
+      "slip_rotation_peak_frame": 173,
+      "slip_held_body": "box_box",
+      "slip_contact_point_local": null,
+      "slip_turn_judged": true,
+      "max_hand_pen_mm": 0.15,
+      "max_object_pen_mm": 0.15,
+      "max_track_pos_mm": 0.9,
+      "max_track_rot_deg": 0.2,
+      "arm": {
+        "plan": {
+          "left": {
+            "mount": "home keyframe",
+            "frames": 174,
+            "free_leg_frames": 0,
+            "ik_residual_mm_max": 0.0,
+            "ik_residual_deg_max": 0.0,
+            "projected_frames": 0,
+            "projected_mm_max": 0.0,
+            "infeasible_frames": 0,
+            "branch_jumps": [],
+            "branch_jump_labels": [],
+            "peak_speed_deg_s": 0.0
+          },
+          "right": {
+            "mount": "home keyframe",
+            "frames": 174,
+            "free_leg_frames": 61,
+            "ik_residual_mm_max": 0.01,
+            "ik_residual_deg_max": 0.0,
+            "projected_frames": 0,
+            "projected_mm_max": 0.0,
+            "infeasible_frames": 0,
+            "branch_jumps": [],
+            "branch_jump_labels": [],
+            "peak_speed_deg_s": 79.7
+          },
+          "plan": {
+            "planned_legs": [],
+            "failed_legs": [],
+            "parked": [],
+            "checked_legs": 1,
+            "seconds": 0.05
+          }
+        },
+        "retimed_s": 0.0,
+        "runtime": {
+          "left": {
+            "residual_mm_max": 4.771789511519341e-10,
+            "residual_deg_max": 7.131056250415291e-05,
+            "peak_speed_deg_s": 0.020325026733539663,
+            "speed_source": "substep_qvel",
+            "speed_sample": 0,
+            "speed_time_s": 0.002,
+            "speed_frame": 1,
+            "mount": "fixed runtime flange"
+          },
+          "right": {
+            "residual_mm_max": 2.3529243400361764e-10,
+            "residual_deg_max": 4.671992382535989e-05,
+            "peak_speed_deg_s": 81.17077384745882,
+            "speed_source": "substep_qvel",
+            "speed_sample": 490,
+            "speed_time_s": 0.9820000000000008,
+            "speed_frame": 30,
+            "mount": "fixed runtime flange"
+          }
+        },
+        "timing_retries": []
+      }
+    },
+    "independent_audits": {
+      "rigid_arm_hand_check": {
+        "ok": true,
+        "issues": [],
+        "sides": {
+          "left": {
+            "max_position_error_m": 4.771691621147487e-13,
+            "max_rotation_error_deg": 7.131056247671613e-05,
+            "rigid": true
+          },
+          "right": {
+            "max_position_error_m": 2.352687707278558e-13,
+            "max_rotation_error_deg": 4.671992380520254e-05,
+            "rigid": true
+          }
+        },
+        "frames_checked": 174
+      },
+      "physics_recording_check": {
+        "ok": true,
+        "issues": [],
+        "frames": 174,
+        "substeps": 2883,
+        "duration_s": 5.765999999999587,
+        "replayed_substeps": 2883,
+        "max_replay_qpos_error": 0.0,
+        "max_replay_qvel_error": 0.0
+      },
+      "swept_collision_audit": {
+        "ok": true,
+        "issues": [],
+        "worst": null,
+        "events": [],
+        "n_events": 0,
+        "frame_pairs_subdivided": 0,
+        "substeps": 0,
+        "frames": [
+          0,
+          2883
+        ]
+      },
+      "object_visual_penetration_audit": {
+        "ok": true,
+        "issues": [],
+        "worst": null,
+        "pairs": {},
+        "table": {
+          "box_box": {
+            "depth_mm": 0.02,
+            "frame": 1726
+          }
+        },
+        "n_events": 0,
+        "open_meshes": [],
+        "stride": 2,
+        "frames": [
+          0,
+          2883
+        ]
+      },
+      "contact_impulse_spike_audit": {
+        "ok": true,
+        "issues": [],
+        "worst": null,
+        "objects": {
+          "box_box": {
+            "peak_force_ratio": 1.23,
+            "frame": 131
+          }
+        },
+        "hands": {
+          "left": {
+            "peak_contact_acc_m_s2": 0.0,
+            "frame": null
+          },
+          "right": {
+            "peak_contact_acc_m_s2": 2.36,
+            "frame": 136
+          }
+        },
+        "logs": {
+          "wrist_force_n[0]": {
+            "peak_n": 18.39,
+            "frame": 130
+          },
+          "hand_object_force_n[0]": {
+            "peak_n": 0.0,
+            "frame": 0
+          },
+          "hand_object_force_n[1]": {
+            "peak_n": 4.31,
+            "frame": 116
+          }
+        },
+        "n_events": 0,
+        "frames": [
+          0,
+          173
+        ]
+      },
+      "held_object_slip_audit": {
+        "ok": true,
+        "issues": [],
+        "worst": null,
+        "windows": [
+          {
+            "side": "right",
+            "object": "box_box",
+            "body": "box_box",
+            "frames": [
+              128,
+              173
+            ],
+            "labels": [
+              "right: lift box_box #1",
+              "right: lift box_box #1"
+            ],
+            "drift_mm": 1.7,
+            "drift_deg": 1.9,
+            "turn_judged": true,
+            "peak_frame": 173,
+            "fail": false
+          }
+        ],
+        "n_windows": 1,
+        "note": null,
+        "frames": [
+          0,
+          173
+        ]
+      }
+    },
+    "selected_lift_ok": true,
+    "selected_hold_ok": true,
+    "initial_test_failure": "Quaternion serialization assertion differed by 2.07e-7; layout comparison now uses 1e-6 tolerance for saved MJCF precision. Physical gates unchanged."
+  }
+}

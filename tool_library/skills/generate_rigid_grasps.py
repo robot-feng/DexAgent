@@ -361,8 +361,8 @@ def generate_rigid_grasps(scene, height_fracs=(0.5, 0.65), yaw_step_deg=45.0,
         side_ = H.load_scene_spec(scene).get("side", "right")
         scr = AH.screen_poses(bench_model, side_, out, bench_q, probe=probe, arm_seed=arm_seed, waypoints=arm_waypoints)
         for g, r in zip(out, scr):
-            g["arm"] = {k: r.get(k) for k in ("ok", "residual_mm", "residual_deg", "reason", "duplicate_of")}
-        out.sort(key=lambda g: (0 if g["arm"]["ok"] else (2 if g["arm"].get("duplicate_of") is not None else 1),
+            g["arm"] = {k: r.get(k) for k in ("ok", "residual_mm", "residual_deg", "reason", "kinematic_reuse_of")}
+        out.sort(key=lambda g: (0 if g["arm"]["ok"] else 1,
                                 0 if g["hold"]["opposed"] else 1, -g["n_touching"], g["overlap_mm"], g["retract_m"] or 0.0))
     if verify and out:
         bid = H.grasp_body(model, scene, ids)

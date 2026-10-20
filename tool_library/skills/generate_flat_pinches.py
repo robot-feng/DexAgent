@@ -350,8 +350,8 @@ def generate_flat_pinches(scene, fingers=(("index",), ("middle",), ("index", "mi
         probe = AH.ArmProbe(str(bench_scene))
         scr = AH.screen_poses(bench_model, spec.get("side", "right"), out, bench_q, probe=probe, arm_seed=arm_seed, waypoints=arm_waypoints)
         for g, s_ in zip(out, scr):
-            g["arm"] = {k: s_.get(k) for k in ("ok", "residual_mm", "residual_deg", "reason", "duplicate_of")}
-        out.sort(key=lambda g: (0 if g["arm"]["ok"] else (2 if g["arm"].get("duplicate_of") is not None else 1),
+            g["arm"] = {k: s_.get(k) for k in ("ok", "residual_mm", "residual_deg", "reason", "kinematic_reuse_of")}
+        out.sort(key=lambda g: (0 if g["arm"]["ok"] else 1,
                                 _hold_rank(g), g.get("overlap_mm", 0.0)))
         n_arm = sum(1 for g in out if g["arm"]["ok"])
     progress["lift_tests_planned"] = min(len(out), int(verify_top))

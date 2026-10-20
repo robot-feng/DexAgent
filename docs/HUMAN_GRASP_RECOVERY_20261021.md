@@ -4,6 +4,9 @@
 “示范先验 → 验证 → 失败修正 → 独立复验”。本轮验证范围是 MuJoCo 中
 Sharpa 手与对象的抓取；没有执行完整 YAM 手臂，也没有完成 G1/G2 同任务验收。
 
+后续固定臂搜索与箱体实际执行见
+[全臂验证记录](HUMAN_GRASP_FULL_ARM_20261021.md)。本页保留原手部实验范围与失败证据。
+
 ## 候选验收
 
 `human_grasp_seeds(verify=True)` 现在对 `verify_top` 内的候选调用优化器已有的
