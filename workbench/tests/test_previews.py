@@ -84,3 +84,31 @@ def test_preview_marks_changed_source_as_a_snapshot(preview_manager):
     run, _ = manager.index.run_path(run_id)
     (run / 'sharpa_manifest.json').write_text('changed source version')
     assert manager.state(first.id).stale
+
+
+def test_asset_preview_tracks_frozen_meshes_and_rejects_changed_identity(preview_manager):
+    from agent.run_reports import sha256_file
+    from workbench.index import preview_kind
+
+    manager, run_id = preview_manager
+    run, _ = manager.index.run_path(run_id)
+    helper = manager.index.repo / 'agent/rss_simfoundry.py'
+    helper.parent.mkdir()
+    helper.write_text('# source hash fixture for process lifecycle only')
+    mesh = run / 'visual_assets/cube.glb'
+    mesh.parent.mkdir()
+    mesh.write_bytes(b'asset identity fixture; native rendering tested separately')
+    (run / 'simfoundry_import.json').write_text(json.dumps({
+        'schema': 'dexagent.simfoundry_import.v1',
+        'asset_files': {'visual_assets/cube.glb': sha256_file(mesh)},
+    }))
+    assert preview_kind(run) == 'rss_assets'
+    first = manager.start(run_id)
+    assert first.status == 'generating'
+    job = json.loads((manager.directory(first.id) / 'job.json').read_text())
+    assert job['mode'] == 'rss_assets'
+    assert str(mesh) in job['source_versions']
+    mesh.write_bytes(b'edited after recording')
+    assert manager.state(first.id).stale
+    with pytest.raises(ValueError, match='asset identity'):
+        manager.start(run_id)

@@ -296,7 +296,7 @@ DexAgent 已有统一入口 `run_dexagent.py`、阶段报告、交付校验、�
 
 “统一系统”指统一任务流、产物契约与运行记录，不要求所有模型共用一个 Python 解释器。DexAgent 与 RoboSimStudio 已共用 `/data/miniconda3/envs/dexagent`（Python 3.12）；本轮用该解释器实测 `robosimstudio`、Newton、Warp、MuJoCo、Viser、Trimesh 可导入，RSS 的 `requirements-robosimstudio.txt` 也明确以现有 DexAgent 环境为目标。RoboSimStudio 的 `uv` 环境不是强制条件。
 
-SimFoundry 官方 `install_everything.sh` 明确按上游阶段建立七个工具环境（主流程、Hunyuan、Any6D、DA3、VOID、Nerfstudio、3DGRUT），不是一个可直接导入 DexAgent 的 Python 包。已确认主 SimFoundry 安装使用 Python 3.11、PyTorch 2.7；RSS/DexAgent 主环境约束 Python 3.12、PyTorch 2.5.1。正在进行的官方安装也已进入主环境 PyTorch 2.7 安装阶段。因此保持 DexAgent + RSS 为统一控制/目标仿真环境，SimFoundry 按其上游环境运行；跨环境只通过明确的文件产物和 manifest 交接，不跨环境导入 Python 模块，也不为整合再复制一套环境。
+SimFoundry 官方 `install_everything.sh` 明确按上游阶段建立七个工具环境（主流程、Hunyuan、Any6D、DA3、VOID、Nerfstudio、3DGRUT），不是一个可直接导入 DexAgent 的 Python 包。已确认主 SimFoundry 安装使用 Python 3.11、PyTorch 2.7；RSS/DexAgent 主环境约束 Python 3.12、PyTorch 2.5.1。本机主环境 PyTorch 2.7、基础 requirements 与 SimFoundry 包的安装步骤已结束，但依赖源码和原生扩展仍未完成，不视为完整环境可运行。因此保持 DexAgent + RSS 为统一控制/目标仿真环境，SimFoundry 按其上游环境运行；跨环境只通过明确的文件产物和 manifest 交接，不跨环境导入 Python 模块，也不为整合再复制一套环境。
 
 本机 DexAgent 环境当前没有 `pxr`，因此 USD/USDZ 场景导入仍未验证；SimFoundry 的 GLB/OBJ 网格优先沿 RSS 现有 `AssetSpec`/`StaticSpec` 导入路径验收，背景 USDZ 则需等实际资产和 USD importer 依赖就绪后测试。模型缓存优先复用 `/data` 上已有权重；缺失权重或凭据必须作为阶段状态报告，不能通过静默降级掩盖。
 
@@ -363,6 +363,8 @@ test；区分通过、失败和环境阻塞；维护 `baseline_report.json`。�
 **已核实的刚体输入契约：** 使用 Stage 8 的 `canonical_mesh/iter_*.glb` 作为几何输入；其 `pre_scale_factor` 已烘焙进网格，Stage 11 记录的 `z_up.scale` 是后续额外缩放，不能重复乘预缩放。初始位姿优先取 Stage 12 的 `pb_scene_poses.json`：位置是 PyBullet 地面坐标系中的米制世界坐标，四元数为 XYZW；这是经过布局稳定化后的姿态。若从 Stage 8 的 `info/*.json` 重建位姿，则还必须组合 `s4_frame/image_<idx>_cam2world.npy`，因为其中 `z_up` 仍是相机帧位姿。质量从 Stage 11 导出的单 link URDF 惯性项读取，摩擦从 `scene_objects_info.json` 读取；它们是估计/配置值，仍要在 RSS 中复核。
 
 当前 [`agent/simfoundry_assets.py`](agent/simfoundry_assets.py) 已将 Stage 8/11/12 几何、尺度、世界位姿、质量和摩擦映射为 RSS `AssetSpec`/`ObjectSpec`。碰撞可显式选择保留 Stage 11 URDF 多网格代理、RSS 凸包或包围盒；Stage 11 代理的网格缩放与原点被烘焙进调用方指定的派生目录，以复用 RSS `AssetSpec.collision_paths`，不改写 SimFoundry 原始资产。适配器仍严格拒绝非均匀缩放和多 link 刚体，并由 GLB 几何计算惯量，不传递 Stage 11 的质心/惯性坐标系；这些边界必须在目标运行时对照，不能视作保真转换。7 项适配器测试通过，覆盖尺度/坐标、路径逃逸拒绝和复合碰撞代理；合成 GLB/URDF 在 RSS `void` 场景加载两个代理并实际步进 5 步通过。该结果证明的是适配器契约与 RSS 导入路径，不是 SimFoundry 真实产物的 P2 验收。真实 SimFoundry 产物尚未生成，P2 仍未通过。`pb_scene_poses` 给出世界位姿，使用时将 RSS 场景的 work-surface frame 设为 world origin（例如 `cell="void"`），或先转换到所选 cell frame。
+
+**2026-10-20 统一入口增量：** `run_dexagent.py --backend-eval simfoundry` 已连接 Stage 8/11/12 资产适配、RSS 原生构建、质量/摩擦/碰撞检查、3 秒静置验证、EpisodeRecorder、诊断渲染及默认 8765 的 Viser 三维状态回放。复制并绑定 run 内资产快照与 SHA；回放核对 body 顺序/shape 变换，且不执行 warm-up 或物理。新增故障验证覆盖悬空漂移失败、未支持结构拒绝、输入输出重叠拒绝与资产/快照身份变化。适配/记录相关 16 项测试、Workbench 55 项测试通过。统一入口合成立方体实测 17 项必需检查通过，保留 COM/惯性坐标系复核警告；150 控制帧、45 视频帧、150 三维回放帧已实际浏览。**这是合成输入验证，无机器人动作，不具备训练发布资格；真实资产 P2 仍未通过。** 命令、实测数值和边界见[接入验证记录](docs/SIMFOUNDRY_RSS_IMPORT_20261020.md)。
 
 **通过条件：** - 无缺失网格、纹理或外部引用； -
 坐标轴、四元数顺序、单位和缩放符合已知合成测试值； - 关节、碰撞和关键物理属性明确； -

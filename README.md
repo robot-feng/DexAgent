@@ -76,6 +76,17 @@ The `reference` mode executes an existing DexAgent episode in RSS, evaluates eve
 Python 3.12 uses `models.blender_executable` for the existing Stage 4 Cycles renderer.
 See [the integration status and environment instructions](docs/ROBOSIMSTUDIO_INTEGRATION.md).
 
+SimFoundry rigid reconstruction outputs can also be checked in RSS through this entry point:
+
+```bash
+python run_dexagent.py dexagent.yaml --backend-eval simfoundry \
+  --simfoundry-stage8 /path/to/s8_pose \
+  --simfoundry-stage11 /path/to/s11_sim \
+  --simfoundry-stage12 /path/to/s12_physics
+```
+
+This preserves Stage 11 compound collision proxies, checks passive stability in RSS, and records a native episode that the Studio can replay in 3D. It is an asset import check; it produces no robot actions or training-qualified episodes. See [commands, measured results and limitations](docs/SIMFOUNDRY_RSS_IMPORT_20261020.md).
+
 One command runs the four stages in order and prints a closing table; each stage also runs on its own (its README says what it reads, what it writes and which GPU it needs).
 
 ```bash

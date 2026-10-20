@@ -32,15 +32,20 @@ class Previews:
     def start(self, run_id: str, episode_id: str | None = None) -> Preview:
         run, _ = self.index.run_path(run_id)
         mode = preview_kind(run)
-        if mode == 'rss':
+        if mode in {'rss', 'rss_assets'}:
             episodes = self.index.episodes(run_id)
             episode = next((e for e in episodes if e.id == episode_id), None) if episode_id else next(iter(episodes), None)
             if episode is None:
                 raise ValueError('no native episode is available for this run')
             episode_id = episode.id
             episode_dir = self.index.artifact_path(episode.meta.id).parent
-            sources = [run / 'original_source_scene.xml', run / 'sharpa_manifest.json',
-                       episode_dir / 'steps.npz', episode_dir / 'privileged.npz']
+            sources = [episode_dir / 'steps.npz', episode_dir / 'privileged.npz']
+            if mode == 'rss_assets':
+                from agent.rss_simfoundry import snapshot_assets
+                _, assets = snapshot_assets(run)
+                sources += [run / 'simfoundry_import.json', episode_dir / 'meta.json', *assets]
+            else:
+                sources += [run / 'original_source_scene.xml', run / 'sharpa_manifest.json']
         elif mode == 'dexagent':
             if episode_id:
                 raise ValueError('DexAgent trajectory preview does not take an EpisodeStore ID')
@@ -49,8 +54,10 @@ class Previews:
         else:
             raise ValueError('this run has no supported recorded 3D source')
         if not all(p.is_file() for p in sources):
-            raise ValueError('recorded 3D needs an original MJCF, its Sharpa manifest, steps and recorded body poses')
+            raise ValueError('recorded 3D source is incomplete; scene identity and recorded states are required')
         digest = hashlib.sha256(Path(__file__).with_name('native_preview.py').read_bytes())
+        if mode == 'rss_assets':
+            digest.update((self.index.repo / 'agent/rss_simfoundry.py').read_bytes())
         digest.update(run_id.encode())
         versions = {}
         for path in sources:
@@ -126,12 +133,12 @@ class Previews:
                                    state_source=result.get('state_source'), stale=stale)
                 return Preview(id=key, run_id=job['run_id'], status='failed',
                                message=result.get('message', 'generation failed') if result.get('status') == 'failed'
-                               else 'preview output is missing its model, clock or no-physics validation')
+                               else 'preview output is missing its model, clock or no-physics validation', stale=stale)
             if handle and handle[0].poll() is None:
                 return Preview(id=key, run_id=job['run_id'], status='generating',
-                               message='正在核对模型身份并生成原生 3D 回放，首次加载需要编译 CPU 可视化内核。')
+                               message='正在核对模型身份并生成原生 3D 回放，首次加载需要编译 CPU 可视化内核。', stale=stale)
             return Preview(id=key, run_id=job['run_id'], status='failed',
-                           message='preview worker ended without a result; see the local generation log')
+                           message='preview worker ended without a result; see the local generation log', stale=stale)
 
     @staticmethod
     def _stop(process: subprocess.Popen):

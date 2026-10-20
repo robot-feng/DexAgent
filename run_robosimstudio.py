@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import math
 import os
 import subprocess
 import sys
@@ -37,7 +38,7 @@ def source_module(path):
     return module
 
 
-def validate_tape(directory, particle_count):
+def validate_tape(directory, particle_count, *, robot_actions=True):
     """Check the saved evidence independently of the in-memory recorder."""
     import numpy as np
 
@@ -50,9 +51,12 @@ def validate_tape(directory, particle_count):
               check("recorded_finite", all(bool(np.isfinite(a).all()) for a in [*steps.values(), *states.values()])),
               check("recorded_frame_counts", bool(states) and all(len(a) == len(times) for a in states.values()),
                     {k: len(a) for k, a in states.items()})]
-    checks.append(check("action_and_joint_frames", all(
-        key in steps and steps[key].ndim == 2 and len(steps[key]) == len(times) and steps[key].shape[1] > 0
-        for key in ("action", "joint_q", "joint_qd"))))
+    if robot_actions:
+        checks.append(check("action_and_joint_frames", all(
+            key in steps and steps[key].ndim == 2 and len(steps[key]) == len(times) and steps[key].shape[1] > 0
+            for key in ("action", "joint_q", "joint_qd"))))
+    else:
+        checks.append(check("passive_asset_recording", "action" in steps and steps["action"].shape == (len(times), 0)))
     with np.load(directory / "capture.npz", allow_pickle=False) as z:
         capture_steps = z["step"].reshape(-1)
         capture_ok = len(capture_steps) == len(times) + 1 and bool(np.all(np.diff(capture_steps) == 1))
@@ -145,11 +149,12 @@ def run(args, out, report):
     commit = subprocess.check_output(["git", "-C", str(ROOT / "robosimstudio"), "rev-parse", "HEAD"], text=True).strip()
     report["model_identity"] = {"robosimstudio": {"path": str(ROOT / "robosimstudio"), "commit": commit}}
     report["metrics"].update({"versions": {n: version(n) for n in ("numpy", "mujoco", "newton", "warp-lang", "jax")},
-                              "python": sys.executable, "gpu": wp.get_device("cuda:0").name,
+                              "python": sys.executable, "gpu": wp.get_device("cuda:0").name if wp.is_cuda_available() else None,
                               "scope": "backend_acceptance_example", "embodiment": {
                                   "towel": "yam_parallel_gripper", "rigid": "panda", "sharpa": "yam_bimanual_sharpa_44_finger_joints",
-                                  "grasp": "yam_bimanual_sharpa_44_finger_joints"}[args.task]})
+                                  "grasp": "yam_bimanual_sharpa_44_finger_joints", "simfoundry": "none_passive_rigid_assets"}[args.task]})
     demo = bridge = None
+    imported = import_camera = None
     checks = report["checks"]
     if args.task in {"sharpa", "grasp"}:
         from agent.rss_sharpa import SharpaBridge
@@ -184,6 +189,11 @@ def run(args, out, report):
         except BaseException:
             sim.close()
             raise
+    elif args.task == "simfoundry":
+        from agent.rss_simfoundry import build_import
+        report["metrics"].update(scope="simfoundry_rigid_asset_validation", training_eligible=False,
+                                 physics_device=args.physics_device)
+        sim, imported, import_camera = build_import(args, out, report, check)
     elif args.task == "towel":
         source = ROOT / "robosimstudio/examples/08_demos/fold_the_towel/fold_the_towel.py"
         demo = source_module(source)
@@ -200,17 +210,18 @@ def run(args, out, report):
                                capture=CaptureSpec(enabled=True, contacts=False))
     try:
         atomic_json(out / "scene_manifest.json", {
-            "schema": "dexagent.rss_scene.v1", "backend": "robosimstudio", "scope": "backend_acceptance_example",
+            "schema": "dexagent.rss_scene.v1", "backend": "robosimstudio", "scope": report["metrics"]["scope"],
             "commit": commit, "physics": asdict(sim.request.physics), "pose_quaternion_order": "xyzw",
             "frame": "rss_world", "surface_z_m": float(sim.scene.handles.surface_z),
             "joint_labels": list(sim.model.joint_label), "joint_q_start": sim.model.joint_q_start.numpy().tolist(),
             "joint_qd_start": sim.model.joint_qd_start.numpy().tolist(),
             "entities": {name: asdict(sim[name].spec) for name in sim.names() if is_dataclass(sim[name].spec)},
-            "action_semantics": "sharpa_manifest.json: joint_reference position targets; actual actuator controls saved separately" if bridge else
+            "action_semantics": "no robot commands; passive asset import validation" if imported else
+                                "sharpa_manifest.json: joint_reference position targets; actual actuator controls saved separately" if bridge else
                                 "solver joint_target_q, indexed by joint_q_start; not Sharpa commands",
             "source_scene_sha256": report["inputs"].get("scene_source", {}).get("sha256")})
         recorder.store.write_run_meta(RunMeta(run_name=out.name, embodiment=report["metrics"]["embodiment"],
-                                            device=str(sim.model.device), provenance={"commit": commit, "scope": "backend_acceptance_example"}))
+                                            device=str(sim.model.device), provenance={"commit": commit, "scope": report["metrics"]["scope"]}))
 
         def record(action=None):
             if not sim.state_is_finite():
@@ -218,7 +229,7 @@ def run(args, out, report):
             if action is None:
                 if bridge:
                     raise ValueError("Sharpa recording requires the joint_reference action")
-                action = sim.control.joint_target_q.numpy().copy()
+                action = np.zeros(0) if imported else sim.control.joint_target_q.numpy().copy()
             proprio = {"joint_q": sim.state.joint_q.numpy(), "joint_qd": sim.state.joint_qd.numpy()}
             if bridge:
                 proprio["actuator_ctrl"] = sim.control.mujoco.ctrl.numpy()[bridge.ctrl_indices]
@@ -260,6 +271,11 @@ def run(args, out, report):
                             "evidence": "upstream example uses one-way cloth coupling"},
                            {"id": "real_material_accuracy", "required": False, "status": "skipped",
                             "evidence": "example uses a tuned 3 kPa towel core; no real towel measurement supplied"}])
+        elif imported:
+            from agent.rss_simfoundry import validate_import
+            import_checks, metrics = validate_import(sim, imported, recorder, record, args.simfoundry_limits, check)
+            checks.extend(import_checks)
+            report["metrics"].update(metrics)
         elif args.task == "grasp":
             from agent.rss_grasp import run_task
             grasp_checks, metrics = run_task(bridge, recorder, record, out, args.grasp_limits, check, no_grip=args.no_grip)
@@ -282,11 +298,11 @@ def run(args, out, report):
         recorder.store.append_result(row)
         recorder.store.write_run_meta(RunMeta(run_name=out.name, embodiment=report["metrics"]["embodiment"],
                                             device=str(sim.model.device), episodes=1, successes=int(success),
-                                            provenance={"commit": commit, "scope": "backend_acceptance_example"}))
+                                            provenance={"commit": commit, "scope": report["metrics"]["scope"]}))
         recorder.close()
         checks.append(check("recorder", not recorder.failures, recorder.failures))
         episode = out / "episodes/0000"
-        tape_checks, times, _ = validate_tape(episode, sim.model.particle_count)
+        tape_checks, times, _ = validate_tape(episode, sim.model.particle_count, robot_actions=not bool(imported))
         checks.extend(tape_checks)
         report["metrics"].update({"recorded_frames": len(times), "particle_count": sim.model.particle_count,
                                   "simulation_duration_s": float(times[-1] - times[0])})
@@ -297,7 +313,7 @@ def run(args, out, report):
                 for shape, body in enumerate(sim.model.shape_body.numpy()):
                     name = sim.model.body_label[int(body)].rsplit("/", 1)[-1] if body >= 0 else ""
                     hand_labels[shape] = 1 if name.startswith("robot_left_left_") else 2 if name.startswith("robot_right_right_") else 0
-            checks.append(render_tape(sim, episode, out, args.fps, bridge.camera("workspace") if bridge else None,
+            checks.append(render_tape(sim, episode, out, args.fps, bridge.camera("workspace") if bridge else import_camera,
                                       hand_labels, args.sharpa_limits["min_hand_pixels"]))
             report["metrics"]["renderer"] = "tiled; diagnostic collision-geometry rendering"
         else:
@@ -403,7 +419,12 @@ def run_sharpa_motion(bridge, recorder, record, out, limits):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("task", choices=("rigid", "towel", "sharpa", "grasp", "reference"))
+    parser.add_argument("task", choices=("rigid", "towel", "sharpa", "grasp", "reference", "simfoundry"))
+    parser.add_argument("--simfoundry-stage8", type=Path, help="Stage 8 output containing canonical_mesh/ and info/")
+    parser.add_argument("--simfoundry-stage11", type=Path, help="Stage 11 output containing scene_objects_info.json and objects/")
+    parser.add_argument("--simfoundry-stage12", type=Path, help="Stage 12 output containing pb_scene_poses.json")
+    parser.add_argument("--simfoundry-pose-info", type=Path, help="explicit Stage 8 info_interactive... directory if selected upstream")
+    parser.add_argument("--simfoundry-collision", choices=("stage11", "convex_hull", "bounding_box"), default="stage11")
     parser.add_argument("--reference-run", type=Path, help="existing DexAgent run with Stage 1–3 evidence")
     parser.add_argument("--reference-control", choices=("feedback", "raw"), default="feedback",
                         help="reference feedforward plus bounded feedback, or diagnostic open-loop raw replay")
@@ -417,6 +438,8 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if args.task == "reference" and args.reference_run is None:
         parser.error("reference requires --reference-run")
+    if args.task == "simfoundry" and not all((args.simfoundry_stage8, args.simfoundry_stage11, args.simfoundry_stage12)):
+        parser.error("simfoundry requires --simfoundry-stage8, --simfoundry-stage11 and --simfoundry-stage12")
     if args.fps < 1:
         parser.error("fps must be positive")
     from agent.config import load_config
@@ -435,7 +458,17 @@ def main(argv=None):
                          "max_slip_m": 0.015, "min_contact_fraction": 0.9, "max_release_force_n": 0.05,
                          "max_settle_speed_mps": 0.02, "max_cpu_object_error_m": 0.03,
                          **args.thresholds.get("grasp", {})}
-    args.physics_device = args.physics_device or (args.grasp_limits.get("physics_device", "cpu") if args.task in {"grasp", "reference"} else "gpu")
+    args.physics_device = args.physics_device or ("cpu" if args.task == "simfoundry" else
+                        args.grasp_limits.get("physics_device", "cpu") if args.task in {"grasp", "reference"} else "gpu")
+    args.simfoundry_limits = {"seconds": 3., "rest_window_s": .5, "max_drift_m": .01,
+                             "max_rotation_rad": .05, "max_speed_mps": .02, "max_angular_speed_rad_s": .05,
+                             "max_penetration_m": .004, **args.thresholds.get("simfoundry", {})}
+    if args.task == "simfoundry":
+        for name, value in args.simfoundry_limits.items():
+            if not isinstance(value, (float, int)) or not math.isfinite(value) or value <= 0:
+                parser.error(f"evaluation.robosimstudio.simfoundry.{name} must be positive and finite")
+        if args.simfoundry_limits["rest_window_s"] > args.simfoundry_limits["seconds"]:
+            parser.error("simfoundry rest_window_s must not exceed seconds")
     args.reference_limits = {"max_arm_error_rad": .025, "max_finger_error_rad": .08, "max_object_error_m": .01,
                              "feedback_omega_rad_s": 48., "min_silhouette_iou": .85, **args.thresholds.get("reference", {})}
     # All controls are set before importing GPU libraries.
@@ -447,6 +480,10 @@ def main(argv=None):
     os.environ.setdefault("XLA_PYTHON_CLIENT_PREALLOCATE", "false")
     os.environ.setdefault("WARP_CACHE_PATH", str(ROOT / "runs/cache/warp"))
     out = (args.output or ROOT / "runs" / f"rss_{args.task}_{time.strftime('%Y%m%d_%H%M%S')}_{os.getpid()}").resolve()
+    if args.task == "simfoundry":
+        for source in (args.simfoundry_stage8, args.simfoundry_stage11, args.simfoundry_stage12, args.simfoundry_pose_info):
+            if source is not None and (out.is_relative_to(source.resolve()) or source.resolve().is_relative_to(out)):
+                parser.error("RSS output and SimFoundry input directories must not overlap")
     out.mkdir(parents=True, exist_ok=True)
     path = out / "stage_report.json"
     if path.exists():

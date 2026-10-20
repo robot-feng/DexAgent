@@ -50,20 +50,27 @@ def build(run: Path, episode: Path, output: Path, *, mode: str = 'rss', max_fram
     from zipfile import ZipFile
     from agent.run_reports import sha256_file
 
+    body_replay = mode in {'rss', 'rss_assets'}
     source = run / 'original_source_scene.xml' if mode == 'rss' else episode / 'scene.xml'
-    recordings = (episode / 'steps.npz', episode / 'privileged.npz') if mode == 'rss' else (episode / 'trajectory.npz',)
+    recordings = (episode / 'steps.npz', episode / 'privileged.npz') if body_replay else (episode / 'trajectory.npz',)
     for path in recordings:
         with ZipFile(path) as archive:
             if sum(info.file_size for info in archive.infolist()) > 128 * 1024 * 1024:
                 raise ValueError('recorded arrays exceed the 128 MiB interactive preview limit')
-    bridge = SharpaBridge(output / 'model', source=source,
-                          device='cpu', physics_device='cpu')
+    bridge = None
+    if mode == 'rss_assets':
+        from agent.rss_simfoundry import rebuild_snapshot
+        sim, camera, body_labels = rebuild_snapshot(run, episode)
+    else:
+        bridge = SharpaBridge(output / 'model', source=source,
+                              device='cpu', physics_device='cpu')
+        sim, camera = bridge.sim, bridge.camera('ego')
     viewer = None
     try:
-        initial_steps = int(bridge.sim.step_count)
+        initial_steps = int(sim.step_count)
         if initial_steps != 0:
             raise ValueError('visualization scene unexpectedly executed physics during construction')
-        actual = bridge.manifest()
+        actual = bridge.manifest() if bridge else None
         if mode == 'rss':
             manifest = json.loads((run / 'sharpa_manifest.json').read_text())
             if manifest.get('schema') != 'dexagent.rss_sharpa.v1':
@@ -71,12 +78,14 @@ def build(run: Path, episode: Path, output: Path, *, mode: str = 'rss', max_fram
             for key in ('source_scene_sha256', 'asset_sha256', 'body_labels'):
                 if not manifest.get(key) or actual[key] != manifest[key]:
                     raise ValueError(f'recorded model identity does not match rebuilt scene: {key}')
+            body_labels = manifest['body_labels']
+        if body_replay:
             with np.load(episode / 'steps.npz', allow_pickle=False) as archive:
                 times = archive['sim_time']
             with np.load(episode / 'privileged.npz', allow_pickle=False) as archive:
                 poses = archive['body_q']
             if (times.ndim != 1 or len(times) < 2 or not np.all(np.diff(times) > 0)
-                    or poses.shape != (len(times), len(manifest['body_labels']), 7)
+                    or poses.shape != (len(times), len(body_labels), 7)
                     or not np.isfinite(times).all() or not np.isfinite(poses).all()):
                 raise ValueError('recorded body poses do not match the model and simulation clock')
             if not np.allclose(np.linalg.norm(poses[:, :, 3:], axis=2), 1.0, atol=1e-3):
@@ -87,29 +96,28 @@ def build(run: Path, episode: Path, output: Path, *, mode: str = 'rss', max_fram
                 joint_names=joint_names(bridge.source), asset_hashes=actual['asset_sha256'], timestep=bridge.source.opt.timestep)
         viewer = ViewerStudio(port=0, share=False, verbose=False)
         serializer = viewer._server.get_scene_serializer()
-        camera = bridge.camera('ego')
         viewer._server.initial_camera.position = camera.eye
         viewer._server.initial_camera.look_at = camera.look_at
         viewer._server.initial_camera.up = camera.up
         viewer._server.initial_camera.fov = float(np.radians(camera.fov_y))
-        viewer.set_model(bridge.sim.model)
+        viewer.set_model(sim.model)
         # Reuse RSS lighting without downloading an HDRI or substituting an unrelated room.
         # The source MJCF geometry remains the authority for the recorded scene.
         LightingRig(environment='').apply(viewer._server)
-        replay = StateReplay(bridge.sim.model, strict=True)
+        replay = StateReplay(sim.model, strict=True)
         indices = np.unique(np.linspace(0, len(times) - 1, min(max_frames, len(times)), dtype=int))
         previous_time = float(times[0])
         for index in indices:
             recorded_time = float(times[index])
             serializer.insert_sleep(recorded_time - previous_time)
-            state = replay.write({'body_q': poses[index]} if mode == 'rss' else
+            state = replay.write({'body_q': poses[index]} if body_replay else
                                  {'joint_q': bridge.source_q_to_import(poses[index])})
             viewer.begin_frame(recorded_time)
             viewer.log_state(state)
             viewer.end_frame()
             previous_time = recorded_time
         html = serializer.as_html(dark_mode=True)
-        executed_steps = int(bridge.sim.step_count) - initial_steps
+        executed_steps = int(sim.step_count) - initial_steps
         if executed_steps != 0:
             raise ValueError('recorded-state preview must not execute physics')
         temporary = output / 'viewer.tmp.html'
@@ -117,13 +125,13 @@ def build(run: Path, episode: Path, output: Path, *, mode: str = 'rss', max_fram
         temporary.replace(output / 'viewer.html')
         return {'status': 'ready', 'source_frames': len(times), 'preview_frames': len(indices),
                 'duration_s': float(times[-1] - times[0]), 'mode': 'native_recorded_state_replay',
-                'state_source': 'body_q' if mode == 'rss' else 'recorded_qpos_with_forward_kinematics',
+                'state_source': 'body_q' if body_replay else 'recorded_qpos_with_forward_kinematics',
                 'model_identity_verified': True, 'physics_steps_executed': executed_steps,
                 'message': '原生记录回放；未运行物理。可旋转、缩放并使用内置播放时间轴。'}
     finally:
         if viewer:
             viewer._server.stop()
-        bridge.sim.close()
+        sim.close()
 
 
 def main(argv=None):
@@ -131,7 +139,7 @@ def main(argv=None):
     parser.add_argument('--run', required=True, type=Path)
     parser.add_argument('--episode', required=True, type=Path)
     parser.add_argument('--output', required=True, type=Path)
-    parser.add_argument('--mode', choices=['rss', 'dexagent'], default='rss')
+    parser.add_argument('--mode', choices=['rss', 'rss_assets', 'dexagent'], default='rss')
     args = parser.parse_args(argv)
     args.output.mkdir(parents=True, exist_ok=True)
     try:

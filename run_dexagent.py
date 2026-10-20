@@ -530,9 +530,14 @@ def apply_cli_runtime_options(cfg: dict, args) -> dict:
 def _main_impl(argv=None):
     import argparse
     ap = argparse.ArgumentParser(description="DexAgent end to end")
-    ap.add_argument("--backend-eval", choices=("rigid", "towel", "sharpa", "grasp", "reference"),
+    ap.add_argument("--backend-eval", choices=("rigid", "towel", "sharpa", "grasp", "reference", "simfoundry"),
                     help="evaluate the RoboSimStudio backend and its recorded artifacts")
     ap.add_argument("--reference-run", type=Path, help="DexAgent reference run for --backend-eval reference")
+    ap.add_argument("--simfoundry-stage8", type=Path)
+    ap.add_argument("--simfoundry-stage11", type=Path)
+    ap.add_argument("--simfoundry-stage12", type=Path)
+    ap.add_argument("--simfoundry-pose-info", type=Path)
+    ap.add_argument("--simfoundry-collision", choices=("stage11", "convex_hull", "bounding_box"), default="stage11")
     ap.add_argument("config", nargs="?", default=os.environ.get("DEXAGENT_CONFIG", str(REPO / "dexagent.yaml")))
     ap.add_argument("--from", dest="start", default="stage1", choices=ORDER)
     ap.add_argument("--to", dest="stop", default="stage4", choices=ORDER)
@@ -552,6 +557,11 @@ def _main_impl(argv=None):
         options = [a.backend_eval, "--config", str(cfg["_config_path"])]
         if a.reference_run is not None:
             options += ["--reference-run", str(a.reference_run)]
+        if a.backend_eval == "simfoundry":
+            for name in ("simfoundry_stage8", "simfoundry_stage11", "simfoundry_stage12", "simfoundry_pose_info"):
+                if getattr(a, name) is not None:
+                    options += ['--' + name.replace('_', '-'), str(getattr(a, name))]
+            options += ["--simfoundry-collision", a.simfoundry_collision]
         return backend_main(options)
     a.profile = cfg["evaluation"]["profile"]
     cfg = apply_cli_runtime_options(cfg, a)
@@ -792,7 +802,8 @@ if __name__ == "__main__":
         if os.environ.get("DEXAGENT_ENV_SWITCHED") == "1" or os.environ.get("DEXAGENT_NO_ENV_SWITCH") == "1":
             return
         value_flags = {"--from", "--to", "--name", "--video", "--prompt", "--max-rounds", "--profile", "--llm",
-                       "--resume-stage3-attempt", "--backend-eval", "--reference-run"}
+                       "--resume-stage3-attempt", "--backend-eval", "--reference-run", "--simfoundry-stage8",
+                       "--simfoundry-stage11", "--simfoundry-stage12", "--simfoundry-pose-info", "--simfoundry-collision"}
         config = None
         skip = False
         for value in argv:

@@ -22,6 +22,9 @@ ALLOWED_EXTENSIONS = IMAGE_EXTENSIONS | VIDEO_EXTENSIONS | MODEL_EXTENSIONS | TE
 
 
 def preview_kind(directory: Path) -> str | None:
+    if ((directory / 'simfoundry_import.json').is_file()
+            and any((directory / 'episodes').glob('*/privileged.npz'))):
+        return 'rss_assets'
     if ((directory / 'original_source_scene.xml').is_file() and (directory / 'sharpa_manifest.json').is_file()
             and any((directory / 'episodes').glob('*/privileged.npz'))):
         return 'rss'
