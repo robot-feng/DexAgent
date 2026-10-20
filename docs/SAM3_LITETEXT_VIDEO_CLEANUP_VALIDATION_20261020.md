@@ -51,7 +51,7 @@ mask 人审界面现在将原始视频与 mask 视频并排同步播放，任一
 - `.workbench/venv/bin/python -m pytest -q workbench/tests/test_workbench.py -k background_cleanup`：7 passed。
 - `.workbench/venv/bin/python -m pytest -q workbench/tests/test_cleanup_readiness.py workbench/tests/test_workbench.py -k 'cleanup or inpainting or void_preflight'`：24 passed，覆盖 VOID 两遍实际脚本、推理配置、配置指定权重及 CogVideoX 基础模型完整/缺失。
 - `npm run build`：TypeScript 与 Vite 生产构建通过。
-- `npm run test:e2e -- --grep 'background cleanup defaults'`：1 passed；默认 LiteText 可提交，其他传播组合按依赖预检禁用或启用；操作演示提示准确说明其不保证完整场景覆盖，不再误称固定机位。
+- `npm run test:e2e -- --grep 'background cleanup defaults'`：1 passed；默认 LiteText 可提交，页面展示 VOID 基础模型和两份 checkpoint 的真实缺项；其他传播组合按依赖预检禁用或启用；操作演示提示准确说明其不保证完整场景覆盖，不再误称固定机位。
 - `npm run test:e2e -- --grep 'background cleanup'`：2 passed；另在真实 `review_mask` 任务上验证原视频与 mask 视频双向拖动同步，不推进人工确认门。
 - Workbench API 冒烟：Stage 1b → SAM3 LiteText 原生双向跟踪 → 400 帧 mask → 人工复核状态。
 - 机械臂单目标冒烟：`ThrowAwayTrash.mp4` → 400 帧 mask → 画外区间与入镜恢复检查、非空帧相邻 IoU 统计 → 人工复核状态。

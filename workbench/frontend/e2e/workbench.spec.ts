@@ -32,6 +32,10 @@ test("background cleanup defaults to native SAM3 LiteText tracking and keeps mod
   ]);
   await expect(page.getByRole("button", { name: "生成 mask 预览" })).toBeEnabled();
   await expect(page.getByText("SimFoundry SAM3/SAM2 分割依赖")).toHaveCount(0);
+  const voidRequirement = page.locator(".requirement-item").filter({ hasText: "VOID 环境与权重" });
+  await expect(voidRequirement).toContainText("CogVideoX-Fun-V1.5-5b-InP");
+  await expect(voidRequirement).toContainText("void_pass1.safetensors");
+  await expect(voidRequirement).toContainText("void_pass2.safetensors");
   await model.selectOption("sam3");
   await expect(page.getByRole("button", { name: "生成 mask 预览" })).toBeDisabled();
   await expect(page.getByText("SimFoundry SAM3/SAM2 分割依赖")).toBeVisible();
