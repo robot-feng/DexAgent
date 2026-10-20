@@ -20,13 +20,17 @@ ACTIVE = {'preparing', 'inpainting', 'building'}
 # Match the environments used by the native stage launchers. Module discovery
 # does not load checkpoints, initialize CUDA, or boot OmniGibson.
 ENV_MODULES = {
-    'simfoundry': ('simfoundry', 'torch', 'numpy', 'PIL', 'cv2', 'hydra', 'omegaconf', 'sam3', 'transformers', 'skimage'),
+    # Stage 1b and LiteText's Hydra mask adapter do not import SimFoundry's
+    # legacy SAM3 package; LiteText runs the native SAM3 tracker in its own env.
+    'simfoundry': ('simfoundry', 'torch', 'numpy', 'PIL', 'cv2', 'hydra', 'omegaconf', 'transformers', 'skimage'),
+    'simfoundry_sam3': ('simfoundry', 'torch', 'numpy', 'PIL', 'cv2', 'hydra', 'omegaconf', 'sam3', 'transformers', 'skimage'),
     'void': ('torch', 'diffusers', 'transformers', 'safetensors', 'accelerate', 'av', 'rp', 'omegaconf'),
     'da3': ('simfoundry', 'torch', 'depth_anything_3', 'cv2', 'hydra'),
     'nerfstudio_simfoundry': ('torch', 'nerfstudio', 'gsplat', 'hydra'),
     '3dgrut': ('torch', 'threedgrut', 'kaolin', 'ppisp', 'fused_ssim'),
     'hunyuan': ('simfoundry', 'torch', 'diffusers', 'transformers', 'bpy'),
 }
+ENV_PREFIXES = {'simfoundry_sam3': 'simfoundry'}
 
 
 def _gemini_capability() -> tuple[bool, str]:
@@ -137,9 +141,10 @@ class BackgroundCleanups:
         return [p for p in dict.fromkeys(values) if p.is_dir()]
 
     def _environment_ready(self, name: str) -> tuple[bool, str]:
-        prefix = next((root / name for root in self._env_dirs() if (root / name / 'conda-meta').is_dir()), None)
+        env_name = ENV_PREFIXES.get(name, name)
+        prefix = next((root / env_name for root in self._env_dirs() if (root / env_name / 'conda-meta').is_dir()), None)
         if prefix is None:
-            return False, f'缺少 {name} 环境；请先完成对应安装。'
+            return False, f'缺少 {env_name} 环境；请先完成对应安装。'
         interpreter = prefix / 'bin/python'
         if not interpreter.is_file():
             return False, f'{name} 环境目录已创建，但缺少 Python 解释器；安装尚未完成。'
@@ -201,6 +206,7 @@ print(json.dumps({"missing": missing}))
             CleanupRequirement(id='conda', title='Conda/Mamba', available=self._conda() is not None,
                                detail='需要 conda 或 mamba 启动 SimFoundry 环境。' if not self._conda() else f'检测到 {self._conda()}。'),
             self._environment_requirement('simfoundry_env', 'SimFoundry 环境', 'simfoundry'),
+            self._environment_requirement('simfoundry_sam3', 'SimFoundry SAM3/SAM2 分割依赖', 'simfoundry_sam3'),
             CleanupRequirement(id='litetext_runtime', title='SAM3 LiteText 视频跟踪',
                                available=lite['ready'], detail=lite['detail']),
             CleanupRequirement(id='sam2_checkpoint', title='SAM2 视频传播权重', available=has_sam2,
@@ -224,7 +230,8 @@ print(json.dumps({"missing": missing}))
         by_id = {item.id: item.available for item in requirements}
         preview_ids = ('video_tools', 'conda', 'simfoundry_env', 'auto_bg_sources')
         # VOID is an explicit second action after the mask review gate.
-        build_ids = (*preview_ids, 'void_env', 'gemini', 'da3_env', 'nerfstudio_env', '3dgrut_env', 'mesh_env')
+        build_ids = (*preview_ids, 'void_env', 'gemini', 'simfoundry_sam3',
+                     'da3_env', 'nerfstudio_env', '3dgrut_env', 'mesh_env')
         videos = []
         seen = set()
         for root in self.source_roots:
@@ -259,8 +266,7 @@ print(json.dumps({"missing": missing}))
                                            capture_type=capture_type))
         videos.sort(key=lambda video: (video.capture_type != 'operation_demo', video.name.casefold()))
         return CleanupCatalog(videos=videos, requirements=requirements,
-                              preview_available=(all(by_id.get(key, False) for key in preview_ids)
-                                  or all(by_id.get(key, False) for key in ('video_tools', 'litetext_runtime', 'auto_bg_sources'))),
+                              preview_available=all(by_id.get(key, False) for key in preview_ids),
                               build_available=all(by_id.get(key, False) for key in build_ids))
 
     def _label(self, path: Path) -> str:
@@ -307,11 +313,14 @@ print(json.dumps({"missing": missing}))
             self.environment_probes.clear()
             catalog = self.catalog()
         requirements = {item.id: item for item in catalog.requirements}
-        required = ['video_tools', 'conda', 'simfoundry_env', 'sam2_checkpoint', 'auto_bg_sources']
-        if propagation_model == 'litetext':
-            required = ['video_tools', 'litetext_runtime', 'auto_bg_sources']
-        if propagation_model == 'sam3':
-            required.remove('sam2_checkpoint')
+        required = ['video_tools', 'conda', 'simfoundry_env', 'auto_bg_sources']
+        if phase == 'mask':
+            if propagation_model == 'litetext':
+                required.append('litetext_runtime')
+            else:
+                required.append('simfoundry_sam3')
+                if propagation_model == 'sam2':
+                    required.append('sam2_checkpoint')
         if phase in {'inpaint', 'build'}:
             required.extend(['conda', 'void_env'])
         # Transitional compatibility guard: the current upstream full A build
@@ -322,7 +331,7 @@ print(json.dumps({"missing": missing}))
         if proposal_backend == 'gemini' or phase == 'build':
             required.append('gemini')
         if phase == 'build':
-            required.extend(['simfoundry_env', 'da3_env', 'nerfstudio_env', '3dgrut_env', 'mesh_env'])
+            required.extend(['simfoundry_env', 'simfoundry_sam3', 'da3_env', 'nerfstudio_env', '3dgrut_env', 'mesh_env'])
         missing = [requirements[item].detail if item in requirements else f'缺少运行依赖检查：{item}。'
                    for item in required if item not in requirements or not requirements[item].available]
         if missing:

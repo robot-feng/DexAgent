@@ -118,3 +118,36 @@ def test_custom_conda_environment_roots_are_discovered(tmp_path, monkeypatch):
     monkeypatch.setenv('MAMBA_ROOT_PREFIX', str(root))
     value = BackgroundCleanups(tmp_path, tmp_path / 'state')
     assert value._env_dirs()[:2] == [envs, root / 'envs']
+
+
+def test_litetext_mask_requires_preprocess_and_its_own_runtime_not_legacy_sam3(tmp_path, monkeypatch):
+    from workbench.models import CleanupCatalog, CleanupRequirement
+
+    manager = BackgroundCleanups(tmp_path, tmp_path / 'state')
+    names = ('video_tools', 'conda', 'simfoundry_env', 'auto_bg_sources', 'litetext_runtime')
+    requirements = [CleanupRequirement(id=name, title=name, available=True, detail='ready') for name in names]
+    requirements.extend([
+        CleanupRequirement(id='simfoundry_sam3', title='legacy SAM3', available=False, detail='not installed'),
+        CleanupRequirement(id='sam2_checkpoint', title='SAM2', available=False, detail='not installed'),
+    ])
+    monkeypatch.setattr(manager, 'catalog', lambda: CleanupCatalog(
+        videos=[], requirements=requirements, preview_available=True, build_available=False))
+
+    manager._require(phase='mask', proposal_backend='manual', propagation_model='litetext')
+
+
+def test_inpainting_does_not_require_segmentation_runtime_after_mask_review(tmp_path, monkeypatch):
+    from workbench.models import CleanupCatalog, CleanupRequirement
+
+    manager = BackgroundCleanups(tmp_path, tmp_path / 'state')
+    names = ('video_tools', 'conda', 'simfoundry_env', 'auto_bg_sources', 'void_env')
+    requirements = [CleanupRequirement(id=name, title=name, available=True, detail='ready') for name in names]
+    requirements.extend([
+        CleanupRequirement(id='litetext_runtime', title='LiteText', available=False, detail='removed after review'),
+        CleanupRequirement(id='simfoundry_sam3', title='legacy SAM3', available=False, detail='not installed'),
+        CleanupRequirement(id='sam2_checkpoint', title='SAM2', available=False, detail='not installed'),
+    ])
+    monkeypatch.setattr(manager, 'catalog', lambda: CleanupCatalog(
+        videos=[], requirements=requirements, preview_available=True, build_available=False))
+
+    manager._require(phase='inpaint', proposal_backend='manual')

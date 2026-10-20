@@ -10,6 +10,8 @@ Workbench 背景清理默认使用本机 SAM3 LiteText-S0 文本编码器，并�
 
 SimFoundry 的 Stage 1b、Hydra mask stage、对象提案、VOID 补洞、人工复核门和 AutoBG 构建顺序仍由原流程管理。LiteText 跟踪器在独立的本机 SAM3 Python 环境运行，Workbench 保持轻量。Stage 1b 和 mask stage 通过 `simfoundry` Conda 环境启动；scene `root_dir` 使用绝对路径，宿主机 ffmpeg 路径显式传入，避免 Hydra 路径解析和 Conda PATH 差异导致失败。
 
+运行预检将 SimFoundry Stage 1b/Hydra 基础依赖与传统 SAM3 图像分割依赖分开：LiteText 路线需要基础环境和独立 LiteText tracker；原生 SAM3 或 SAM3+SAM2 路线额外要求 SimFoundry 环境能导入 SAM3。mask 通过人工复核后运行 VOID 时，只重查基础环境与 VOID，不要求分割模型环境仍在机器上。
+
 ## 真实冒烟结果
 
 使用 SimFoundry 示例 `ThrowAwayTrash.mp4` 经 Workbench `/background-cleanup` 页面和 API 创建任务，选择三个手动提示词，完整运行 Stage 1b 与 LiteText mask 阶段。Workbench 任务最终进入 `review_mask`，并生成人工复核所需 overlay、黑白 mask 视频和 `quadmask_meta.json`。

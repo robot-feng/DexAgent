@@ -54,10 +54,13 @@ export function BackgroundCleanupPage() {
   );
   const selectedJob = jobs.data?.find((job) => job.id === selectedJobId) ?? jobs.data?.[0];
   const requirement = (id: string) => catalog.data?.requirements.find((item) => item.id === id);
+  const propagationReady = propagationModel === "litetext"
+    ? requirement("litetext_runtime")?.available
+    : requirement("simfoundry_sam3")?.available &&
+      (propagationModel === "sam3" || requirement("sam2_checkpoint")?.available);
   const canStart = Boolean(
     catalog.data?.preview_available &&
-    (propagationModel === "litetext" ? requirement("litetext_runtime")?.available :
-      requirement("simfoundry_env")?.available && (propagationModel === "sam3" || requirement("sam2_checkpoint")?.available)) &&
+    propagationReady &&
     (proposalBackend !== "gemini" || requirement("gemini")?.available) &&
     videoId &&
     (proposalBackend !== "manual" || objectNames(includeText).length),
@@ -216,7 +219,8 @@ export function BackgroundCleanupPage() {
               <div className="requirement-list">
                 {catalog.data.requirements.filter((item) =>
                   !["da3_env", "nerfstudio_env", "3dgrut_env", "mesh_env"].includes(item.id) &&
-                  (item.id !== "sam2_checkpoint" || propagationModel === "sam2"),
+                  (item.id !== "sam2_checkpoint" || propagationModel === "sam2") &&
+                  (item.id !== "simfoundry_sam3" || propagationModel !== "litetext"),
                 ).map((item) => (
                   <div className="requirement-item" key={item.id}>
                     <span className={item.available ? "requirement-dot good" : "requirement-dot bad"} />

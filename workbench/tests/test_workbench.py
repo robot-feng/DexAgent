@@ -249,7 +249,7 @@ def test_file_ids_ranges_and_symlink_replacement(client, workspace):
     assert client.post(PREFIX + '/imports', json={'directory': '../../', 'project_id': 'imported'}).status_code == 422
 
 
-def test_background_cleanup_lists_local_video_and_reports_missing_pipeline_env(tmp_path):
+def test_background_cleanup_lists_local_video_and_reports_missing_legacy_segmenter(tmp_path):
     from workbench.api import create_app
     videos = tmp_path / 'SimFoundry/docs/assets/example_videos'
     source = videos / 'ThrowAwayTrash.mp4'
@@ -273,7 +273,7 @@ def test_background_cleanup_lists_local_video_and_reports_missing_pipeline_env(t
             'include_objects': ['robot arm'], 'propagation_model': 'sam3',
         })
         assert unavailable.status_code == 503
-        assert 'simfoundry 环境' in unavailable.json()['detail']
+        assert 'sam3' in unavailable.json()['detail']
         assert not list((state / 'background_cleanups/jobs').glob('*/job.json'))
 
 
@@ -282,7 +282,7 @@ def test_background_cleanup_build_preflight_reports_current_upstream_gemini_gap(
     from workbench.models import CleanupCatalog, CleanupRequirement
 
     requirements = [CleanupRequirement(id=name, title=name, available=True, detail='ready') for name in (
-        'video_tools', 'conda', 'simfoundry_env', 'sam2_checkpoint', 'void_env',
+        'video_tools', 'conda', 'simfoundry_env', 'simfoundry_sam3', 'sam2_checkpoint', 'void_env',
         'da3_env', 'nerfstudio_env', '3dgrut_env', 'mesh_env', 'auto_bg_sources',
     )]
     requirements.append(CleanupRequirement(id='gemini', title='Gemini', available=False,
@@ -369,7 +369,7 @@ def test_background_cleanup_codex_proposal_does_not_require_gemini(tmp_path, mon
     from workbench.models import CleanupCatalog, CleanupRequirement
 
     requirements = [CleanupRequirement(id=name, title=name, available=True, detail='ready') for name in (
-        'video_tools', 'conda', 'simfoundry_env', 'sam2_checkpoint', 'auto_bg_sources',
+        'video_tools', 'conda', 'simfoundry_env', 'simfoundry_sam3', 'sam2_checkpoint', 'auto_bg_sources',
     )]
     requirements.extend([
         CleanupRequirement(id='gemini', title='Gemini', available=False, detail='not configured'),
