@@ -27,7 +27,8 @@ TOOL = {
         "as finger_targets_human. Seeds are ranked by a static score: hand overlap with the scene, the thumb's and the next "
         "pad's gap to the object, fingers the robot could not bend like the human, and how far the snap moved the hand "
         "(a long snap is a warning that Stage 2 misplaced the object). Near-duplicates (8 mm / 10 deg) are dropped. With "
-        "verify the top seeds of each subgoal are driven through grasp_lift_test and the lifting ones rank first. The seed "
+        "verify the top seeds of each subgoal must pass both grasp_lift_test and grasp_hold_test; only jointly passing "
+        "seeds rank first. Reports distinguish failed and untested candidates. The seed "
         "is a PRIOR: hand it to optimize_grasp_pose (starts=<the seed json>) or execute it after its stress tests."
     ),
     "inputs": [
@@ -48,12 +49,12 @@ TOOL = {
         {"name": "top_k", "type": "int", "description": "Seeds kept per subgoal. Default 6."},
         {"name": "motions", "type": "list[str] | None", "description": "Motions that start a contact (default the list above)."},
         {"name": "snap_radius_m", "type": "float", "description": "How far the retargeted hand may be translated onto the object. Default 0.07."},
-        {"name": "verify", "type": "bool", "description": "Run grasp_lift_test on the top verify_top seeds of each subgoal. Default false."},
-        {"name": "verify_top", "type": "int", "description": "Default 2."},
+        {"name": "verify", "type": "bool", "description": "Run the default full grasp_lift_test then grasp_hold_test on the top verify_top seeds. A failed lift stops that candidate's test ladder; neither untested nor lift-only poses count as passed. Default false."},
+        {"name": "verify_top", "type": "int", "description": "Nonnegative maximum candidates to verify, default 2. Zero leaves all candidates untested."},
         {"name": "setup_dir", "type": "path | None", "description": "Setup folder (hand MJCFs); default the repository's setup/."},
     ],
     "outputs": [
-        {"name": "subgoals", "type": "list", "description": "[{index, side, object, grasp_body, window_frames, arrival_frame, frames_tried, n_seeds, seeds_json, best {frame, score, overlap_mm, touching, snap_mm, lift?}, warnings}]."},
+        {"name": "subgoals", "type": "list", "description": "[{index, side, object, grasp_body, window_frames, arrival_frame, frames_tried, n_seeds, seeds_json, verification {requested, tested, passed, untested, required_tests}, best {frame, score, overlap_mm, touching, snap_mm, lift?, hold?, verification}, warnings}]. Each pose stores stress_tests and verification status. Hand-only tests do not prove full robot task success."},
         {"name": "seeds", "type": "dict", "description": "{'<index>_<side>': seeds_json path}: give one to optimize_grasp_pose(starts=...) or as a plan entry's pose / pose_candidates."},
         {"name": "out_json", "type": "path", "description": "human_grasp_seeds.json (this summary)."},
     ],
@@ -73,6 +74,7 @@ import numpy as np
 START_MOTIONS = ("grasp_lift", "hold", "regrasp", "pull", "open_joint", "close_joint", "unscrew", "screw", "tie", "fold")
 NO_CONTACT_MOTIONS = ("release", "place", "carry", "insert", "pour", "tilt", "home")
 DEFAULT_SETUP = Path(__file__).resolve().parents[2] / "setup"
+SEED_TESTS = ("grasp_lift_test", "grasp_hold_test")
 
 
 def _load(x):
@@ -244,6 +246,35 @@ def _rot_deg(e1, e2):
     return float(np.degrees(np.arccos(np.clip((np.trace(R) - 1.0) / 2.0, -1.0, 1.0))))
 
 
+def _verify_seeds(scene, seeds, verify_top):
+    """Use the optimizer's existing verifier ladder without changing its gates."""
+    from tool_library.skills.optimize_grasp_pose import run_tests
+
+    if isinstance(verify_top, bool) or int(verify_top) != verify_top or verify_top < 0:
+        raise ValueError("verify_top must be a nonnegative integer")
+    for i, pose in enumerate(seeds):
+        # Do not carry stale success from an earlier geometry/control state.
+        pose.pop("lift", None)
+        pose.pop("hold", None)
+        reports = run_tests(scene, pose, SEED_TESTS, None, (0.06, 0.10, 0.15)) if i < verify_top else {}
+        pose["stress_tests"] = reports
+        passed = all(reports.get(name, {}).get("ok") is True for name in SEED_TESTS)
+        failed = next((f"{name}:{r.get('first_fail') or 'failed'}" for name, r in reports.items() if not r.get("ok")), None)
+        pose["verification"] = {
+            "status": "passed" if passed else "failed" if reports else "not_tested",
+            "required_tests": list(SEED_TESTS), "completed_tests": list(reports), "first_fail": failed,
+        }
+        if "grasp_lift_test" in reports:
+            lt = reports["grasp_lift_test"]
+            pose["lift"] = {"ok": bool(lt["ok"]), "first_fail": lt.get("first_fail"),
+                            "tested_heights_m": [float(x["commanded_mm"]) / 1000 for x in lt.get("lifts", [])],
+                            "achieved_mm": lt["lifts"][-1]["achieved_mm"] if lt.get("lifts") else 0.0}
+        if "grasp_hold_test" in reports:
+            ht = reports["grasp_hold_test"]
+            pose["hold"] = {key: ht.get(key) for key in ("ok", "first_fail", "slip_mm_s", "fingers", "contact_force_N")}
+    seeds.sort(key=lambda p: (p["verification"]["status"] != "passed", p["seed_score"]))
+
+
 def human_grasp_seeds(scene_semantic_json=None, subgoals=None, hands_npz=None, egodex_hdf5=None, episode_json=None, hamer_npz=None,
                       camera=None, joint_regressor=None, hand_scenes=None, scene_recon_json=None, out_dir="poses", fps=None,
                       frames_per_window=5, pre_s=0.5, top_k=6, motions=None, snap_radius_m=0.07, verify=False, verify_top=2,
@@ -361,17 +392,10 @@ def human_grasp_seeds(scene_semantic_json=None, subgoals=None, hands_npz=None, e
                 continue
             kept.append(p)
         kept = kept[:int(top_k)]
-        if verify and kept:
-            from tool_library.verifiers.grasp_lift_test import grasp_lift_test
-            for p in kept[:int(verify_top)]:
-                # Use the verifier's complete default lift ladder. A seed that
-                # survives only the shorter lifts must not outrank one that
-                # survives the full published grasp test.
-                lt = grasp_lift_test(scene, p)
-                p["lift"] = {"ok": bool(lt["ok"]), "first_fail": lt["first_fail"],
-                             "tested_heights_m": [float(x['commanded_mm']) / 1000 for x in lt['lifts']],
-                             "achieved_mm": lt["lifts"][-1]["achieved_mm"] if lt["lifts"] else 0.0}
-            kept.sort(key=lambda q: (0 if q.get("lift", {}).get("ok") else 1, q["seed_score"]))
+        _verify_seeds(scene, kept, verify_top if verify else 0)
+        if verify and not any(p["verification"]["status"] == "passed" for p in kept):
+            warnings.append("no seed passed both default lift and hold checks within verify_top; "
+                            "use optimize_grasp_pose(family='seeds', starts=the seed file) for bounded repair")
         for i, p in enumerate(kept):
             p["seed_rank"] = i
             warnings += [w for w in (p.get("warnings") or []) if w not in warnings][:2]
@@ -383,11 +407,16 @@ def human_grasp_seeds(scene_semantic_json=None, subgoals=None, hands_npz=None, e
                         "hand_scene": hs if isinstance(hs, str) else None, "window_frames": [f0, f1], "arrival_frame": arrival,
                         "time_window_s": sg.get("time_window_s"),
                         "frames_tried": picks, "n_seeds": len(kept), "seeds_json": str(path),
+                        "verification": {"requested": bool(verify), "required_tests": list(SEED_TESTS),
+                                         "tested": sum(bool(p["stress_tests"]) for p in kept),
+                                         "passed": sum(p["verification"]["status"] == "passed" for p in kept),
+                                         "untested": sum(p["verification"]["status"] == "not_tested" for p in kept)},
                         "best": None if best is None else {"frame": best["frame"], "source_frame": best["source_frame"],
                                                            "capture_time_s": best["capture_time_s"], "score": best["seed_score"], "overlap_mm": best.get("overlap_mm"),
                                                            "touching": best.get("touching"),
                                                            "snap_mm": round(1000 * float(np.linalg.norm((best.get("snap") or {}).get("shift_m") or [0, 0, 0])), 1),
-                                                           "lift": best.get("lift")},
+                                                           "lift": best.get("lift"), "hold": best.get("hold"),
+                                                           "verification": best["verification"]},
                         "warnings": warnings[:6]})
     summary = {"subgoals": results, "seeds": seeds_index, "fps": fps, "time_source": timing["time_source"],
                "frame_semantics": "local hand sample IDs; each pose also records source_frame and capture_time_s",

@@ -79,8 +79,9 @@ python tool_library/tests/test_human_grasp_seeds.py
 记为物理通过。详细数值、比较范围与失败阶段见
 [grasp-clock-regression.json](references/humanego/grasp-clock-regression.json)。
 
-下一步复用 `optimize_grasp_pose(family="seeds")` 对失败先验做有限修正，并
-保持举升与握持双验收。当前 `human_grasp_seeds(verify=True)` 只调用举升验证，
-其通过状态不能代替握持稳定性，更不能代替完整机器人任务。
+本阶段结束时，`human_grasp_seeds(verify=True)` 仅调用举升验证，不能据此
+判定握持稳定。后续已接入双验收排序，并复用
+`optimize_grasp_pose(family="seeds")` 恢复上述两例，见
+[抓取双验收与有限修复](HUMAN_GRASP_RECOVERY_20261021.md)。这仍不代替完整机器人任务。
 HumanEgo 的实际场景配准、Aria21 到目标手/TCP 的适配与三本体同任务验收
 仍是独立未完成项。

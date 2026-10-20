@@ -1,0 +1,193 @@
+{
+  "scope": "MuJoCo Sharpa hand-only physical grasp recovery. No YAM arm reach or multi-embodiment task acceptance.",
+  "fixed_seed": 20261021,
+  "unchanged_acceptance": "Default grasp_lift_test (60/100/150 mm) and default grasp_hold_test (80 mm lift + 0.8 s hold); all returned passing poses independently re-run.",
+  "runtime": {
+    "mujoco": "3.12.0",
+    "numpy": "1.26.4",
+    "scipy": "1.17.1"
+  },
+  "python": "3.12.14 | packaged by conda-forge | (main, Sep  1 2026, 15:55:32) [GCC 14.4.0]",
+  "process_environment": {
+    "MUJOCO_GL": "egl",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "cases": {
+    "box_right": {
+      "status": "passed",
+      "evaluated": 32,
+      "physically_tested": 16,
+      "reported_passes": 2,
+      "independent_passes": 2,
+      "runtime_seconds": 46.22386193275452,
+      "failure_classes": {
+        "screen:pads_off": 15,
+        "grasp_lift_test:lift_0.06": 10,
+        "grasp_hold_test:lift_0.08": 3,
+        "screen:overlap": 1,
+        "grasp_lift_test:seated": 1
+      },
+      "best_source_frame": 45,
+      "best_parameters": {
+        "roll_deg": 0.0,
+        "tilt_pinch_deg": 0.0,
+        "tilt_cross_deg": 0.0,
+        "off_approach_m": 0.0,
+        "off_pinch_m": 0.0,
+        "off_cross_m": 0.0,
+        "approach_up": 0.0,
+        "open_frac": 0.55,
+        "press_depth_rad": 0.152
+      },
+      "changes": {
+        "press_depth_rad": {
+          "before": 0.2,
+          "after": 0.152
+        }
+      },
+      "independent_measurements": [
+        {
+          "index": 0,
+          "ok": true,
+          "lift_commanded_achieved_mm": [
+            [
+              60.0,
+              59.8
+            ],
+            [
+              100.0,
+              99.8
+            ],
+            [
+              150.0,
+              149.8
+            ]
+          ],
+          "hold_slip_mm_s": 0.0,
+          "hold_contacts": 2,
+          "max_contact_penetration_mm": 0.465
+        },
+        {
+          "index": 1,
+          "ok": true,
+          "lift_commanded_achieved_mm": [
+            [
+              60.0,
+              59.1
+            ],
+            [
+              100.0,
+              99.1
+            ],
+            [
+              150.0,
+              149.1
+            ]
+          ],
+          "hold_slip_mm_s": 0.03,
+          "hold_contacts": 3,
+          "max_contact_penetration_mm": 0.465
+        }
+      ]
+    },
+    "tall_box_right_hamer": {
+      "status": "passed",
+      "evaluated": 16,
+      "physically_tested": 3,
+      "reported_passes": 1,
+      "independent_passes": 1,
+      "runtime_seconds": 14.335634469985962,
+      "failure_classes": {
+        "screen:pads_off": 13,
+        "grasp_lift_test:lift_0.06": 1,
+        "grasp_lift_test:seated": 1
+      },
+      "best_source_frame": 45,
+      "best_parameters": {
+        "roll_deg": -15.110399641420319,
+        "tilt_pinch_deg": 1.9082517476508867,
+        "tilt_cross_deg": 4.179384207335669,
+        "off_approach_m": -0.005116852202843841,
+        "off_pinch_m": 0.009301612245237723,
+        "off_cross_m": 0.02,
+        "approach_up": -0.47314899933747573,
+        "open_frac": 0.3163242846263299,
+        "press_depth_rad": 0.156440968947327
+      },
+      "changes": {
+        "pos": {
+          "before": [
+            0.1897120954185457,
+            0.46989140560282,
+            0.22074792341405122
+          ],
+          "after": [
+            0.16825703383623483,
+            0.49154169826867433,
+            0.21600565148368
+          ]
+        },
+        "euler": {
+          "before": [
+            2.364798553126521,
+            0.011897808205012739,
+            -2.5535469290940505
+          ],
+          "after": [
+            2.2201734146812977,
+            -0.115632827490179,
+            -2.365302829464801
+          ]
+        },
+        "approach": {
+          "before": [
+            0.31173103271483626,
+            0.34676559980779054,
+            0.8846340384772027
+          ],
+          "after": [
+            0.5303986274317812,
+            0.6263368438372375,
+            0.5712962927155143
+          ]
+        },
+        "open_frac": {
+          "before": null,
+          "after": 0.3163242846263299
+        },
+        "press_depth_rad": {
+          "before": 0.2,
+          "after": 0.156440968947327
+        }
+      },
+      "independent_measurements": [
+        {
+          "index": 0,
+          "ok": true,
+          "lift_commanded_achieved_mm": [
+            [
+              60.0,
+              59.9
+            ],
+            [
+              100.0,
+              99.9
+            ],
+            [
+              150.0,
+              149.9
+            ]
+          ],
+          "hold_slip_mm_s": 0.0,
+          "hold_contacts": 2,
+          "max_contact_penetration_mm": 0.465
+        }
+      ]
+    }
+  },
+  "source_manifest_head": "28f72fbb53d00536200c9a766e9d7d459b5f342a",
+  "reproducible_input": "tool_library/tests/fixtures/human_grasp_recovery.json",
+  "current_code_regression": "tool_library/tests/test_human_grasp_recovery.py: 2 passed; actual bounded search and independent default lift+hold verification, including stale acceptance cleanup"
+}

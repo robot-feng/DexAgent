@@ -13914,7 +13914,7 @@
    "type": "skill",
    "category": "Grasp & Poses",
    "summary": "Turns the human hand at each Stage 1 subgoal's contact window (EgoDex ARKit joints, an EgoDex .hdf5, or HaMeR meshes) into ranked Sharpa grasp-pose seeds per subgoal: the wrist relative to the object and the finger targets, retargeted through human_grasp_pose_prior / retarget_hand_motion, snapped onto the object, the grip fingers cinched onto its surface, and written as pose lists the executor (pose / pose_candidates), the stress tests and optimize_grasp_pose take.",
-   "description": "The demonstration already shows how the hand held each part; this skill reads it before any search. For every subgoal whose acting hand starts a contact (grasp_lift, hold, regrasp, pull, open/close_joint, unscrew, screw, tie, fold, or any motion on an object that hand did not touch in its previous subgoal; 'both' gives a seed list per hand) it takes the subgoal's capture-time window (or explicit local sample IDs), measures in every frame of the window (and `pre_s` before it) how far the human thumb and nearest finger are from the grasped body's bounding box in the hand scene, and picks up to `frames_per_window` frames: the arrival (the first frame within 1.5 cm of the closest approach), frames after it and the closest one. Each frame is retargeted with human_grasp_pose_prior (knuckle frames matched for the wrist, per-finger IK on fingertip targets scaled by finger length, the hand lifted off the table, backed out of the object along the human's approach and snapped onto the object by at most snap_radius_m, because the demonstration and the reconstruction disagree by centimetres). The grip fingers are then cinched from the human's finger shape until their pads touch the grasped body (avoiding the table and bystanders), giving the closed and squeezed targets the executor clamps from; the human shape is kept as finger_targets_human. Seeds are ranked by a static score: hand overlap with the scene, the thumb's and the next pad's gap to the object, fingers the robot could not bend like the human, and how far the snap moved the hand (a long snap is a warning that Stage 2 misplaced the object). Near-duplicates (8 mm / 10 deg) are dropped. With verify the top seeds of each subgoal are driven through grasp_lift_test and the lifting ones rank first. The seed is a PRIOR: hand it to optimize_grasp_pose (starts=<the seed json>) or execute it after its stress tests.",
+   "description": "The demonstration already shows how the hand held each part; this skill reads it before any search. For every subgoal whose acting hand starts a contact (grasp_lift, hold, regrasp, pull, open/close_joint, unscrew, screw, tie, fold, or any motion on an object that hand did not touch in its previous subgoal; 'both' gives a seed list per hand) it takes the subgoal's capture-time window (or explicit local sample IDs), measures in every frame of the window (and `pre_s` before it) how far the human thumb and nearest finger are from the grasped body's bounding box in the hand scene, and picks up to `frames_per_window` frames: the arrival (the first frame within 1.5 cm of the closest approach), frames after it and the closest one. Each frame is retargeted with human_grasp_pose_prior (knuckle frames matched for the wrist, per-finger IK on fingertip targets scaled by finger length, the hand lifted off the table, backed out of the object along the human's approach and snapped onto the object by at most snap_radius_m, because the demonstration and the reconstruction disagree by centimetres). The grip fingers are then cinched from the human's finger shape until their pads touch the grasped body (avoiding the table and bystanders), giving the closed and squeezed targets the executor clamps from; the human shape is kept as finger_targets_human. Seeds are ranked by a static score: hand overlap with the scene, the thumb's and the next pad's gap to the object, fingers the robot could not bend like the human, and how far the snap moved the hand (a long snap is a warning that Stage 2 misplaced the object). Near-duplicates (8 mm / 10 deg) are dropped. With verify the top seeds of each subgoal must pass both grasp_lift_test and grasp_hold_test; only jointly passing seeds rank first. Reports distinguish failed and untested candidates. The seed is a PRIOR: hand it to optimize_grasp_pose (starts=<the seed json>) or execute it after its stress tests.",
    "inputs": [
     {
      "name": "scene_semantic_json",
@@ -14021,13 +14021,13 @@
     {
      "name": "verify",
      "type": "bool",
-     "description": "Run grasp_lift_test on the top verify_top seeds of each subgoal. Default false.",
+     "description": "Run the default full grasp_lift_test then grasp_hold_test on the top verify_top seeds. A failed lift stops that candidate's test ladder; neither untested nor lift-only poses count as passed. Default false.",
      "optional": true
     },
     {
      "name": "verify_top",
      "type": "int",
-     "description": "Default 2.",
+     "description": "Nonnegative maximum candidates to verify, default 2. Zero leaves all candidates untested.",
      "optional": true
     },
     {
@@ -14041,7 +14041,7 @@
     {
      "name": "subgoals",
      "type": "list",
-     "description": "[{index, side, object, grasp_body, window_frames, arrival_frame, frames_tried, n_seeds, seeds_json, best {frame, score, overlap_mm, touching, snap_mm, lift?}, warnings}]."
+     "description": "[{index, side, object, grasp_body, window_frames, arrival_frame, frames_tried, n_seeds, seeds_json, verification {requested, tested, passed, untested, required_tests}, best {frame, score, overlap_mm, touching, snap_mm, lift?, hold?, verification}, warnings}]. Each pose stores stress_tests and verification status. Hand-only tests do not prove full robot task success."
     },
     {
      "name": "seeds",

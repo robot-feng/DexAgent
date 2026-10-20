@@ -224,6 +224,10 @@ def perturb(scene, start, theta):
     from tool_library.common import hand as H
     model, data0, rig, ids = _opened(scene)
     pose = json.loads(json.dumps(_jsonable(start)))
+    # A seed's cached acceptance belongs to its original controls and scene.
+    # Only this evaluation's actual stress tests may certify the new candidate.
+    for key in ("verification", "stress_tests", "lift", "hold"):
+        pose.pop(key, None)
     moved = any(abs(theta[k]) > 1e-9 for k in PARAMS[:6])
     if moved:
         c, a, p, q = _pads_frame(model, data0, rig, start)
