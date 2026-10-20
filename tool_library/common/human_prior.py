@@ -83,22 +83,70 @@ def chain_length(points) -> float:
     return float(np.linalg.norm(np.diff(P, axis=0), axis=1).sum())
 
 
+def track_timing(path, fps=30.0):
+    """Local hand sample IDs, source IDs and time; overlay fps is never a clock.
+
+    Old archives without timestamps retain an explicitly nominal source-ID/fps
+    clock. Malformed declared timestamps never fall back to this assumption.
+    """
+    with np.load(str(path), allow_pickle=False) as z:
+        ids = np.asarray(z["frame_idx"]) if "frame_idx" in z else np.arange(len(z["rig_xyz"]))
+        source = np.asarray(z["source_frame_idx"]) if "source_frame_idx" in z else ids.copy()
+        for value in (ids, source):
+            if (value.ndim != 1 or not len(value) or not np.issubdtype(value.dtype, np.integer)
+                    or np.any(value < 0) or np.any(value[1:] <= value[:-1])):
+                raise ValueError("hand clock requires increasing unique nonnegative sample/source IDs")
+        if source.shape != ids.shape:
+            raise ValueError("hand source IDs do not match sample IDs")
+        if "timestamps_s" in z:
+            times = np.asarray(z["timestamps_s"], float)
+            kind = str(z["time_source"].item()) if "time_source" in z else "archive timestamps_s"
+        else:
+            if "timestamps_ns" in z:
+                raise ValueError("nanosecond hand clock requires timestamps_s and its source origin")
+            if not np.isfinite(fps) or fps <= 0:
+                raise ValueError("nominal capture fps must be finite and positive")
+            times = source.astype(float) / fps
+            kind = "source_frame_idx / supplied capture fps; nominal, not measured"
+        if times.shape != ids.shape or not np.isfinite(times).all() or np.any(times < 0) or np.any(np.diff(times) <= 0):
+            raise ValueError("hand timestamps_s must be finite, nonnegative and strictly increasing")
+        result = dict(frame_idx=ids, source_frame_idx=source, timestamps_s=times, time_source=kind)
+        if "timestamps_ns" in z:
+            ns = np.asarray(z["timestamps_ns"])
+            origin = np.asarray(z["source_first_timestamp_ns"]) if "source_first_timestamp_ns" in z else None
+            if (ns.shape != ids.shape or not np.issubdtype(ns.dtype, np.signedinteger)
+                    or np.any(ns < 0) or np.any(ns[1:] <= ns[:-1])
+                    or origin is None or origin.shape != () or not np.issubdtype(origin.dtype, np.signedinteger)
+                    or origin.item() < 0 or origin.item() > int(ns[0])):
+                raise ValueError("hand nanosecond clock needs valid timestamps and original source origin")
+            if not np.allclose((ns - int(origin)) / 1e9, times, rtol=0, atol=1e-9):
+                raise ValueError("hand seconds disagree with source nanoseconds")
+            result.update(timestamps_ns=ns, source_first_timestamp_ns=int(origin))
+        return result
+
+
 def keypoints_from_egodex(hands_npz, side: str, frames):
     """{'wrist': [T, 3], finger: [T, 4, 3]} rig-frame joints of one hand at the given frames from a hands.npz
     written by read_egodex_episode (25 ARKit joints per hand)."""
     with np.load(str(hands_npz), allow_pickle=False) as z:
         names = [str(n) for n in z["names"]]
         X = np.asarray(z["rig_xyz"], float)
+        ids = np.asarray(z["frame_idx"]) if "frame_idx" in z else np.arange(len(X))
     frames = np.atleast_1d(np.asarray(frames, int))
-    if frames.min() < 0 or frames.max() >= len(X):
-        raise ValueError(f"frames must lie in 0..{len(X) - 1}")
+    if (ids.shape != (len(X),) or not np.issubdtype(ids.dtype, np.integer)
+            or np.any(ids < 0) or np.any(ids[1:] <= ids[:-1])):
+        raise ValueError("EgoDex frame_idx must match unique increasing source frame IDs")
+    lookup = {int(f): i for i, f in enumerate(ids)}
+    if any(int(f) not in lookup for f in frames):
+        raise ValueError("requested frame is not in the EgoDex hand track")
+    rows = [lookup[int(f)] for f in frames]
     col = {n: i for i, n in enumerate(names)}
 
     def j(n):
         key = side + n
         if key not in col:
             raise ValueError(f"hands.npz has no joint {key!r}; is it an EgoDex hands.npz from read_egodex_episode?")
-        return X[frames, col[key]]
+        return X[rows, col[key]]
 
     out = {"wrist": j(ARKIT_WRIST)}
     for f, chain in ARKIT_CHAINS.items():

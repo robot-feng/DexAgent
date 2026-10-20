@@ -1,0 +1,1102 @@
+{
+  "baseline_commit": "af4da9d944cd0fb2d19590e5d98fdb1417821cfe",
+  "scope": "Controlled prior/retarget tool comparison on saved synthetic tracks and exact fixture geometry; not a full historical repository run",
+  "cases": {
+    "box_right": {
+      "scope": "Only retarget_hand_motion replaced with repository HEAD version inside this process. Current source-ID/window code retained; uniform nominal FPS case. Original box geometry restored from test source.",
+      "pose_comparison": [
+        {
+          "frame": 45,
+          "old_rank": 0,
+          "new_rank": 0,
+          "old_score": 25.03,
+          "new_score": 35.03,
+          "max_final_finger_difference": 0.0,
+          "max_pos_difference": 0.0,
+          "old_unreachable": [
+            "index",
+            "middle",
+            "thumb"
+          ],
+          "new_unreachable": [
+            "index",
+            "middle",
+            "pinky",
+            "ring",
+            "thumb"
+          ]
+        },
+        {
+          "frame": 42,
+          "old_rank": 1,
+          "new_rank": 1,
+          "old_score": 74.12,
+          "new_score": 84.12,
+          "max_final_finger_difference": 0.0,
+          "max_pos_difference": 0.0,
+          "old_unreachable": [
+            "index",
+            "middle",
+            "thumb"
+          ],
+          "new_unreachable": [
+            "index",
+            "middle",
+            "pinky",
+            "ring",
+            "thumb"
+          ]
+        },
+        {
+          "frame": 44,
+          "old_rank": 2,
+          "new_rank": 2,
+          "old_score": 22.31,
+          "new_score": 32.31,
+          "max_final_finger_difference": 0.0,
+          "max_pos_difference": 0.0,
+          "old_unreachable": [
+            "index",
+            "middle",
+            "thumb"
+          ],
+          "new_unreachable": [
+            "index",
+            "middle",
+            "pinky",
+            "ring",
+            "thumb"
+          ]
+        },
+        {
+          "frame": 51,
+          "old_rank": 3,
+          "new_rank": 3,
+          "old_score": 134.04,
+          "new_score": 144.04,
+          "max_final_finger_difference": 0.0,
+          "max_pos_difference": 0.0,
+          "old_unreachable": [
+            "index",
+            "middle",
+            "thumb"
+          ],
+          "new_unreachable": [
+            "index",
+            "middle",
+            "pinky",
+            "ring",
+            "thumb"
+          ]
+        }
+      ],
+      "verification": {
+        "legacy": {
+          "frame": 45,
+          "hold": {
+            "ok": false,
+            "slip_mm_s": 3.32,
+            "first_fail": "lift_0.08",
+            "penetration": {
+              "name": "penetration",
+              "ok": true,
+              "max_contact_mm": 0.465,
+              "max_visual_floor_mm": 0.0,
+              "limit_mm": 3.0,
+              "steps": 2298,
+              "worst_pair": [
+                "hand_right_ring_elastomer_visual",
+                "hand_right_pinky_DP_visual"
+              ],
+              "first_bad": null
+            },
+            "contact_force_N": 0.0,
+            "fingers": 0,
+            "lifted": false,
+            "phases": [
+              {
+                "name": "approach_open",
+                "object_nudged_mm": 0.0,
+                "penetration_mm": 0.0,
+                "ok": true
+              },
+              {
+                "name": "seated",
+                "held_before_full_press": true,
+                "finger_contacts": 2,
+                "fingers": [
+                  "middle",
+                  "thumb"
+                ],
+                "contact_force_N": 13.7,
+                "ok": true
+              },
+              {
+                "name": "lift_0.08",
+                "commanded_mm": 80.0,
+                "achieved_mm": -4.6,
+                "drift_mm": 84.1,
+                "ok": false
+              },
+              {
+                "name": "hold",
+                "drift_mm": 86.4,
+                "slip_mm_s": 3.32,
+                "finger_contacts": 0,
+                "held_slip": {
+                  "body": "box_box",
+                  "body_id": 1,
+                  "contact_point_local": null,
+                  "contact_frame": null,
+                  "turn_judged": true,
+                  "drift_m": 0.0026579985777211873,
+                  "turn_deg": 10.072680375395354,
+                  "translation_peak_frame": 35,
+                  "rotation_peak_frame": 45,
+                  "frames": [
+                    0,
+                    400
+                  ]
+                },
+                "contact_force_N": 0.0,
+                "ok": false
+              },
+              {
+                "name": "servo_reserve",
+                "judged": 7,
+                "saturated_frac": 0.0,
+                "median_s": 0.328,
+                "peak_s": 0.356,
+                "limiting_joint": "thumb_CMC_AA",
+                "ok": true
+              },
+              {
+                "name": "penetration",
+                "ok": true,
+                "max_contact_mm": 0.465,
+                "max_visual_floor_mm": 0.0,
+                "limit_mm": 3.0,
+                "steps": 2298,
+                "worst_pair": [
+                  "hand_right_ring_elastomer_visual",
+                  "hand_right_pinky_DP_visual"
+                ],
+                "first_bad": null
+              }
+            ]
+          },
+          "lift": {
+            "ok": true,
+            "lifts": [
+              {
+                "commanded_mm": 60.0,
+                "achieved_mm": 59.4
+              },
+              {
+                "commanded_mm": 100.0,
+                "achieved_mm": 99.4
+              },
+              {
+                "commanded_mm": 150.0,
+                "achieved_mm": 149.4
+              }
+            ],
+            "first_fail": null,
+            "penetration": {
+              "name": "penetration",
+              "ok": true,
+              "max_contact_mm": 0.465,
+              "max_visual_floor_mm": 0.0,
+              "limit_mm": 3.0,
+              "steps": 2648,
+              "worst_pair": [
+                "hand_right_ring_elastomer_visual",
+                "hand_right_pinky_DP_visual"
+              ],
+              "first_bad": null
+            },
+            "grip": {
+              "fingers": [
+                "middle",
+                "thumb"
+              ],
+              "force_N": 13.7
+            },
+            "phases": [
+              {
+                "name": "approach_open",
+                "object_nudged_mm": 0.0,
+                "penetration_mm": 0.0,
+                "ok": true
+              },
+              {
+                "name": "seated",
+                "held_before_full_press": true,
+                "finger_contacts": 2,
+                "fingers": [
+                  "middle",
+                  "thumb"
+                ],
+                "contact_force_N": 13.7,
+                "ok": true
+              },
+              {
+                "name": "lift_0.06",
+                "commanded_mm": 60.0,
+                "achieved_mm": 59.4,
+                "drift_mm": 0.0,
+                "ok": true
+              },
+              {
+                "name": "lift_0.10",
+                "commanded_mm": 100.0,
+                "achieved_mm": 99.4,
+                "drift_mm": 0.0,
+                "ok": true
+              },
+              {
+                "name": "lift_0.15",
+                "commanded_mm": 150.0,
+                "achieved_mm": 149.4,
+                "drift_mm": 0.0,
+                "ok": true
+              },
+              {
+                "name": "servo_reserve",
+                "judged": 32,
+                "saturated_frac": 0.0,
+                "median_s": 0.385,
+                "peak_s": 0.543,
+                "limiting_joint": "thumb_CMC_AA",
+                "ok": true
+              },
+              {
+                "name": "penetration",
+                "ok": true,
+                "max_contact_mm": 0.465,
+                "max_visual_floor_mm": 0.0,
+                "limit_mm": 3.0,
+                "steps": 2648,
+                "worst_pair": [
+                  "hand_right_ring_elastomer_visual",
+                  "hand_right_pinky_DP_visual"
+                ],
+                "first_bad": null
+              }
+            ]
+          }
+        },
+        "current": {
+          "frame": 45,
+          "hold": {
+            "ok": false,
+            "slip_mm_s": 3.32,
+            "first_fail": "lift_0.08",
+            "penetration": {
+              "name": "penetration",
+              "ok": true,
+              "max_contact_mm": 0.465,
+              "max_visual_floor_mm": 0.0,
+              "limit_mm": 3.0,
+              "steps": 2298,
+              "worst_pair": [
+                "hand_right_ring_elastomer_visual",
+                "hand_right_pinky_DP_visual"
+              ],
+              "first_bad": null
+            },
+            "contact_force_N": 0.0,
+            "fingers": 0,
+            "lifted": false,
+            "phases": [
+              {
+                "name": "approach_open",
+                "object_nudged_mm": 0.0,
+                "penetration_mm": 0.0,
+                "ok": true
+              },
+              {
+                "name": "seated",
+                "held_before_full_press": true,
+                "finger_contacts": 2,
+                "fingers": [
+                  "middle",
+                  "thumb"
+                ],
+                "contact_force_N": 13.7,
+                "ok": true
+              },
+              {
+                "name": "lift_0.08",
+                "commanded_mm": 80.0,
+                "achieved_mm": -4.6,
+                "drift_mm": 84.1,
+                "ok": false
+              },
+              {
+                "name": "hold",
+                "drift_mm": 86.4,
+                "slip_mm_s": 3.32,
+                "finger_contacts": 0,
+                "held_slip": {
+                  "body": "box_box",
+                  "body_id": 1,
+                  "contact_point_local": null,
+                  "contact_frame": null,
+                  "turn_judged": true,
+                  "drift_m": 0.0026579985777211873,
+                  "turn_deg": 10.072680375395354,
+                  "translation_peak_frame": 35,
+                  "rotation_peak_frame": 45,
+                  "frames": [
+                    0,
+                    400
+                  ]
+                },
+                "contact_force_N": 0.0,
+                "ok": false
+              },
+              {
+                "name": "servo_reserve",
+                "judged": 7,
+                "saturated_frac": 0.0,
+                "median_s": 0.328,
+                "peak_s": 0.356,
+                "limiting_joint": "thumb_CMC_AA",
+                "ok": true
+              },
+              {
+                "name": "penetration",
+                "ok": true,
+                "max_contact_mm": 0.465,
+                "max_visual_floor_mm": 0.0,
+                "limit_mm": 3.0,
+                "steps": 2298,
+                "worst_pair": [
+                  "hand_right_ring_elastomer_visual",
+                  "hand_right_pinky_DP_visual"
+                ],
+                "first_bad": null
+              }
+            ]
+          },
+          "lift": {
+            "ok": true,
+            "lifts": [
+              {
+                "commanded_mm": 60.0,
+                "achieved_mm": 59.4
+              },
+              {
+                "commanded_mm": 100.0,
+                "achieved_mm": 99.4
+              },
+              {
+                "commanded_mm": 150.0,
+                "achieved_mm": 149.4
+              }
+            ],
+            "first_fail": null,
+            "penetration": {
+              "name": "penetration",
+              "ok": true,
+              "max_contact_mm": 0.465,
+              "max_visual_floor_mm": 0.0,
+              "limit_mm": 3.0,
+              "steps": 2648,
+              "worst_pair": [
+                "hand_right_ring_elastomer_visual",
+                "hand_right_pinky_DP_visual"
+              ],
+              "first_bad": null
+            },
+            "grip": {
+              "fingers": [
+                "middle",
+                "thumb"
+              ],
+              "force_N": 13.7
+            },
+            "phases": [
+              {
+                "name": "approach_open",
+                "object_nudged_mm": 0.0,
+                "penetration_mm": 0.0,
+                "ok": true
+              },
+              {
+                "name": "seated",
+                "held_before_full_press": true,
+                "finger_contacts": 2,
+                "fingers": [
+                  "middle",
+                  "thumb"
+                ],
+                "contact_force_N": 13.7,
+                "ok": true
+              },
+              {
+                "name": "lift_0.06",
+                "commanded_mm": 60.0,
+                "achieved_mm": 59.4,
+                "drift_mm": 0.0,
+                "ok": true
+              },
+              {
+                "name": "lift_0.10",
+                "commanded_mm": 100.0,
+                "achieved_mm": 99.4,
+                "drift_mm": 0.0,
+                "ok": true
+              },
+              {
+                "name": "lift_0.15",
+                "commanded_mm": 150.0,
+                "achieved_mm": 149.4,
+                "drift_mm": 0.0,
+                "ok": true
+              },
+              {
+                "name": "servo_reserve",
+                "judged": 32,
+                "saturated_frac": 0.0,
+                "median_s": 0.385,
+                "peak_s": 0.543,
+                "limiting_joint": "thumb_CMC_AA",
+                "ok": true
+              },
+              {
+                "name": "penetration",
+                "ok": true,
+                "max_contact_mm": 0.465,
+                "max_visual_floor_mm": 0.0,
+                "limit_mm": 3.0,
+                "steps": 2648,
+                "worst_pair": [
+                  "hand_right_ring_elastomer_visual",
+                  "hand_right_pinky_DP_visual"
+                ],
+                "first_bad": null
+              }
+            ]
+          }
+        }
+      },
+      "legacy_candidate_lift": [
+        {
+          "frame": 45,
+          "rank": 0,
+          "lift": {
+            "ok": true,
+            "first_fail": null,
+            "tested_heights_m": [
+              0.06,
+              0.1,
+              0.15
+            ],
+            "achieved_mm": 149.4
+          }
+        },
+        {
+          "frame": 42,
+          "rank": 1,
+          "lift": {
+            "ok": true,
+            "first_fail": null,
+            "tested_heights_m": [
+              0.06,
+              0.1,
+              0.15
+            ],
+            "achieved_mm": 149.2
+          }
+        },
+        {
+          "frame": 44,
+          "rank": 2,
+          "lift": {
+            "ok": false,
+            "first_fail": "lift_0.06",
+            "tested_heights_m": [
+              0.06,
+              0.1,
+              0.15
+            ],
+            "achieved_mm": -7.6
+          }
+        },
+        {
+          "frame": 51,
+          "rank": 3,
+          "lift": null
+        }
+      ],
+      "current_candidate_lift": [
+        {
+          "frame": 45,
+          "rank": 0,
+          "lift": {
+            "ok": true,
+            "first_fail": null,
+            "tested_heights_m": [
+              0.06,
+              0.1,
+              0.15
+            ],
+            "achieved_mm": 149.4
+          }
+        },
+        {
+          "frame": 42,
+          "rank": 1,
+          "lift": {
+            "ok": true,
+            "first_fail": null,
+            "tested_heights_m": [
+              0.06,
+              0.1,
+              0.15
+            ],
+            "achieved_mm": 149.2
+          }
+        },
+        {
+          "frame": 44,
+          "rank": 2,
+          "lift": {
+            "ok": false,
+            "first_fail": "lift_0.06",
+            "tested_heights_m": [
+              0.06,
+              0.1,
+              0.15
+            ],
+            "achieved_mm": -7.6
+          }
+        },
+        {
+          "frame": 51,
+          "rank": 3,
+          "lift": null
+        }
+      ]
+    },
+    "tall_box_right_hamer": {
+      "scope": "HEAD human_grasp_pose_prior and retarget_hand_motion loaded in isolated process; output-only frame/time metadata added for current seeds summary; no numeric pose adaptation. Same saved human track and original tall box geometry.",
+      "pose_comparison": [
+        {
+          "frame": 49,
+          "old_rank": 0,
+          "new_rank": 1,
+          "old_score": 51.51,
+          "new_score": 61.51,
+          "max_final_finger_difference": 2.220446049250313e-15,
+          "max_pos_difference": 1.1102230246251565e-16,
+          "old_unreachable": [],
+          "new_unreachable": [
+            "middle",
+            "thumb"
+          ]
+        },
+        {
+          "frame": 45,
+          "old_rank": 1,
+          "new_rank": 0,
+          "old_score": 51.94,
+          "new_score": 15.74,
+          "max_final_finger_difference": 0.16769705716884364,
+          "max_pos_difference": 0.003888888888888886,
+          "old_unreachable": [],
+          "new_unreachable": [
+            "thumb"
+          ]
+        },
+        {
+          "frame": 53,
+          "old_rank": 2,
+          "new_rank": 2,
+          "old_score": 154.44,
+          "new_score": 164.44,
+          "max_final_finger_difference": 0.04385154107280265,
+          "max_pos_difference": 2.220446049250313e-16,
+          "old_unreachable": [],
+          "new_unreachable": [
+            "pinky",
+            "thumb"
+          ]
+        }
+      ],
+      "verification": {
+        "legacy": {
+          "frame": null,
+          "hold": null,
+          "lift": null
+        },
+        "current": {
+          "frame": null,
+          "hold": null,
+          "lift": null
+        }
+      },
+      "failed_candidate_checks": {
+        "legacy": {
+          "frame": 49,
+          "lift": {
+            "ok": false,
+            "lifts": [
+              {
+                "commanded_mm": 60.0,
+                "achieved_mm": -2.4
+              },
+              {
+                "commanded_mm": 100.0,
+                "achieved_mm": -2.4
+              },
+              {
+                "commanded_mm": 150.0,
+                "achieved_mm": -2.4
+              }
+            ],
+            "first_fail": "seated",
+            "penetration": {
+              "name": "penetration",
+              "ok": true,
+              "max_contact_mm": 0.465,
+              "max_visual_floor_mm": 0.0,
+              "limit_mm": 3.0,
+              "steps": 2630,
+              "worst_pair": [
+                "hand_right_ring_elastomer_visual",
+                "hand_right_pinky_DP_visual"
+              ],
+              "first_bad": null
+            },
+            "grip": {
+              "fingers": [],
+              "force_N": 0.0
+            },
+            "phases": [
+              {
+                "name": "approach_open",
+                "object_nudged_mm": 0.0,
+                "penetration_mm": 0.0,
+                "ok": true
+              },
+              {
+                "name": "seated",
+                "held_before_full_press": true,
+                "finger_contacts": 0,
+                "fingers": [],
+                "contact_force_N": 0.0,
+                "ok": false
+              },
+              {
+                "name": "lift_0.06",
+                "commanded_mm": 60.0,
+                "achieved_mm": -2.4,
+                "drift_mm": 62.3,
+                "ok": false
+              },
+              {
+                "name": "lift_0.10",
+                "commanded_mm": 100.0,
+                "achieved_mm": -2.4,
+                "drift_mm": 102.3,
+                "ok": false
+              },
+              {
+                "name": "lift_0.15",
+                "commanded_mm": 150.0,
+                "achieved_mm": -2.4,
+                "drift_mm": 152.3,
+                "ok": false
+              },
+              {
+                "name": "servo_reserve",
+                "judged": 0,
+                "ok": true,
+                "note": "the object was never held by the hand alone"
+              },
+              {
+                "name": "penetration",
+                "ok": true,
+                "max_contact_mm": 0.465,
+                "max_visual_floor_mm": 0.0,
+                "limit_mm": 3.0,
+                "steps": 2630,
+                "worst_pair": [
+                  "hand_right_ring_elastomer_visual",
+                  "hand_right_pinky_DP_visual"
+                ],
+                "first_bad": null
+              }
+            ]
+          },
+          "hold": {
+            "ok": false,
+            "slip_mm_s": 0.0,
+            "first_fail": "seated",
+            "penetration": {
+              "name": "penetration",
+              "ok": true,
+              "max_contact_mm": 0.465,
+              "max_visual_floor_mm": 0.0,
+              "limit_mm": 3.0,
+              "steps": 2280,
+              "worst_pair": [
+                "hand_right_ring_elastomer_visual",
+                "hand_right_pinky_DP_visual"
+              ],
+              "first_bad": null
+            },
+            "contact_force_N": 0.0,
+            "fingers": 0,
+            "lifted": false,
+            "phases": [
+              {
+                "name": "approach_open",
+                "object_nudged_mm": 0.0,
+                "penetration_mm": 0.0,
+                "ok": true
+              },
+              {
+                "name": "seated",
+                "held_before_full_press": true,
+                "finger_contacts": 0,
+                "fingers": [],
+                "contact_force_N": 0.0,
+                "ok": false
+              },
+              {
+                "name": "lift_0.08",
+                "commanded_mm": 80.0,
+                "achieved_mm": -2.4,
+                "drift_mm": 82.3,
+                "ok": false
+              },
+              {
+                "name": "hold",
+                "drift_mm": 82.3,
+                "slip_mm_s": 0.0,
+                "finger_contacts": 0,
+                "held_slip": {
+                  "body": "box_box",
+                  "body_id": 1,
+                  "contact_point_local": null,
+                  "contact_frame": null,
+                  "turn_judged": true,
+                  "drift_m": 5.161811653571938e-09,
+                  "turn_deg": 0.0,
+                  "translation_peak_frame": 65,
+                  "rotation_peak_frame": 0,
+                  "frames": [
+                    0,
+                    400
+                  ]
+                },
+                "contact_force_N": 0.0,
+                "ok": false
+              },
+              {
+                "name": "servo_reserve",
+                "judged": 0,
+                "ok": true,
+                "note": "the object was never held by the hand alone"
+              },
+              {
+                "name": "penetration",
+                "ok": true,
+                "max_contact_mm": 0.465,
+                "max_visual_floor_mm": 0.0,
+                "limit_mm": 3.0,
+                "steps": 2280,
+                "worst_pair": [
+                  "hand_right_ring_elastomer_visual",
+                  "hand_right_pinky_DP_visual"
+                ],
+                "first_bad": null
+              }
+            ]
+          }
+        },
+        "current": {
+          "frame": 45,
+          "lift": {
+            "ok": false,
+            "lifts": [
+              {
+                "commanded_mm": 60.0,
+                "achieved_mm": -1.5
+              },
+              {
+                "commanded_mm": 100.0,
+                "achieved_mm": -1.5
+              },
+              {
+                "commanded_mm": 150.0,
+                "achieved_mm": -1.5
+              }
+            ],
+            "first_fail": "lift_0.06",
+            "penetration": {
+              "name": "penetration",
+              "ok": true,
+              "max_contact_mm": 0.465,
+              "max_visual_floor_mm": 0.0,
+              "limit_mm": 3.0,
+              "steps": 2635,
+              "worst_pair": [
+                "hand_right_ring_elastomer_visual",
+                "hand_right_pinky_DP_visual"
+              ],
+              "first_bad": null
+            },
+            "grip": {
+              "fingers": [
+                "index",
+                "thumb"
+              ],
+              "force_N": 11.6
+            },
+            "phases": [
+              {
+                "name": "approach_open",
+                "object_nudged_mm": 0.0,
+                "penetration_mm": 0.0,
+                "ok": true
+              },
+              {
+                "name": "seated",
+                "held_before_full_press": true,
+                "finger_contacts": 2,
+                "fingers": [
+                  "index",
+                  "thumb"
+                ],
+                "contact_force_N": 11.6,
+                "ok": true
+              },
+              {
+                "name": "lift_0.06",
+                "commanded_mm": 60.0,
+                "achieved_mm": -1.5,
+                "drift_mm": 60.9,
+                "ok": false
+              },
+              {
+                "name": "lift_0.10",
+                "commanded_mm": 100.0,
+                "achieved_mm": -1.5,
+                "drift_mm": 100.9,
+                "ok": false
+              },
+              {
+                "name": "lift_0.15",
+                "commanded_mm": 150.0,
+                "achieved_mm": -1.5,
+                "drift_mm": 150.9,
+                "ok": false
+              },
+              {
+                "name": "servo_reserve",
+                "judged": 0,
+                "ok": true,
+                "note": "the object was never held by the hand alone"
+              },
+              {
+                "name": "penetration",
+                "ok": true,
+                "max_contact_mm": 0.465,
+                "max_visual_floor_mm": 0.0,
+                "limit_mm": 3.0,
+                "steps": 2635,
+                "worst_pair": [
+                  "hand_right_ring_elastomer_visual",
+                  "hand_right_pinky_DP_visual"
+                ],
+                "first_bad": null
+              }
+            ]
+          },
+          "hold": {
+            "ok": false,
+            "slip_mm_s": 0.0,
+            "first_fail": "lift_0.08",
+            "penetration": {
+              "name": "penetration",
+              "ok": true,
+              "max_contact_mm": 0.465,
+              "max_visual_floor_mm": 0.0,
+              "limit_mm": 3.0,
+              "steps": 2285,
+              "worst_pair": [
+                "hand_right_ring_elastomer_visual",
+                "hand_right_pinky_DP_visual"
+              ],
+              "first_bad": null
+            },
+            "contact_force_N": 0.0,
+            "fingers": 0,
+            "lifted": false,
+            "phases": [
+              {
+                "name": "approach_open",
+                "object_nudged_mm": 0.0,
+                "penetration_mm": 0.0,
+                "ok": true
+              },
+              {
+                "name": "seated",
+                "held_before_full_press": true,
+                "finger_contacts": 2,
+                "fingers": [
+                  "index",
+                  "thumb"
+                ],
+                "contact_force_N": 11.6,
+                "ok": true
+              },
+              {
+                "name": "lift_0.08",
+                "commanded_mm": 80.0,
+                "achieved_mm": -1.5,
+                "drift_mm": 80.8,
+                "ok": false
+              },
+              {
+                "name": "hold",
+                "drift_mm": 80.8,
+                "slip_mm_s": 0.0,
+                "finger_contacts": 0,
+                "held_slip": {
+                  "body": "box_box",
+                  "body_id": 1,
+                  "contact_point_local": null,
+                  "contact_frame": null,
+                  "turn_judged": true,
+                  "drift_m": 5.121317739357956e-09,
+                  "turn_deg": 0.0,
+                  "translation_peak_frame": 66,
+                  "rotation_peak_frame": 0,
+                  "frames": [
+                    0,
+                    400
+                  ]
+                },
+                "contact_force_N": 0.0,
+                "ok": false
+              },
+              {
+                "name": "servo_reserve",
+                "judged": 0,
+                "ok": true,
+                "note": "the object was never held by the hand alone"
+              },
+              {
+                "name": "penetration",
+                "ok": true,
+                "max_contact_mm": 0.465,
+                "max_visual_floor_mm": 0.0,
+                "limit_mm": 3.0,
+                "steps": 2285,
+                "worst_pair": [
+                  "hand_right_ring_elastomer_visual",
+                  "hand_right_pinky_DP_visual"
+                ],
+                "first_bad": null
+              }
+            ]
+          }
+        }
+      },
+      "legacy_candidate_lift": [
+        {
+          "frame": 49,
+          "rank": 0,
+          "lift": {
+            "ok": false,
+            "first_fail": "seated",
+            "tested_heights_m": [
+              0.06,
+              0.1,
+              0.15
+            ],
+            "achieved_mm": -2.4
+          }
+        },
+        {
+          "frame": 45,
+          "rank": 1,
+          "lift": {
+            "ok": false,
+            "first_fail": "lift_0.06",
+            "tested_heights_m": [
+              0.06,
+              0.1,
+              0.15
+            ],
+            "achieved_mm": -1.9
+          }
+        },
+        {
+          "frame": 53,
+          "rank": 2,
+          "lift": {
+            "ok": false,
+            "first_fail": "seated",
+            "tested_heights_m": [
+              0.06,
+              0.1,
+              0.15
+            ],
+            "achieved_mm": 0.0
+          }
+        }
+      ],
+      "current_candidate_lift": [
+        {
+          "frame": 45,
+          "rank": 0,
+          "lift": {
+            "ok": false,
+            "first_fail": "lift_0.06",
+            "tested_heights_m": [
+              0.06,
+              0.1,
+              0.15
+            ],
+            "achieved_mm": -1.5
+          }
+        },
+        {
+          "frame": 49,
+          "rank": 1,
+          "lift": {
+            "ok": false,
+            "first_fail": "seated",
+            "tested_heights_m": [
+              0.06,
+              0.1,
+              0.15
+            ],
+            "achieved_mm": -2.4
+          }
+        },
+        {
+          "frame": 53,
+          "rank": 2,
+          "lift": {
+            "ok": false,
+            "first_fail": "seated",
+            "tested_heights_m": [
+              0.06,
+              0.1,
+              0.15
+            ],
+            "achieved_mm": 0.0
+          }
+        }
+      ]
+    }
+  }
+}

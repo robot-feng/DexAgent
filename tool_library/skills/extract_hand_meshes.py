@@ -16,10 +16,11 @@ TOOL = {
         "per-frame RGBA hand layers for compositing. Detection runs on the raw frame and falls "
         "back to a contrast/brightness-boosted copy only when nothing is found: the boost raised "
         "recall on dark egocentric clips and lowered it on bright bench footage. The output "
-        "npz is what hand retargeting and the robot's initial pose are read from."
+        "npz is what hand retargeting and the robot's initial pose are read from. Source frame IDs and capture "
+        "timestamps linked by episode.json are preserved independently of overlay fps; malformed declared clocks are rejected."
     ),
     "inputs": [
-        {"name": "frames_dir", "type": "path", "description": "Folder of frame%05d.jpg."},
+        {"name": "frames_dir", "type": "path", "description": "Folder of frame images (JPG/PNG), optionally with episode.json linking image names to source frames and observations_npz."},
         {"name": "out_dir", "type": "path", "description": "Receives hands.npz, overlay.mp4, layers/frame%05d.png, summary.json."},
         {"name": "hamer_root", "type": "path | None", "description": "HaMeR checkout holding _DATA/ (MANO, HaMeR and ViTPose checkpoints), vitpose_model.py and third-party/ViTPose; the tool runs with this as the working directory because HaMeR resolves its data relatively."},
         {"name": "checkpoint", "type": "path | None", "description": "HaMeR checkpoint; the package default when None."},
@@ -31,7 +32,7 @@ TOOL = {
     ],
     "outputs": [
         {"name": "summary", "type": "dict",
-         "description": "frames processed, frames_with_hands, detection_rate, hands_left, hands_right, paths. hands.npz holds per-frame object arrays verts (n_hands,778,3), cam_t, is_right, bbox, global_orient, hand_pose, betas and the MANO faces."},
+         "description": "frames processed, frames_with_hands, detection_rate, hands_left, hands_right, paths. hands.npz holds per-frame object arrays verts (n_hands,778,3), cam_t, is_right, bbox, global_orient, hand_pose, betas and the MANO faces. Also source_frame_idx, timestamps_s and time_source when supplied, plus original timestamps_ns/source_first_timestamp_ns if available. fps is overlay playback only."},
     ],
     "status": "tested",
     "entrypoint": "extract_hand_meshes",
@@ -108,6 +109,52 @@ def _source_frame_indices(files, frames_dir):
     return np.asarray(indices, dtype=np.int64)
 
 
+def _source_timing(files, frames_dir):
+    """Join capture time by source ID, independent of overlay playback fps."""
+    indices = _source_frame_indices(files, frames_dir)
+    if indices is None:
+        episode_path = Path(frames_dir) / "episode.json"
+        if episode_path.exists() and json.loads(episode_path.read_text()).get("observations_npz"):
+            raise ValueError("declared observations require source_frame_indices")
+        return {}
+    result = {"source_frame_idx": indices}
+    episode = json.loads((Path(frames_dir) / "episode.json").read_text())
+    declared = episode.get("observations_npz") or episode.get("hands_npz")
+    if not declared:
+        return result
+    path = Path(declared)
+    if not path.is_absolute():
+        path = Path(frames_dir) / path
+    with np.load(path, allow_pickle=False) as z:
+        if "timestamps_s" not in z and not episode.get("observations_npz") and "timestamps_ns" not in z:
+            return result  # Old EgoDex archives had no capture clock.
+        if "timestamps_s" not in z or (episode.get("observations_npz") and "frame_idx" not in z):
+            raise ValueError("declared observations require source frame IDs and timestamps_s")
+        ids = np.asarray(z["frame_idx"]) if "frame_idx" in z else np.arange(len(z["timestamps_s"]))
+        times = np.asarray(z["timestamps_s"], float)
+        if (ids.ndim != 1 or not np.issubdtype(ids.dtype, np.integer) or np.any(ids < 0)
+                or np.any(ids[1:] <= ids[:-1]) or times.shape != ids.shape
+                or not np.isfinite(times).all() or np.any(times < 0) or np.any(np.diff(times) <= 0)):
+            raise ValueError("source observation clock is invalid")
+        lookup = {int(f): i for i, f in enumerate(ids)}
+        if any(int(f) not in lookup for f in indices):
+            raise ValueError("source observation clock is missing an input frame")
+        rows = [lookup[int(f)] for f in indices]
+        result.update(timestamps_s=times[rows], time_source=np.asarray(episode.get("time_source", "source archive timestamps_s")))
+        if "timestamps_ns" in z:
+            ns = np.asarray(z["timestamps_ns"])
+            origin = episode.get("source_first_timestamp_ns")
+            if (ns.shape != ids.shape or not np.issubdtype(ns.dtype, np.signedinteger)
+                    or np.any(ns < 0) or np.any(ns[1:] <= ns[:-1])
+                    or type(origin) is not int or origin < 0 or origin > int(ns[0])
+                    or not np.allclose((ns-origin)/1e9, times, rtol=0, atol=1e-9)):
+                raise ValueError("source nanosecond timestamps disagree with capture seconds")
+            result.update(timestamps_ns=ns[rows], source_first_timestamp_ns=np.int64(origin))
+    if np.any(np.diff(result["timestamps_s"]) <= 0):
+        raise ValueError("input images are not ordered by capture time")
+    return result
+
+
 def _run(frames_dir, out_dir, checkpoint, fps, enhance, kp_thresh, rescale_factor, max_frames):
     try:
         import torch
@@ -123,7 +170,7 @@ def _run(frames_dir, out_dir, checkpoint, fps, enhance, kp_thresh, rescale_facto
     if max_frames:
         files = files[: int(max_frames)]
     assert files, f"no frames in {frames_dir}"
-    source_frame_idx = _source_frame_indices(files, frames_dir)
+    source_timing = _source_timing(files, frames_dir)
     out = Path(out_dir)
     (out / "layers").mkdir(parents=True, exist_ok=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -195,12 +242,13 @@ def _run(frames_dir, out_dir, checkpoint, fps, enhance, kp_thresh, rescale_facto
              verts=obj("verts"), cam_t=obj("cam_t"), is_right=obj("is_right"), bbox=obj("bbox"),
              global_orient=obj("global_orient"), hand_pose=obj("hand_pose"), betas=obj("betas"),
              faces=model.mano.faces, fps=float(fps),
-             **({"source_frame_idx": source_frame_idx} if source_frame_idx is not None else {}))
+             **source_timing)
     write_video(overlay, out / "overlay.mp4", fps)
     summary = {"processed_frames": len(files), "frames_with_hands": n_with,
                "detection_rate": round(n_with / max(1, len(files)), 3), "hands_left": int(n_left),
                "hands_right": int(n_right), "runtime_s": round(time.time() - t0, 1),
-               "hands_npz": str(out / "hands.npz"), "overlay_video": str(out / "overlay.mp4")}
+               "hands_npz": str(out / "hands.npz"), "overlay_video": str(out / "overlay.mp4"),
+               "time_source": str(source_timing.get("time_source", "capture clock unavailable; fps is overlay playback only"))}
     write_json(summary, out / "summary.json")
     return summary
 

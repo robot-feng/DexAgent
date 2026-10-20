@@ -33,7 +33,7 @@ TOOL = {
     ),
     "inputs": [
         {"name": "side", "type": "str", "description": "'left' or 'right' (the robot station that takes the grasp)."},
-        {"name": "frame", "type": "int", "description": "The contact frame (a Stage 1 subgoal's grasp moment, video frame index)."},
+        {"name": "frame", "type": "int", "description": "Contact sample ID: EgoDex frame_idx or HaMeR local image ID. Output also records the source video frame and capture time."},
         {"name": "out_json", "type": "path | None", "description": "Where the pose json is written."},
         {"name": "hands_npz", "type": "path | None", "description": "read_egodex_episode's hands.npz (ARKit joints in the rig frame)."},
         {"name": "hamer_npz", "type": "path | None", "description": "extract_hand_meshes' hands.npz (alternative source); needs camera and joint_regressor."},
@@ -50,7 +50,7 @@ TOOL = {
         {"name": "contact_tol_m", "type": "float", "description": "A pad this close to the grasped body grips. Default 0.015."},
         {"name": "snap_to_object", "type": "bool", "description": "With a hand scene: translate the retargeted hand (orientation and finger shape kept) by at most snap_radius_m to where the thumb and its two nearest pads are closest to the object without entering it; the unshifted position is kept as prior_pos. Default true."},
         {"name": "snap_radius_m", "type": "float", "description": "How far the snap may translate the retargeted hand (per axis; 0.5x downward) to bring the thumb and its two nearest pads onto the object. Default 0.07."},
-        {"name": "fps", "type": "float", "description": "Frame rate of the source (retargeting rate limits). Default 30."},
+        {"name": "fps", "type": "float", "description": "Nominal capture rate only for archives without timestamps. Measured timestamps take precedence; never use overlay playback fps."},
     ],
     "outputs": [
         {"name": "pose", "type": "dict", "description": "{side, pos, euler (intrinsic XYZ, the hand root's world pose = the wrist joints), finger_targets {short joint name: rad}, grip_fingers, approach, finger_targets_preshape, source 'human_prior', frame, residual_mm per finger, finger_scale, human {wrist, tips, knuckle_origin}, robot_tips, and with a scene overlap_mm, cleared_m, tip_to_object_mm}; the input grasp_stress_test, grasp_lift_test and execute_subgoal_plan take."},
@@ -99,8 +99,16 @@ def human_grasp_pose_prior(side, frame, out_json=None, hands_npz=None, hamer_npz
     if (hands_npz is None) == (hamer_npz is None):
         raise ValueError("give exactly one source: hands_npz (EgoDex, read_egodex_episode) or hamer_npz (extract_hand_meshes)")
     frame = int(frame)
-    first = max(0, frame - max(int(window), int(approach_frames)))
-    frames = np.arange(first, frame + 1)
+    timing = HP.track_timing(hands_npz if hands_npz is not None else hamer_npz, fps)
+    positions = np.flatnonzero(timing["frame_idx"] == frame)
+    if not len(positions):
+        raise ValueError("contact frame is not in the hand track")
+    if window < 0 or approach_frames < 0:
+        raise ValueError("window and approach_frames must be nonnegative")
+    contact_row = int(positions[0])
+    first = max(0, contact_row - max(int(window), int(approach_frames)))
+    frames = timing["frame_idx"][first:contact_row + 1]
+    times = timing["timestamps_s"][first:contact_row + 1]
     if hands_npz is not None:
         kp = HP.keypoints_from_egodex(hands_npz, side, frames)
     else:
@@ -132,7 +140,8 @@ def human_grasp_pose_prior(side, frame, out_json=None, hands_npz=None, hamer_npz
             targets[f].append(ref["kp"][f][0] + scale[f] * (R_a @ v))           # in the Sharpa root frame
     res = retarget_hand_motion(hand_xml, hand_root=ref["root_body"], fingertips={f: ref["tips"][f]["body"] for f in HP.FINGERS},
                                targets={f: np.array(v) for f, v in targets.items()},
-                               tip_points={f: ref["tips"][f]["point"] for f in HP.FINGERS}, fps=fps)
+                               tip_points={f: ref["tips"][f]["point"] for f in HP.FINGERS}, fps=fps,
+                               timestamps_s=times[w0:])
     head = f"{side}_"
     short = [n[len(head):] if n.startswith(head) else n for n in res["joint_names"]]
     q_contact = {k: float(v) for k, v in zip(short, res["qpos"][-1])}
@@ -164,6 +173,10 @@ def human_grasp_pose_prior(side, frame, out_json=None, hands_npz=None, hamer_npz
     pose = {"side": side, "pos": [float(v) for v in p_root], "euler": [float(v) for v in euler], "finger_targets": q_contact,
             "finger_targets_preshape": q_pre, "approach": [float(v) for v in approach], "approach_source": approach_src,
             "source": "human_prior", "frame": frame, "preshape_frame": int(frames[w0]), "scaling": scaling,
+            "source_frame": int(timing["source_frame_idx"][contact_row]),
+            "preshape_source_frame": int(timing["source_frame_idx"][first + w0]),
+            "capture_time_s": float(times[-1]), "preshape_capture_time_s": float(times[w0]),
+            "time_source": timing["time_source"], "retarget_smoothing": res["smoothing"],
             "finger_scale": {f: round(float(s), 4) for f, s in scale.items()},
             "residual_mm": {f: v["max_mm"] for f, v in res["residual_mm"].items()},
             "unreachable_fingers": sorted(res["unreachable"]),
@@ -173,7 +186,7 @@ def human_grasp_pose_prior(side, frame, out_json=None, hands_npz=None, hamer_npz
     warnings = []
     if res["unreachable"]:
         warnings.append(f"fingers {sorted(res['unreachable'])} could not reach their scaled targets (residual above 4 mm): the "
-                        "human finger bent beyond the robot's joint range; the joints are clamped at their limits")
+                        "final IK trajectory remains outside tolerance after smoothing, joint limits and rate limits; the residual alone does not identify the cause")
     if hand_scene is not None:
         meas = _measure_in_scene(hand_scene, pose, side, clear_overlap, contact_tol_m, snap_to_object, snap_radius_m)
         pose.update(meas["pose_update"])

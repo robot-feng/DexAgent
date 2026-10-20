@@ -101,9 +101,10 @@ Aria MPS21 与 MediaPipe21 不同：没有拇指 CMC，包含掌心点。输出�
 相机下静止世界手点、旋转和平移配准后的像素不变、稀疏源帧重排、实测时钟、
 缺失手、无效姿态、损坏 RGB、源目录逃逸及不覆盖已有输出。
 
-已有 `extract_hand_meshes` 能读取新 `source_frame_indices`，不会把源帧 413
-错当为 0。尚未运行 HaMeR 重提取或机器人重定向；HaMeR 输出仍使用自身叠加
-视频的 fps，后续动作处理必须按源帧号关联 `observations.npz` 的实测时间，
-不能把叠加视频 fps 当作采集时钟。原始 Aria21 也不能直接交给要求 ARKit /
-MANO 关节的工具。下一步应完成 Demo 到 Scene 的真实配准以及目标手/TCP
-映射，再进入现有动作生成和物理验收。
+`extract_hand_meshes` 现按 `source_frame_indices` 关联 `observations.npz`，把原始
+源帧、秒、int64 纳秒及源时间起点写入 HaMeR 输出；叠加视频 fps 仅控制播放。
+抓取窗口按采集时间选择，手指限速使用相邻样本的实际时间差。完整 544 帧及
+稀疏/尾段元数据传递已验证，未运行这段 HumanEgo 视频的 HaMeR 重提取。
+实现、回归与未通过的物理抓取样例见 [采集时钟接入](DEMO_CAPTURE_CLOCK_20261021.md)。
+原始 Aria21 仍不能直接交给要求 ARKit / MANO 关节的工具；真实 Demo→Scene
+配准、目标手/TCP 映射及三本体同任务物理验收仍待完成。

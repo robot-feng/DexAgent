@@ -11696,12 +11696,12 @@
    "type": "skill",
    "category": "Perception & Grounding",
    "summary": "MANO hand meshes for every frame: ViTPose finds the hands and their handedness, HaMeR recovers vertices, camera translation and MANO parameters.",
-   "description": "Runs ViTPose whole-body pose on the full frame (egocentric footage rarely shows a person, so a person detector would find nothing), turns the wrist and finger keypoints into hand boxes with correct left/right labels, and passes each box to HaMeR. Per frame it records the MANO vertices, the weak-perspective camera translation lifted to the full image, handedness, boxes and MANO parameters, and renders an overlay video plus per-frame RGBA hand layers for compositing. Detection runs on the raw frame and falls back to a contrast/brightness-boosted copy only when nothing is found: the boost raised recall on dark egocentric clips and lowered it on bright bench footage. The output npz is what hand retargeting and the robot's initial pose are read from.",
+   "description": "Runs ViTPose whole-body pose on the full frame (egocentric footage rarely shows a person, so a person detector would find nothing), turns the wrist and finger keypoints into hand boxes with correct left/right labels, and passes each box to HaMeR. Per frame it records the MANO vertices, the weak-perspective camera translation lifted to the full image, handedness, boxes and MANO parameters, and renders an overlay video plus per-frame RGBA hand layers for compositing. Detection runs on the raw frame and falls back to a contrast/brightness-boosted copy only when nothing is found: the boost raised recall on dark egocentric clips and lowered it on bright bench footage. The output npz is what hand retargeting and the robot's initial pose are read from. Source frame IDs and capture timestamps linked by episode.json are preserved independently of overlay fps; malformed declared clocks are rejected.",
    "inputs": [
     {
      "name": "frames_dir",
      "type": "path",
-     "description": "Folder of frame%05d.jpg."
+     "description": "Folder of frame images (JPG/PNG), optionally with episode.json linking image names to source frames and observations_npz."
     },
     {
      "name": "out_dir",
@@ -11755,7 +11755,7 @@
     {
      "name": "summary",
      "type": "dict",
-     "description": "frames processed, frames_with_hands, detection_rate, hands_left, hands_right, paths. hands.npz holds per-frame object arrays verts (n_hands,778,3), cam_t, is_right, bbox, global_orient, hand_pose, betas and the MANO faces."
+     "description": "frames processed, frames_with_hands, detection_rate, hands_left, hands_right, paths. hands.npz holds per-frame object arrays verts (n_hands,778,3), cam_t, is_right, bbox, global_orient, hand_pose, betas and the MANO faces. Also source_frame_idx, timestamps_s and time_source when supplied, plus original timestamps_ns/source_first_timestamp_ns if available. fps is overlay playback only."
     }
    ],
    "status": "tested",
@@ -13768,7 +13768,7 @@
     {
      "name": "frame",
      "type": "int",
-     "description": "The contact frame (a Stage 1 subgoal's grasp moment, video frame index)."
+     "description": "Contact sample ID: EgoDex frame_idx or HaMeR local image ID. Output also records the source video frame and capture time."
     },
     {
      "name": "out_json",
@@ -13869,7 +13869,7 @@
     {
      "name": "fps",
      "type": "float",
-     "description": "Frame rate of the source (retargeting rate limits). Default 30.",
+     "description": "Nominal capture rate only for archives without timestamps. Measured timestamps take precedence; never use overlay playback fps.",
      "optional": true
     }
    ],
@@ -13914,7 +13914,7 @@
    "type": "skill",
    "category": "Grasp & Poses",
    "summary": "Turns the human hand at each Stage 1 subgoal's contact window (EgoDex ARKit joints, an EgoDex .hdf5, or HaMeR meshes) into ranked Sharpa grasp-pose seeds per subgoal: the wrist relative to the object and the finger targets, retargeted through human_grasp_pose_prior / retarget_hand_motion, snapped onto the object, the grip fingers cinched onto its surface, and written as pose lists the executor (pose / pose_candidates), the stress tests and optimize_grasp_pose take.",
-   "description": "The demonstration already shows how the hand held each part; this skill reads it before any search. For every subgoal whose acting hand starts a contact (grasp_lift, hold, regrasp, pull, open/close_joint, unscrew, screw, tie, fold, or any motion on an object that hand did not touch in its previous subgoal; 'both' gives a seed list per hand) it takes the subgoal's time window (time_window_s x fps, or explicit frames), measures in every frame of the window (and `pre_s` before it) how far the human thumb and nearest finger are from the grasped body's bounding box in the hand scene, and picks up to `frames_per_window` frames: the arrival (the first frame within 1.5 cm of the closest approach), frames after it and the closest one. Each frame is retargeted with human_grasp_pose_prior (knuckle frames matched for the wrist, per-finger IK on fingertip targets scaled by finger length, the hand lifted off the table, backed out of the object along the human's approach and snapped onto the object by at most snap_radius_m, because the demonstration and the reconstruction disagree by centimetres). The grip fingers are then cinched from the human's finger shape until their pads touch the grasped body (avoiding the table and bystanders), giving the closed and squeezed targets the executor clamps from; the human shape is kept as finger_targets_human. Seeds are ranked by a static score: hand overlap with the scene, the thumb's and the next pad's gap to the object, fingers the robot could not bend like the human, and how far the snap moved the hand (a long snap is a warning that Stage 2 misplaced the object). Near-duplicates (8 mm / 10 deg) are dropped. With verify the top seeds of each subgoal are driven through grasp_lift_test and the lifting ones rank first. The seed is a PRIOR: hand it to optimize_grasp_pose (starts=<the seed json>) or execute it after its stress tests.",
+   "description": "The demonstration already shows how the hand held each part; this skill reads it before any search. For every subgoal whose acting hand starts a contact (grasp_lift, hold, regrasp, pull, open/close_joint, unscrew, screw, tie, fold, or any motion on an object that hand did not touch in its previous subgoal; 'both' gives a seed list per hand) it takes the subgoal's capture-time window (or explicit local sample IDs), measures in every frame of the window (and `pre_s` before it) how far the human thumb and nearest finger are from the grasped body's bounding box in the hand scene, and picks up to `frames_per_window` frames: the arrival (the first frame within 1.5 cm of the closest approach), frames after it and the closest one. Each frame is retargeted with human_grasp_pose_prior (knuckle frames matched for the wrist, per-finger IK on fingertip targets scaled by finger length, the hand lifted off the table, backed out of the object along the human's approach and snapped onto the object by at most snap_radius_m, because the demonstration and the reconstruction disagree by centimetres). The grip fingers are then cinched from the human's finger shape until their pads touch the grasped body (avoiding the table and bystanders), giving the closed and squeezed targets the executor clamps from; the human shape is kept as finger_targets_human. Seeds are ranked by a static score: hand overlap with the scene, the thumb's and the next pad's gap to the object, fingers the robot could not bend like the human, and how far the snap moved the hand (a long snap is a warning that Stage 2 misplaced the object). Near-duplicates (8 mm / 10 deg) are dropped. With verify the top seeds of each subgoal are driven through grasp_lift_test and the lifting ones rank first. The seed is a PRIOR: hand it to optimize_grasp_pose (starts=<the seed json>) or execute it after its stress tests.",
    "inputs": [
     {
      "name": "scene_semantic_json",
@@ -13925,7 +13925,7 @@
     {
      "name": "subgoals",
      "type": "list | None",
-     "description": "Instead of (or filtering) Stage 1: [{index, side, object, grasp_body?, frames: [f0, f1] | time_window_s, hand_scene?}].",
+     "description": "Instead of (or filtering) Stage 1: [{index, side, object, grasp_body?, frames: [f0, f1] | time_window_s, hand_scene?}]. frames are local sample IDs; time_window_s is relative to the original capture origin.",
      "optional": true
     },
     {
@@ -13985,7 +13985,7 @@
     {
      "name": "fps",
      "type": "float | None",
-     "description": "Frame rate of the hand track (default: episode_json's fps, else 30).",
+     "description": "Nominal capture fps for archives without timestamps (default: episode_json fps, else 30). Measured times override it; never pass overlay playback fps.",
      "optional": true
     },
     {
@@ -18971,7 +18971,7 @@
    "type": "skill",
    "category": "Trajectory & Execution",
    "summary": "Fingertip targets in the hand frame -> robot finger joint trajectory by per-finger limit-aware IK with warm starts and smoothing.",
-   "description": "For each named finger it builds the chain of joints between the hand root body and the fingertip body, converts the per-frame target (hand-root frame, optionally scaled about the root and offset) to world using the root's pose, and solves position-only damped least squares IK with the previous frame as the start and a pull toward the open posture in the null space. Joint values are clamped to the model's limits, smoothed with a zero-phase filter and rate-limited to max_rate_rad_s. Returns the finger joint trajectory in qpos order, the joint names, per-finger residuals in millimetres and the frames where a finger could not reach. Works with any hand whose fingers are hinge/slide chains under one root body; the wrist pose itself is handled by the arm (solve_arm_ik / attach_arms).",
+   "description": "For each named finger it builds the chain of joints between the hand root body and the fingertip body, converts the per-frame target (hand-root frame, optionally scaled about the root and offset) to world using the root's pose, and solves position-only damped least squares IK with the previous frame as the start and a pull toward the open posture in the null space. Joint values are clamped to the model's limits, smoothed with a zero-phase filter and rate-limited to max_rate_rad_s. Optional timestamps_s supplies measured sample times; irregular times disable the equal-sample smoothing. Residuals describe the final returned trajectory after rate limiting. Returns the finger joint trajectory in qpos order, the joint names, per-finger residuals in millimetres and the frames where a finger could not reach. Works with any hand whose fingers are hinge/slide chains under one root body; the wrist pose itself is handled by the arm (solve_arm_ik / attach_arms).",
    "inputs": [
     {
      "name": "scene",
@@ -19012,6 +19012,12 @@
      "optional": true
     },
     {
+     "name": "timestamps_s",
+     "type": "ndarray [T] | None",
+     "description": "Finite, strictly increasing sample times in seconds; overrides fps for rate limits. Irregular sampling disables equal-sample smoothing.",
+     "optional": true
+    },
+    {
      "name": "qpos_base",
      "type": "ndarray | None",
      "description": "Scene state the hand root pose is read from; default qpos0.",
@@ -19028,7 +19034,7 @@
     {
      "name": "result",
      "type": "dict",
-     "description": "qpos [T, n_finger_joints], qadr, joint_names, residual_mm {finger: max, mean}, unreachable {finger: frames}, ok."
+     "description": "qpos [T, n_finger_joints], qadr, joint_names, final-state residual_mm {finger: max_mm, mean_mm}, unreachable {finger: frames}, ok, timestamps_s, time_source and smoothing. fps is null when measured times are supplied."
     }
    ],
    "requirements": [

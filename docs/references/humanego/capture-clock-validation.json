@@ -1,0 +1,48 @@
+{
+  "scope": "Capture metadata propagation and window selection; no HaMeR inference or robot execution",
+  "source_session": "HumanEgo serve_bread 040",
+  "source_revision": "f0aa87fade6a41316d65322512f56f066dec62e3",
+  "frame_count": 544,
+  "checks": [
+    {
+      "selection": "full",
+      "samples": 544,
+      "start_source_frame": 0,
+      "end_source_frame": 543,
+      "start_time_s": 0.0,
+      "end_time_s": 18.097107625,
+      "nanoseconds_equal": true,
+      "seconds_equal": true,
+      "capture_clock_independent_of_fps": true,
+      "last_window_local_id": 543,
+      "source_origin_ns": 351521388068186
+    },
+    {
+      "selection": "sparse",
+      "samples": 2,
+      "start_source_frame": 180,
+      "end_source_frame": 413,
+      "start_time_s": 5.999035875,
+      "end_time_s": 13.764465375,
+      "nanoseconds_equal": true,
+      "seconds_equal": true,
+      "capture_clock_independent_of_fps": true,
+      "last_window_local_id": 1,
+      "source_origin_ns": 351521388068186
+    },
+    {
+      "selection": "tail",
+      "samples": 44,
+      "start_source_frame": 500,
+      "end_source_frame": 543,
+      "start_time_s": 16.6640028,
+      "end_time_s": 18.097107625,
+      "nanoseconds_equal": true,
+      "seconds_equal": true,
+      "capture_clock_independent_of_fps": true,
+      "last_window_local_id": 43,
+      "source_origin_ns": 351521388068186
+    }
+  ],
+  "all_checks_passed": true
+}

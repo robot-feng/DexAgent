@@ -15,7 +15,7 @@ TOOL = {
         "The demonstration already shows how the hand held each part; this skill reads it before any search. For every "
         "subgoal whose acting hand starts a contact (grasp_lift, hold, regrasp, pull, open/close_joint, unscrew, screw, "
         "tie, fold, or any motion on an object that hand did not touch in its previous subgoal; 'both' gives a seed list "
-        "per hand) it takes the subgoal's time window (time_window_s x fps, or explicit frames), measures in every frame "
+        "per hand) it takes the subgoal's capture-time window (or explicit local sample IDs), measures in every frame "
         "of the window (and `pre_s` before it) how far the human thumb and nearest finger are from the grasped body's "
         "bounding box in the hand scene, and picks up to `frames_per_window` frames: the arrival (the first frame within "
         "1.5 cm of the closest approach), frames after it and the closest one. Each frame is retargeted with "
@@ -32,7 +32,7 @@ TOOL = {
     ),
     "inputs": [
         {"name": "scene_semantic_json", "type": "path | dict | None", "description": "Stage 1 scene_semantics.json: subgoals with index, acting_hand, motion, object_refs, time_window_s."},
-        {"name": "subgoals", "type": "list | None", "description": "Instead of (or filtering) Stage 1: [{index, side, object, grasp_body?, frames: [f0, f1] | time_window_s, hand_scene?}]."},
+        {"name": "subgoals", "type": "list | None", "description": "Instead of (or filtering) Stage 1: [{index, side, object, grasp_body?, frames: [f0, f1] | time_window_s, hand_scene?}]. frames are local sample IDs; time_window_s is relative to the original capture origin."},
         {"name": "hands_npz", "type": "path | None", "description": "EgoDex hand joints in the rig frame (read_egodex_episode's or place_egodex_camera_for_reach's hands.npz: names, rig_xyz)."},
         {"name": "egodex_hdf5", "type": "path | None", "description": "An EgoDex .hdf5 read directly (ARKit transforms); needs episode_json for the rig frame."},
         {"name": "episode_json", "type": "path | None", "description": "episode.json of the Stage 2 camera (rig: R_world_rig, origin_world; fps) for egodex_hdf5."},
@@ -42,7 +42,7 @@ TOOL = {
         {"name": "hand_scenes", "type": "dict | None", "description": "{subgoal index or '<index>_<side>' or object id: hand scene json/dict} (hand_scene_from_recon's out_json)."},
         {"name": "scene_recon_json", "type": "path | None", "description": "Stage 2 scene_recon.json: hand scenes not given are built with hand_scene_from_recon (target = the object id)."},
         {"name": "out_dir", "type": "path", "description": "Receives seeds_sg<NN>_<side>.json (a ranked JSON list of poses) per subgoal and human_grasp_seeds.json. Default 'poses'."},
-        {"name": "fps", "type": "float | None", "description": "Frame rate of the hand track (default: episode_json's fps, else 30)."},
+        {"name": "fps", "type": "float | None", "description": "Nominal capture fps for archives without timestamps (default: episode_json fps, else 30). Measured times override it; never pass overlay playback fps."},
         {"name": "frames_per_window", "type": "int", "description": "Contact frames retargeted per subgoal. Default 5."},
         {"name": "pre_s", "type": "float", "description": "Seconds before the window also searched for the arrival (Stage 1 windows start late). Default 0.5."},
         {"name": "top_k", "type": "int", "description": "Seeds kept per subgoal. Default 6."},
@@ -108,14 +108,13 @@ def _subgoal_list(sem, subgoals, motions, fps):
     if subgoals:
         for s in subgoals:
             fr = s.get("frames")
-            if fr is None and s.get("time_window_s"):
-                fr = [int(round(float(s["time_window_s"][0]) * fps)), int(round(float(s["time_window_s"][1]) * fps))]
-            if fr is None:
+            time_window = s.get("time_window_s") if fr is None else None
+            if fr is None and time_window is None:
                 raise ValueError(f"subgoal {s.get('index')}: give frames or time_window_s")
             obj = str(s.get("object") or "")
             out.append({"index": int(s["index"]), "side": s["side"], "object": obj.split(":")[0], "part": obj.split(":")[1] if ":" in obj else None,
-                        "grasp_body": s.get("grasp_body"), "frames": [int(fr[0]), int(fr[1])], "hand_scene": s.get("hand_scene"),
-                        "motion": s.get("motion")})
+                        "grasp_body": s.get("grasp_body"), "frames": None if fr is None else [int(fr[0]), int(fr[1])], "hand_scene": s.get("hand_scene"),
+                        "motion": s.get("motion"), "time_window_s": time_window})
         return out
     if not sem:
         raise ValueError("give scene_semantic_json or subgoals")
@@ -143,8 +142,31 @@ def _subgoal_list(sem, subgoals, motions, fps):
                 continue
             t0, t1 = (float(v) for v in s["time_window_s"])
             out.append({"index": int(s["index"]), "side": side, "object": ref.split(":")[0], "part": ref.split(":")[1] if ":" in ref else None,
-                        "grasp_body": None, "frames": [int(round(t0 * fps)), int(round(t1 * fps))], "hand_scene": None, "motion": motion})
+                        "grasp_body": None, "frames": None,
+                        "time_window_s": [t0, t1], "hand_scene": None, "motion": motion})
     return out
+
+
+def _window_samples(subgoal, timing, available, pre_s):
+    """Select local sample IDs using capture time, not overlay ordinals/fps."""
+    if not np.isfinite(pre_s) or pre_s < 0:
+        raise ValueError("pre_s must be finite and nonnegative")
+    ids, times = timing["frame_idx"], timing["timestamps_s"]
+    if subgoal.get("time_window_s") is not None:
+        bounds = np.asarray(subgoal["time_window_s"], float)
+        if bounds.shape != (2,) or not np.isfinite(bounds).all() or bounds[0] < 0 or bounds[1] < bounds[0]:
+            raise ValueError("time_window_s must be ordered nonnegative capture seconds")
+        eligible = (times >= bounds[0] - pre_s) & (times <= bounds[1])
+    else:
+        first, last = subgoal["frames"]
+        if first < 0 or last < first:
+            raise ValueError("frames must be ordered nonnegative local sample IDs")
+        start = int(np.searchsorted(ids, first))
+        if start == len(ids):
+            return []
+        eligible = (times >= times[start] - pre_s) & (ids <= last)
+    available = set(available)
+    return [int(f) for f in ids[eligible] if int(f) in available]
 
 
 def _box_dist(p, lo, hi):
@@ -235,16 +257,18 @@ def human_grasp_seeds(scene_semantic_json=None, subgoals=None, hands_npz=None, e
     if len(sources) != 1:
         raise ValueError("give exactly one hand source: hands_npz (EgoDex joints), egodex_hdf5 (+ episode_json) or hamer_npz (+ camera, joint_regressor)")
     ep = _load(episode_json) if episode_json is not None else None
-    fps = float(fps or (ep or {}).get("fps") or 30.0)
+    fps = float(fps if fps is not None else (ep or {}).get("fps") or 30.0)
     if egodex_hdf5 is not None:
         if ep is None:
             raise ValueError("egodex_hdf5 needs episode_json (the rig frame of the Stage 2 camera)")
         hands_npz = hands_npz_from_hdf5(egodex_hdf5, ep, out / "hands_rig.npz")
     if hamer_npz is not None and (camera is None or joint_regressor is None):
         raise ValueError("hamer_npz needs camera (camera.json) and joint_regressor (MANO J_regressor)")
+    # Validate the complete clock before per-candidate gap recovery; corrupt
+    # timestamps must not be swallowed and retried as a single-frame prior.
+    timing = HP.track_timing(hands_npz if hands_npz is not None else hamer_npz, fps)
     if hands_npz is not None:
-        with np.load(str(hands_npz), allow_pickle=False) as z:
-            n_frames = int(np.asarray(z["rig_xyz"]).shape[0])
+        available_frames = {side: timing["frame_idx"].tolist() for side in ("left", "right")}
     else:
         # HaMeR misses hands in some frames: per side, the frames where it found that hand
         with np.load(str(hamer_npz), allow_pickle=True) as z:
@@ -253,7 +277,7 @@ def human_grasp_seeds(scene_semantic_json=None, subgoals=None, hands_npz=None, e
                 for r in np.atleast_1d(isr):
                     hamer_frames["right" if int(r) == 1 else "left"].append(int(f))
         hamer_frames = {k: sorted(set(v)) for k, v in hamer_frames.items()}
-        n_frames = max([max(v) + 1 for v in hamer_frames.values() if v] or [0])
+        available_frames = hamer_frames
     sem = _load(scene_semantic_json)
     todo = _subgoal_list(sem, subgoals, tuple(motions or START_MOTIONS), fps)
     hand_scenes = {str(k): v for k, v in (hand_scenes or {}).items()}
@@ -283,16 +307,12 @@ def human_grasp_seeds(scene_semantic_json=None, subgoals=None, hands_npz=None, e
         model, data0, rig, ids = H.open_scene(scene)
         ext = H.object_extent(model, data0, sorted(ids["grasp_gids"]))
         lo, hi = np.asarray(ext["lo"], float), np.asarray(ext["hi"], float)
-        f0 = max(0, int(sg["frames"][0] - round(pre_s * fps)))
-        f1 = min(n_frames - 1, int(sg["frames"][1]))
-        if hamer_npz is not None:
-            window = [f for f in hamer_frames[sg["side"]] if f0 <= f <= f1]
-        else:
-            window = list(range(f0, f1 + 1))
+        window = _window_samples(sg, timing, available_frames[sg["side"]], pre_s)
         if not window:
             results.append({"index": sg["index"], "side": sg["side"], "object": sg["object"], "n_seeds": 0,
-                            "warnings": [f"no hand frames in {f0}-{f1}"]})
+                            "warnings": ["no hand samples in the requested capture-time/sample window"]})
             continue
+        f0, f1 = window[0], window[-1]
         try:
             kp = (HP.keypoints_from_egodex(hands_npz, sg["side"], window) if hands_npz is not None
                   else HP.keypoints_from_hamer(hamer_npz, camera, sg["side"], window, joint_regressor))
@@ -361,13 +381,17 @@ def human_grasp_seeds(scene_semantic_json=None, subgoals=None, hands_npz=None, e
         best = kept[0] if kept else None
         results.append({"index": sg["index"], "side": sg["side"], "object": sg["object"], "grasp_body": scene.get("grasp_body"),
                         "hand_scene": hs if isinstance(hs, str) else None, "window_frames": [f0, f1], "arrival_frame": arrival,
+                        "time_window_s": sg.get("time_window_s"),
                         "frames_tried": picks, "n_seeds": len(kept), "seeds_json": str(path),
-                        "best": None if best is None else {"frame": best["frame"], "score": best["seed_score"], "overlap_mm": best.get("overlap_mm"),
+                        "best": None if best is None else {"frame": best["frame"], "source_frame": best["source_frame"],
+                                                           "capture_time_s": best["capture_time_s"], "score": best["seed_score"], "overlap_mm": best.get("overlap_mm"),
                                                            "touching": best.get("touching"),
                                                            "snap_mm": round(1000 * float(np.linalg.norm((best.get("snap") or {}).get("shift_m") or [0, 0, 0])), 1),
                                                            "lift": best.get("lift")},
                         "warnings": warnings[:6]})
-    summary = {"subgoals": results, "seeds": seeds_index, "fps": fps, "source": "hands_npz" if hamer_npz is None else "hamer_npz"}
+    summary = {"subgoals": results, "seeds": seeds_index, "fps": fps, "time_source": timing["time_source"],
+               "frame_semantics": "local hand sample IDs; each pose also records source_frame and capture_time_s",
+               "source": "hands_npz" if hamer_npz is None else "hamer_npz"}
     p = out / "human_grasp_seeds.json"
     p.write_text(json.dumps(summary, indent=1, default=float))
     summary["out_json"] = str(p)
