@@ -182,7 +182,7 @@ export function BackgroundCleanupPage() {
               <label>
                 <span>视频分割模型</span>
                 <select aria-label="视频分割模型" value={propagationModel} onChange={(event) => setPropagationModel(event.target.value as typeof propagationModel)}>
-                  <option value="litetext">SAM3 LiteText 视频跟踪（本机 S0 权重）</option>
+                  <option value="litetext">SAM3 LiteText-S0（默认，原生视频跟踪）</option>
                   <option value="sam3">SAM3 单模型（文字分割 + 跨帧跟踪）</option>
                   <option value="sam2">SimFoundry 原流程（SAM3 mask + SAM2 传播）</option>
                 </select>
@@ -198,7 +198,7 @@ export function BackgroundCleanupPage() {
             </div>
             <div className="notice cleanup-note">
               <ShieldCheck size={16} />
-              <span>LiteText 仅替换 SAM3 文本编码器，视频仍由 SAM3 原生双向跟踪器传播；目标在主关键帧不可见时，会自动尝试其它抽样帧播种。确认整段彩色 mask 没有漏检或漂移后再运行 VOID 补洞。</span>
+              <span>LiteText 缩小的是文本编码器，SAM3 视觉主干和原生双向视频跟踪仍保留；论文报告文本编码器参数最高减少 88%，但这不代表整套显存同幅下降或每个场景都零精度损失。目标在主关键帧不可见时会尝试其它抽样帧播种，夹爪也会回退到机器人术语 end effector。确认整段彩色 mask 没有漏检或漂移后再运行 VOID 补洞。</span>
             </div>
             {catalog.data?.preview_available && propagationModel === "sam2" && requirement("sam2_checkpoint")?.available === false && (
               <p className="notice warning cleanup-warning">该组合要求 SimFoundry 原版 SAM3 与 SAM2.1 Hiera Large；本机 Hiera-Small 不会自动替代。当前推荐 LiteText 路线。</p>

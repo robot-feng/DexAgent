@@ -160,6 +160,7 @@ def run(stage: Path, config: dict):
         },
         seed_frame_indices=worker_meta.get("seed_frame_indices", {}),
         seed_scores=worker_meta.get("seed_scores", {}),
+        prompt_resolutions=worker_meta.get("prompt_resolutions", {}),
     )
     metadata.write_text(json.dumps(data, ensure_ascii=False, indent=2))
 

@@ -26,7 +26,7 @@ test("background cleanup defaults to native SAM3 LiteText tracking and keeps mod
   const model = page.getByLabel("视频分割模型");
   await expect(model).toHaveValue("litetext");
   await expect(model.locator("option")).toContainText([
-    "SAM3 LiteText 视频跟踪（本机 S0 权重）",
+    "SAM3 LiteText-S0（默认，原生视频跟踪）",
     "SAM3 单模型（文字分割 + 跨帧跟踪）",
     "SimFoundry 原流程（SAM3 mask + SAM2 传播）",
   ]);

@@ -14,6 +14,12 @@ SimFoundry 的 Stage 1b、Hydra mask stage、对象提案、VOID 补洞、人工
 
 本机也有 SAM2.1 Hiera-Small checkpoint（约 184 MB），但 SimFoundry 原始 SAM3+SAM2 路线固定查找 `sam2.1_hiera_large.pt` 并使用 Hiera-L 配置；Workbench 不会把 Small 权重冒充 Large。LiteText-S0 只替换文本编码器，SAM3 视觉主干与视频 tracker 仍保留，因此适合优先维持 SAM3 的跟踪能力，但它不是与 SAM2-Small 同级的整体显存缩小方案。上游 LiteText 基准报告性能接近教师模型，不能保证每个机器人场景零精度损失；本次真实视频冒烟没有逐像素真值，仍需人审 mask。
 
+## 夹爪提示词回退
+
+2026-10-20 的 `ThrowAwayTrash.mp4` 重跑中，`robot arm` 已成功跟踪 400 / 400 帧，但额外独立提示词 `gripper` 在 16 个抽样候选帧都没有返回 mask。直接让整条任务失败会丢掉已经有效的机器人 mask。针对机器人术语加入受限回退：当 `gripper`、`robot gripper` 或 `robotic gripper` 无命中时，再尝试 `end effector`；仍没有 mask 就继续报错，不放宽成空 mask。原提示词与实际命中的回退提示词均写入 `quadmask_meta.json`。
+
+在同一视频的第 0 帧，`end effector` 命中分数为 `0.75`，mask 覆盖两侧机器人末端与臂体，和 `robot arm` 的移除目标一致；视觉对照保存在 `.workbench/previews/sam3-litetext-end-effector-frame0.png`。随后通过 Workbench 用 `robot arm`、`gripper` 重跑整段任务：SAM3 LiteText 分别以原词和 `end effector` 播种，两者都双向跟踪 `400 / 400` 帧，种子分数分别为 `0.805` 和 `0.750`，任务进入 `review_mask`。在关键帧上，夹爪提示 mask 有 `98.97%` 落在机械臂提示 mask 内；传播 mask 的帧间 IoU 中位数为 `0.943`、第 10 百分位为 `0.872`。400 帧中有 342 帧 mask 非空，空帧集中在 `126–147` 和 `252–287`；对照视频时机器人离开了视野。抽查关键帧及多个中间时点没有发现明显漂移。该结果支持这个示例中的提示词回退，但不证明所有机器人夹爪都适用。任务仍停在人审阶段，必须检查漏检、漂移和多余区域后才能进入 VOID。
+
 因此当前默认选 SAM3 LiteText，而不是仅因 checkpoint 文件小就切到本机 SAM2 Small。LiteText 复用 SAM3 原生图像与视频跟踪路径；它主要减轻文本编码器，不会把整套视觉跟踪器缩小。本次 A100 推理记录的 SAM3 峰值显存约 9.3 GiB。SAM2 Small 的 184 MB 是权重文件大小，不能直接代表显存占用，也没有在同一场景上完成效果对照。已有文本编码器输出对照最大绝对误差 `3.34e-6`，但不能据此声称整段视频的 mask 与原始 SAM3 完全无损。
 
 ## 真实冒烟结果

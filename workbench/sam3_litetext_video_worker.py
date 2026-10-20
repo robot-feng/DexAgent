@@ -10,6 +10,19 @@ import subprocess
 import sys
 
 
+_PROMPT_ALIASES = {
+    "gripper": ("end effector",),
+    "robot gripper": ("end effector",),
+    "robotic gripper": ("end effector",),
+}
+
+
+def _prompt_variants(name: str) -> tuple[str, ...]:
+    """Add a robotics synonym only when the original phrase has no seed mask."""
+    normalized = " ".join(name.casefold().split())
+    return (name, *_PROMPT_ALIASES.get(normalized, ()))
+
+
 def _sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as stream:
@@ -160,6 +173,7 @@ def run(args) -> None:
         canonical_masks = np.zeros((len(prompts), args.height, args.width), dtype=np.uint8)
         seed_indices = {}
         seed_scores = {}
+        prompt_resolutions = {}
         candidates = np.linspace(
             0,
             max(args.num_frames - 1, 0),
@@ -172,79 +186,97 @@ def run(args) -> None:
         )
 
         for prompt_index, name in enumerate(prompts):
-            session_id = predictor.handle_request(
-                {"type": "start_session", "resource_path": str(video)}
-            )["session_id"]
-            try:
-                seed_index = None
-                for candidate in candidates:
-                    response = predictor.handle_request(
-                        {
-                            "type": "add_prompt",
-                            "session_id": session_id,
-                            "frame_index": candidate,
-                            "text": name,
-                        }
-                    )
-                    outputs = response["outputs"]
-                    masks = np.asarray(outputs.get("out_binary_masks", []), dtype=bool)
-                    if masks.ndim == 2:
-                        masks = masks[None]
-                    if masks.ndim == 3 and len(masks) and masks.any():
-                        seed_index = candidate
-                        seed_scores[name] = float(np.asarray(outputs.get("out_probs", [0.0])).max())
-                        seed_mask = np.any(masks, axis=0)
-                        break
-                if seed_index is None:
-                    raise ValueError(
-                        f"SAM3 LiteText 在 {len(candidates)} 个候选帧都没有找到“{name}”；请调整对象名称。"
-                    )
-
-                seed_indices[name] = seed_index
-                union[seed_index] = np.maximum(union[seed_index], seed_mask.astype(np.uint8) * 255)
-                if seed_index == args.keyframe_idx:
-                    canonical_masks[prompt_index] = seed_mask.astype(np.uint8)
-                tracked_frames = set()
-                for result in predictor.handle_stream_request(
-                    {
-                        "type": "propagate_in_video",
-                        "session_id": session_id,
-                        "propagation_direction": "both",
-                        "start_frame_index": seed_index,
-                    }
-                ):
-                    frame_index = int(result["frame_index"])
-                    if not 0 <= frame_index < args.num_frames:
+            resolved = False
+            attempted = _prompt_variants(name)
+            for query in attempted:
+                session_id = predictor.handle_request(
+                    {"type": "start_session", "resource_path": str(video)}
+                )["session_id"]
+                try:
+                    seed_index = None
+                    for candidate in candidates:
+                        response = predictor.handle_request(
+                            {
+                                "type": "add_prompt",
+                                "session_id": session_id,
+                                "frame_index": candidate,
+                                "text": query,
+                            }
+                        )
+                        outputs = response["outputs"]
+                        masks = np.asarray(outputs.get("out_binary_masks", []), dtype=bool)
+                        if masks.ndim == 2:
+                            masks = masks[None]
+                        if masks.ndim == 3 and len(masks) and masks.any():
+                            seed_index = candidate
+                            probabilities = np.asarray(outputs.get("out_probs", []))
+                            seed_scores[name] = float(probabilities.max()) if probabilities.size else 0.0
+                            seed_mask = np.any(masks, axis=0)
+                            break
+                    if seed_index is None:
+                        print(
+                            f"{name}: “{query}”在 {len(candidates)} 个候选帧没有命中",
+                            flush=True,
+                        )
                         continue
-                    tracked = np.asarray(
-                        result["outputs"].get("out_binary_masks", []), dtype=bool
-                    )
-                    merged = np.any(tracked, axis=0) if tracked.ndim == 3 and len(tracked) else np.zeros(
-                        (args.height, args.width), dtype=bool
-                    )
-                    if merged.shape != (args.height, args.width):
-                        import cv2
 
-                        merged = cv2.resize(
-                            merged.astype(np.uint8),
-                            (args.width, args.height),
-                            interpolation=cv2.INTER_NEAREST,
-                        ).astype(bool)
-                    union[frame_index] = np.maximum(
-                        union[frame_index], merged.astype(np.uint8) * 255
+                    prompt_resolutions[name] = query
+                    seed_indices[name] = seed_index
+                    union[seed_index] = np.maximum(
+                        union[seed_index], seed_mask.astype(np.uint8) * 255
                     )
-                    if frame_index == args.keyframe_idx:
-                        canonical_masks[prompt_index] = merged.astype(np.uint8)
-                    tracked_frames.add(frame_index)
-                if not canonical_masks[prompt_index].any() and seed_index == args.keyframe_idx:
-                    canonical_masks[prompt_index] = seed_mask.astype(np.uint8)
-                print(
-                    f"{name}: seed={seed_index}, score={seed_scores[name]:.3f}, "
-                    f"tracked={len(tracked_frames)} frames",
-                    flush=True,
+                    if seed_index == args.keyframe_idx:
+                        canonical_masks[prompt_index] = seed_mask.astype(np.uint8)
+                    tracked_frames = set()
+                    for result in predictor.handle_stream_request(
+                        {
+                            "type": "propagate_in_video",
+                            "session_id": session_id,
+                            "propagation_direction": "both",
+                            "start_frame_index": seed_index,
+                        }
+                    ):
+                        frame_index = int(result["frame_index"])
+                        if not 0 <= frame_index < args.num_frames:
+                            continue
+                        tracked = np.asarray(
+                            result["outputs"].get("out_binary_masks", []), dtype=bool
+                        )
+                        merged = np.any(tracked, axis=0) if tracked.ndim == 3 and len(tracked) else np.zeros(
+                            (args.height, args.width), dtype=bool
+                        )
+                        if merged.shape != (args.height, args.width):
+                            import cv2
+
+                            merged = cv2.resize(
+                                merged.astype(np.uint8),
+                                (args.width, args.height),
+                                interpolation=cv2.INTER_NEAREST,
+                            ).astype(bool)
+                        union[frame_index] = np.maximum(
+                            union[frame_index], merged.astype(np.uint8) * 255
+                        )
+                        if frame_index == args.keyframe_idx:
+                            canonical_masks[prompt_index] = merged.astype(np.uint8)
+                        tracked_frames.add(frame_index)
+                    if not canonical_masks[prompt_index].any() and seed_index == args.keyframe_idx:
+                        canonical_masks[prompt_index] = seed_mask.astype(np.uint8)
+                    print(
+                        f"{name} (prompt={query}): seed={seed_index}, score={seed_scores[name]:.3f}, "
+                        f"tracked={len(tracked_frames)} frames",
+                        flush=True,
+                    )
+                    resolved = True
+                finally:
+                    predictor.handle_request({"type": "close_session", "session_id": session_id})
+                if resolved:
+                    break
+
+            if not resolved:
+                raise ValueError(
+                    f"SAM3 LiteText 在 {len(candidates)} 个候选帧均未找到“{name}” "
+                    f"（已尝试：{', '.join(attempted)}）；请调整对象名称。"
                 )
-            finally:
-                predictor.handle_request({"type": "close_session", "session_id": session_id})
 
         np.save(output_dir / "union.npy", union)
         np.save(output_dir / "canonical_masks.npy", canonical_masks)
@@ -252,6 +284,7 @@ def run(args) -> None:
             "objects": prompts,
             "seed_frame_indices": seed_indices,
             "seed_scores": seed_scores,
+            "prompt_resolutions": prompt_resolutions,
             "segmentation_identity": {
                 "model": "SAM3-LiteText-S0-16",
                 "repo_id": "local:sam3-litetext-s0",
