@@ -209,8 +209,9 @@ print(json.dumps({"missing": missing}))
             self._environment_requirement('simfoundry_sam3', 'SimFoundry SAM3/SAM2 分割依赖', 'simfoundry_sam3'),
             CleanupRequirement(id='litetext_runtime', title='SAM3 LiteText 视频跟踪',
                                available=lite['ready'], detail=lite['detail']),
-            CleanupRequirement(id='sam2_checkpoint', title='SAM2 视频传播权重', available=has_sam2,
-                               detail='缺少 sam2.1_hiera_large.pt；按 SimFoundry 默认路径检查。' if not has_sam2 else 'SAM2 权重已找到。'),
+            CleanupRequirement(id='sam2_checkpoint', title='SAM2.1 Hiera Large 权重', available=has_sam2,
+                               detail=('缺少 sam2.1_hiera_large.pt；SimFoundry 原流程固定使用 Hiera-L 配置，本机 Hiera-Small 不会自动替代。'
+                                       if not has_sam2 else 'SimFoundry SAM2.1 Hiera Large 权重已找到。')),
             CleanupRequirement(id='void_env', title='VOID 环境与权重', available=void_ready and has_void,
                                detail=void_detail),
             CleanupRequirement(id='gemini', title='上游 Gemini 后端（兼容项）', available=has_gemini_auth,

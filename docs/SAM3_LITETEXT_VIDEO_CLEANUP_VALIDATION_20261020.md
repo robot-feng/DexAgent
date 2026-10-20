@@ -12,6 +12,8 @@ SimFoundry 的 Stage 1b、Hydra mask stage、对象提案、VOID 补洞、人工
 
 运行预检将 SimFoundry Stage 1b/Hydra 基础依赖与传统 SAM3 图像分割依赖分开：LiteText 路线需要基础环境和独立 LiteText tracker；原生 SAM3 或 SAM3+SAM2 路线额外要求 SimFoundry 环境能导入 SAM3。mask 通过人工复核后运行 VOID 时，只重查基础环境与 VOID，不要求分割模型环境仍在机器上。
 
+本机也有 SAM2.1 Hiera-Small checkpoint（约 184 MB），但 SimFoundry 原始 SAM3+SAM2 路线固定查找 `sam2.1_hiera_large.pt` 并使用 Hiera-L 配置；Workbench 不会把 Small 权重冒充 Large。LiteText-S0 只替换文本编码器，SAM3 视觉主干与视频 tracker 仍保留，因此适合优先维持 SAM3 的跟踪能力，但它不是与 SAM2-Small 同级的整体显存缩小方案。上游 LiteText 基准报告性能接近教师模型，不能保证每个机器人场景零精度损失；本次真实视频冒烟没有逐像素真值，仍需人审 mask。
+
 ## 真实冒烟结果
 
 使用 SimFoundry 示例 `ThrowAwayTrash.mp4` 经 Workbench `/background-cleanup` 页面和 API 创建任务，选择三个手动提示词，完整运行 Stage 1b 与 LiteText mask 阶段。Workbench 任务最终进入 `review_mask`，并生成人工复核所需 overlay、黑白 mask 视频和 `quadmask_meta.json`。

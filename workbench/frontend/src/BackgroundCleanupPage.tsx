@@ -200,7 +200,7 @@ export function BackgroundCleanupPage() {
               <span>LiteText 仅替换 SAM3 文本编码器，视频仍由 SAM3 原生双向跟踪器传播；目标在主关键帧不可见时，会自动尝试其它抽样帧播种。确认整段彩色 mask 没有漏检或漂移后再运行 VOID 补洞。</span>
             </div>
             {catalog.data?.preview_available && propagationModel === "sam2" && requirement("sam2_checkpoint")?.available === false && (
-              <p className="notice warning cleanup-warning">所选 SimFoundry 原组合需要本机 SAM2 checkpoint；当前未检测到，切回 SAM3 单模型或安装该权重。</p>
+              <p className="notice warning cleanup-warning">该组合要求 SimFoundry 原版 SAM3 与 SAM2.1 Hiera Large；本机 Hiera-Small 不会自动替代。当前推荐 LiteText 路线。</p>
             )}
             {catalog.data?.preview_available && proposalBackend === "gemini" && requirement("gemini")?.available === false && (
               <p className="notice warning cleanup-warning">所选 Gemini provider 需要 Gemini API key 或 Vertex 项目；也可以切换到 DexAgent external 或手动提示词。</p>

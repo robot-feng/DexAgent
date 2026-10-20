@@ -34,7 +34,7 @@ test("background cleanup defaults to native SAM3 LiteText tracking and keeps mod
   await expect(page.getByText("SimFoundry SAM3/SAM2 分割依赖")).toBeVisible();
   await model.selectOption("sam2");
   await expect(page.getByRole("button", { name: "生成 mask 预览" })).toBeDisabled();
-  await expect(page.getByText("SAM2 视频传播权重")).toBeVisible();
+  await expect(page.getByText("SAM2.1 Hiera Large 权重")).toBeVisible();
   expect(errors).toEqual([]);
 });
 
