@@ -151,7 +151,7 @@ export function BackgroundCleanupPage() {
             {selectedVideo?.capture_type === "operation_demo" && (
               <div className="notice warning cleanup-warning">
                 <AlertTriangle size={16} />
-                <span>操作演示只用于 mask/补洞冒烟测试，固定机位没有相机视差，不能构建 3D 场景。</span>
+                <span>操作演示可用于 mask/补洞流程冒烟；即使视频带有视角变化，也不保证覆盖完整场景几何，不能作为 3D 扫描重建输入。</span>
               </div>
             )}
             <div className="cleanup-form-row">

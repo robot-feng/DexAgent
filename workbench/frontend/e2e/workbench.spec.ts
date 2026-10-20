@@ -12,7 +12,10 @@ test("background cleanup defaults to native SAM3 LiteText tracking and keeps mod
   const video = page.getByLabel("输入视频");
   await expect(video).toHaveValue(/.+/);
   await expect(video.locator("option:checked")).toContainText("ThrowAwayTrash.mp4");
-  await expect(page.getByText("操作演示只用于 mask/补洞冒烟测试", { exact: false })).toBeVisible();
+  const operationDemoNotice = page.getByText("操作演示可用于 mask/补洞流程冒烟", { exact: false });
+  await expect(operationDemoNotice).toBeVisible();
+  await expect(operationDemoNotice).toContainText("不保证覆盖完整场景几何");
+  await expect(operationDemoNotice).not.toContainText("固定机位");
   const proposal = page.getByLabel("对象提案 provider");
   await expect(proposal).toHaveValue("codex_external");
   await expect(proposal.locator("option")).toContainText([

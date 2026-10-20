@@ -446,7 +446,7 @@ print(json.dumps({"missing": missing}))
             if job.get('status') != 'review_clean':
                 raise ValueError('只有补洞视频检查通过后，才能构建 3D 背景。')
             if job.get('capture_type') != 'scene_scan':
-                raise ValueError('固定机位操作演示只用于 mask/补洞冒烟测试，不能用于相机视差重建。')
+                raise ValueError('只有标记为相机扫描的素材才能构建 3D 场景；操作演示视频仅用于清理流程冒烟。')
             self._require(phase='build')
             job.update(status='building', current_step='SimFoundry A 重建与 AutoBG 场景对齐',
                        message='正在运行完整场景重建和背景高斯对齐。', updated_at=self._now())

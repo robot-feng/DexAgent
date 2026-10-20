@@ -277,6 +277,19 @@ def test_background_cleanup_lists_local_video_and_reports_missing_legacy_segment
         assert not list((state / 'background_cleanups/jobs').glob('*/job.json'))
 
 
+def test_background_cleanup_build_gate_does_not_assume_operation_demo_camera_is_fixed(tmp_path):
+    from workbench.background_cleanups import BackgroundCleanups
+
+    manager = BackgroundCleanups(tmp_path, tmp_path / 'state')
+    job_id = 'a' * 24
+    write(manager.jobs_root / job_id / 'job.json', {
+        'status': 'review_clean', 'capture_type': 'operation_demo',
+    })
+
+    with pytest.raises(ValueError, match='只有标记为相机扫描的素材才能构建 3D 场景'):
+        manager.build_scene(job_id)
+
+
 def test_background_cleanup_build_preflight_reports_current_upstream_gemini_gap(tmp_path, monkeypatch):
     from workbench.background_cleanups import BackgroundCleanups, CleanupUnavailable
     from workbench.models import CleanupCatalog, CleanupRequirement
