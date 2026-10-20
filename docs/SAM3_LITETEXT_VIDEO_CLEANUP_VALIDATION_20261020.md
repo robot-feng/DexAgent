@@ -38,7 +38,7 @@ mask 人审界面现在将原始视频与 mask 视频并排同步播放，任一
 
 ## VOID 补洞依赖预检
 
-补洞启动门现在按 SimFoundry 实际执行路径检查 Pass 1/2 driver、VOID 推理源码和配置、`auto_bg.yaml` 中配置的两份 VOID checkpoint，以及本地 CogVideoX-Fun 基础模型的配置、分词器、调度器和 transformer/VAE/text-encoder 权重文件。这样 Conda 环境里模块可导入、但模型未下载完整时，Workbench 会明确报缺项并阻止创建昂贵的补洞任务。自动背景流程实际调用本地模型目录；仅有 Hugging Face 缓存或权重文件名不能代替该目录。
+补洞启动门现在按 SimFoundry 实际执行路径检查 Pass 1/2 driver、VOID 推理源码和配置、`auto_bg.yaml` 中配置的两份 VOID checkpoint，以及本地 CogVideoX-Fun 基础模型的配置、分词器、调度器和 transformer/VAE/text-encoder 权重文件。这样 Conda 环境里模块可导入、但模型未下载完整时，Workbench 会明确报缺项并阻止创建昂贵的补洞任务；mask 复核页也使用同一预检禁用补洞按钮并显示原因，后端启动检查继续作为最终门禁。自动背景流程实际调用本地模型目录；仅有 Hugging Face 缓存或权重文件名不能代替该目录。
 
 当前本机预检确认 VOID Python 模块和上游脚本已存在，仍缺 `void_pass1.safetensors`、`void_pass2.safetensors` 和 `CogVideoX-Fun-V1.5-5b-InP` 基础模型目录，因此没有运行 VOID。CogVideoX-Fun 官方模型页标明 5B Transformer 权重按 CogVideoX License 发布，代码仓库的 Apache-2.0 许可不等同于 5B 权重许可；若用于商业服务，模型许可要求先单独核验。[CogVideoX-Fun 5B 模型卡](https://huggingface.co/alibaba-pai/CogVideoX-Fun-V1.5-5b-InP) · [CogVideoX License](https://github.com/alibaba/Tora/blob/main/CogVideoX_LICENSE)
 
@@ -52,7 +52,7 @@ mask 人审界面现在将原始视频与 mask 视频并排同步播放，任一
 - `.workbench/venv/bin/python -m pytest -q workbench/tests/test_cleanup_readiness.py workbench/tests/test_workbench.py -k 'cleanup or inpainting or void_preflight'`：24 passed，覆盖 VOID 两遍实际脚本、推理配置、配置指定权重及 CogVideoX 基础模型完整/缺失。
 - `npm run build`：TypeScript 与 Vite 生产构建通过。
 - `npm run test:e2e -- --grep 'background cleanup defaults'`：1 passed；默认 LiteText 可提交，页面展示 VOID 基础模型和两份 checkpoint 的真实缺项；其他传播组合按依赖预检禁用或启用；操作演示提示准确说明其不保证完整场景覆盖，不再误称固定机位。
-- `npm run test:e2e -- --grep 'background cleanup'`：2 passed；另在真实 `review_mask` 任务上验证原视频与 mask 视频双向拖动同步，不推进人工确认门。
+- `npm run test:e2e -- --grep 'background cleanup'`：2 passed；在真实 `review_mask` 任务上验证缺少 VOID 模型时补洞按钮禁用、缺项说明可见，并验证原视频与 mask 视频双向拖动同步；未推进人工确认门。
 - Workbench API 冒烟：Stage 1b → SAM3 LiteText 原生双向跟踪 → 400 帧 mask → 人工复核状态。
 - 机械臂单目标冒烟：`ThrowAwayTrash.mp4` → 400 帧 mask → 画外区间与入镜恢复检查、非空帧相邻 IoU 统计 → 人工复核状态。
 - `Fruits.mp4` scene-scan 冒烟：SAM3 LiteText 原生双向跟踪 → 400 帧 mask → 11 个视角样本视觉检查和整段 mask 面积 / 相邻帧 IoU 检查 → 人工复核状态。

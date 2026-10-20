@@ -54,6 +54,7 @@ export function BackgroundCleanupPage() {
   );
   const selectedJob = jobs.data?.find((job) => job.id === selectedJobId) ?? jobs.data?.[0];
   const requirement = (id: string) => catalog.data?.requirements.find((item) => item.id === id);
+  const voidRequirement = requirement("void_env");
   const propagationReady = propagationModel === "litetext"
     ? requirement("litetext_runtime")?.available
     : requirement("simfoundry_sam3")?.available &&
@@ -251,20 +252,24 @@ export function BackgroundCleanupPage() {
 
           {selectedJob && <CleanupReview job={selectedJob} onApprove={() => approve.mutate(selectedJob.id)}
             onBuild={() => build.mutate(selectedJob.id)} onStop={() => stop.mutate(selectedJob.id)}
-            busy={approve.isPending || build.isPending || stop.isPending} canBuild={catalog.data?.build_available ?? false} />}
+            busy={approve.isPending || build.isPending || stop.isPending} canBuild={catalog.data?.build_available ?? false}
+            canInpaint={voidRequirement?.available === true}
+            inpaintUnavailableReason={voidRequirement?.detail ?? "正在检查 VOID 补洞环境。"} />}
         </div>
       </section>
     </main>
   );
 }
 
-function CleanupReview({ job, onApprove, onBuild, onStop, busy, canBuild }: {
+function CleanupReview({ job, onApprove, onBuild, onStop, busy, canBuild, canInpaint, inpaintUnavailableReason }: {
   job: CleanupJob;
   onApprove: () => void;
   onBuild: () => void;
   onStop: () => void;
   busy: boolean;
   canBuild: boolean;
+  canInpaint: boolean;
+  inpaintUnavailableReason: string;
 }) {
   return (
     <div className="cleanup-review">
@@ -300,8 +305,9 @@ function CleanupReview({ job, onApprove, onBuild, onStop, busy, canBuild }: {
               testId="cleanup-synchronized-review"
             />
           )}
+          {!canInpaint && <div className="notice warning cleanup-warning">补洞环境未就绪，暂时无法确认并启动 VOID：{inpaintUnavailableReason}</div>}
           <div className="cleanup-actions">
-            <button className="button primary" onClick={onApprove} disabled={busy}><Check size={15} />确认 mask，运行 VOID 补洞</button>
+            <button className="button primary" onClick={onApprove} disabled={busy || !canInpaint}><Check size={15} />确认 mask，运行 VOID 补洞</button>
             <a className="button" href={job.log_url} target="_blank" rel="noreferrer">查看运行日志</a>
           </div>
         </>

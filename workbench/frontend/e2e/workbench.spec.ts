@@ -63,6 +63,8 @@ test("background cleanup mask review synchronizes the source and mask timelines"
   const source = page.getByTestId("mask-review-source");
   const mask = page.getByTestId("mask-review-output");
   await expect(page.getByTestId("cleanup-synchronized-review")).toBeVisible();
+  await expect(page.getByRole("button", { name: "确认 mask，运行 VOID 补洞" })).toBeDisabled();
+  await expect(page.getByText(/补洞环境未就绪.*CogVideoX-Fun-V1\.5-5b-InP/)).toBeVisible();
   await expect(source).toHaveAttribute("src", reviewJob.source_video_url);
   await expect(mask).toHaveAttribute("src", reviewJob.mask_video_url);
   await expect(source).toHaveAttribute("aria-label", "原始视频");
