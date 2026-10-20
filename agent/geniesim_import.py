@@ -392,14 +392,15 @@ def compare_ball_loop_anchors(model, solver):
     return check("native_ball_loop_anchors_preserved", all(e["preserved"] for e in evidence), evidence)
 
 
-def qualify(source: Path, output: Path, *, omit_missing_camera=False):
+def qualify(source: Path, output: Path, *, omit_missing_camera=False, integrator="implicitfast"):
     """Import and finalize on CPU, retaining failed attempts and source identity."""
     started = time.monotonic()
     report = make_report(run=output.name, profile=source.parent.name,
                          stage="embodiment_import_qualification",
                          inputs={"source": str(source)})
     report.update(scope="embodiment_import_qualification", task_success_evaluated=False,
-                  device="cpu", adaptations=[], checks=[])
+                  device="cpu", adaptations=[], checks=[],
+                  native_integrator={"requested": integrator, "effective": None})
     checks = report["checks"]
     try:
         report["inputs"]["sha256"] = sha256_file(source)
@@ -487,7 +488,11 @@ def qualify(source: Path, output: Path, *, omit_missing_camera=False):
             inertia_check["id"] = "finalized_authored_mass_principal_inertia_preserved"
             checks.append(inertia_check)
             try:
-                solver = SolverMuJoCo(model, use_mujoco_cpu=True)
+                from agent.rss_runtime import build_cpu_mujoco_solver
+                solver = build_cpu_mujoco_solver(model, integrator=integrator)
+                report["native_integrator"].update(
+                    effective=int(solver.mj_model.opt.integrator),
+                    mujoco_version=importlib.metadata.version("mujoco"))
                 checks.append(check("native_cpu_solver_build", True,
                                     {"nq": solver.mj_model.nq, "nv": solver.mj_model.nv,
                                      "neq": solver.mj_model.neq}))
@@ -525,9 +530,11 @@ def main(argv=None):
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--omit-missing-camera", action="store_true",
                         help="Record and deactivate only G1's missing decorative camera in an anonymous session")
+    parser.add_argument("--integrator", choices=("implicitfast", "discrete"), default="implicitfast",
+                        help="CPU integrator; discrete requires an isolated MuJoCo >= 3.13 runtime")
     args = parser.parse_args(argv)
     report = qualify((args.assets_root / args.robot / "robot.usda").resolve(),
-                     args.output, omit_missing_camera=args.omit_missing_camera)
+                     args.output, omit_missing_camera=args.omit_missing_camera, integrator=args.integrator)
     print(f"{args.robot}: {report['status']}; report={args.output}")
     return 0 if report["status"] == "passed" else 1
 
