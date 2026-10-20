@@ -50,9 +50,15 @@ def build(run: Path, episode: Path, output: Path, *, mode: str = 'rss', max_fram
     from zipfile import ZipFile
     from agent.run_reports import sha256_file
 
+    diagnostic = None
+    if mode == 'diagnostic':
+        from .planning_replay import recording_sources
+        diagnostic = recording_sources(run, episode / 'execution_report.json')
     body_replay = mode in {'rss', 'rss_assets'}
-    source = run / 'original_source_scene.xml' if mode == 'rss' else episode / 'scene.xml'
-    recordings = (episode / 'steps.npz', episode / 'privileged.npz') if body_replay else (episode / 'trajectory.npz',)
+    source = (diagnostic['scene'] if diagnostic else
+              run / 'original_source_scene.xml' if mode == 'rss' else episode / 'scene.xml')
+    recordings = ([p for _, p in diagnostic['segments']] if diagnostic else
+                  (episode / 'steps.npz', episode / 'privileged.npz') if body_replay else (episode / 'trajectory.npz',))
     for path in recordings:
         with ZipFile(path) as archive:
             if sum(info.file_size for info in archive.infolist()) > 128 * 1024 * 1024:
@@ -90,6 +96,16 @@ def build(run: Path, episode: Path, output: Path, *, mode: str = 'rss', max_fram
                 raise ValueError('recorded body poses do not match the model and simulation clock')
             if not np.allclose(np.linalg.norm(poses[:, :, 3:], axis=2), 1.0, atol=1e-3):
                 raise ValueError('recorded xyzw body orientations are not normalized')
+        elif diagnostic:
+            import mujoco
+            from agent.artifacts import model_digest
+            from .planning_replay import read_recording
+            source_model = mujoco.MjModel.from_xml_path(str(source))
+            if model_digest(source_model) != model_digest(bridge.source):
+                raise ValueError('rebuilt diagnostic scene differs from the recorded physical model')
+            if actual['asset_sha256'] != {str(p): sha for p, sha in diagnostic['assets'].items()}:
+                raise ValueError('rebuilt diagnostic assets differ from the native input contract')
+            times, poses = read_recording(diagnostic, source_model)
         else:
             from tool_library.common.episode import joint_names
             times, poses = read_dexagent_recording(episode / 'trajectory.npz', scene_sha256=sha256_file(source),
@@ -127,7 +143,8 @@ def build(run: Path, episode: Path, output: Path, *, mode: str = 'rss', max_fram
                 'duration_s': float(times[-1] - times[0]), 'mode': 'native_recorded_state_replay',
                 'state_source': 'body_q' if body_replay else 'recorded_qpos_with_forward_kinematics',
                 'model_identity_verified': True, 'physics_steps_executed': executed_steps,
-                'message': '原生记录回放；未运行物理。可旋转、缩放并使用内置播放时间轴。'}
+                'message': ('规划试验实际记录回放；不代表任务成功。未运行物理。' if diagnostic else
+                            '原生记录回放；未运行物理。可旋转、缩放并使用内置播放时间轴。')}
     finally:
         if viewer:
             viewer._server.stop()
@@ -139,11 +156,19 @@ def main(argv=None):
     parser.add_argument('--run', required=True, type=Path)
     parser.add_argument('--episode', required=True, type=Path)
     parser.add_argument('--output', required=True, type=Path)
-    parser.add_argument('--mode', choices=['rss', 'rss_assets', 'dexagent'], default='rss')
+    parser.add_argument('--mode', choices=['rss', 'rss_assets', 'dexagent', 'diagnostic'], default='rss')
     args = parser.parse_args(argv)
     args.output.mkdir(parents=True, exist_ok=True)
     try:
+        if args.mode == 'diagnostic':
+            from agent.run_reports import sha256_file
+            expected = json.loads((args.output / 'job.json').read_text()).get('source_hashes')
+            if not expected or any(sha256_file(name) != sha for name, sha in expected.items()):
+                raise ValueError('diagnostic preview inputs changed before generation')
         result = build(args.run.resolve(), args.episode.resolve(), args.output.resolve(), mode=args.mode)
+        if args.mode == 'diagnostic' and any(sha256_file(name) != sha for name, sha in expected.items()):
+            (args.output / 'viewer.html').unlink(missing_ok=True)
+            raise ValueError('diagnostic preview inputs changed during generation')
     except Exception as exc:
         traceback.print_exc()
         result = {'status': 'failed', 'message': f'{type(exc).__name__}: {exc}'}

@@ -29,10 +29,20 @@ class Previews:
         self.lock = threading.RLock()
         self.processes: dict[str, tuple[subprocess.Popen, float]] = {}
 
-    def start(self, run_id: str, episode_id: str | None = None) -> Preview:
+    def start(self, run_id: str, episode_id: str | None = None, *, trial_report_id: str | None = None) -> Preview:
         run, _ = self.index.run_path(run_id)
         mode = preview_kind(run)
-        if mode in {'rss', 'rss_assets'}:
+        if trial_report_id:
+            from .diagnostics import planning_trial
+            from .planning_replay import recording_sources
+            if episode_id:
+                raise ValueError('choose an episode or a planning trial, not both')
+            planning_trial(self.index, run_id, trial_report_id)
+            report = self.index.artifact_path(trial_report_id)
+            recording = recording_sources(run, report)
+            mode, episode_dir = 'diagnostic', report.parent
+            sources = recording['files']
+        elif mode in {'rss', 'rss_assets'}:
             episodes = self.index.episodes(run_id)
             episode = next((e for e in episodes if e.id == episode_id), None) if episode_id else next(iter(episodes), None)
             if episode is None:
@@ -56,16 +66,23 @@ class Previews:
         if not all(p.is_file() for p in sources):
             raise ValueError('recorded 3D source is incomplete; scene identity and recorded states are required')
         digest = hashlib.sha256(Path(__file__).with_name('native_preview.py').read_bytes())
+        if mode == 'diagnostic':
+            digest.update(Path(__file__).with_name('planning_replay.py').read_bytes())
+            digest.update((self.index.repo / 'agent/rss_sharpa.py').read_bytes())
         if mode == 'rss_assets':
             digest.update((self.index.repo / 'agent/rss_simfoundry.py').read_bytes())
         digest.update(run_id.encode())
         versions = {}
+        source_hashes = {}
         for path in sources:
             path = self.index.permitted(path)
             digest.update(str(path).encode())
+            file_hash = hashlib.sha256()
             with path.open('rb') as stream:
                 for block in iter(lambda: stream.read(1024 * 1024), b''):
                     digest.update(block)
+                    file_hash.update(block)
+            source_hashes[str(path)] = file_hash.hexdigest()
             stat = path.stat()
             versions[str(path)] = [stat.st_mtime_ns, stat.st_size]
         key = digest.hexdigest()[:24]
@@ -84,7 +101,8 @@ class Previews:
                     raise PreviewBusy('another 3D preview is being generated; retry when it finishes')
             output.mkdir(parents=True, exist_ok=True)
             (output / 'job.json').write_text(json.dumps({'run_id': run_id, 'episode_id': episode_id,
-                                                       'mode': mode, 'source_versions': versions}))
+                'trial_report_id': trial_report_id, 'mode': mode, 'source_versions': versions,
+                'source_hashes': source_hashes}))
             (output / 'result.json').unlink(missing_ok=True)
             environment = dict(os.environ, PYTHONUNBUFFERED='1')
             environment['PYTHONPATH'] = str(self.index.repo) + (os.pathsep + environment['PYTHONPATH'] if environment.get('PYTHONPATH') else '')
@@ -127,17 +145,18 @@ class Previews:
                         and result.get('model_identity_verified') is True
                         and result.get('physics_steps_executed') == 0
                         and result.get('preview_frames', 0) >= 2):
-                    return Preview(id=key, run_id=job['run_id'], status='ready', message=result.get('message', ''),
+                    return Preview(id=key, run_id=job['run_id'], trial_report_id=job.get('trial_report_id'),
+                                   status='ready', message=result.get('message', ''),
                                    url=f'/api/workbench/v1/previews/{key}/viewer', source_frames=result.get('source_frames'),
                                    preview_frames=result.get('preview_frames'), duration_s=result.get('duration_s'),
                                    state_source=result.get('state_source'), stale=stale)
-                return Preview(id=key, run_id=job['run_id'], status='failed',
+                return Preview(id=key, run_id=job['run_id'], trial_report_id=job.get('trial_report_id'), status='failed',
                                message=result.get('message', 'generation failed') if result.get('status') == 'failed'
                                else 'preview output is missing its model, clock or no-physics validation', stale=stale)
             if handle and handle[0].poll() is None:
-                return Preview(id=key, run_id=job['run_id'], status='generating',
+                return Preview(id=key, run_id=job['run_id'], trial_report_id=job.get('trial_report_id'), status='generating',
                                message='正在核对模型身份并生成原生 3D 回放，首次加载需要编译 CPU 可视化内核。', stale=stale)
-            return Preview(id=key, run_id=job['run_id'], status='failed',
+            return Preview(id=key, run_id=job['run_id'], trial_report_id=job.get('trial_report_id'), status='failed',
                            message='preview worker ended without a result; see the local generation log', stale=stale)
 
     @staticmethod

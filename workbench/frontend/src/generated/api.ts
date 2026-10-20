@@ -1333,11 +1333,15 @@ export interface components {
              * @default false
              */
             stale: boolean;
+            /** Trial Report Id */
+            trial_report_id: string | null;
         };
         /** PreviewRequest */
         PreviewRequest: {
             /** Episode Id */
             episode_id?: string | null;
+            /** Trial Report Id */
+            trial_report_id?: string | null;
         };
         /** Project */
         Project: {

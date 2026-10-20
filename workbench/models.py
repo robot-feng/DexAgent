@@ -333,6 +333,7 @@ class Preview(ReadModel):
     duration_s: float | None = None
     state_source: str | None = None
     stale: bool = False
+    trial_report_id: str | None = None
 
 
 ExecutionMode = Literal['pipeline', 'rigid', 'towel', 'sharpa', 'grasp', 'reference', 'simfoundry', 'candidate', 'replan']
@@ -478,3 +479,4 @@ class EditorCreate(BaseModel):
 
 class PreviewRequest(BaseModel):
     episode_id: str | None = None
+    trial_report_id: str | None = None

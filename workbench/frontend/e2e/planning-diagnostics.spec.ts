@@ -134,6 +134,38 @@ test("planning trials expose physical failures without certifying dry runs", asy
       },
     });
   });
+  let replayReport = "another-trial";
+  let replayRequest: unknown;
+  let replayCount = 0;
+  const previews: Record<string, object> = {};
+  await page.route(`**${prefix}/runs/${runId}/preview`, (route) => {
+    replayRequest = route.request().postDataJSON();
+    const id = `fixture-${++replayCount}`;
+    const response = {
+      id,
+      run_id: runId,
+      trial_report_id: replayReport,
+      status: "ready",
+      message: "UI contract fixture only",
+      source_frames: 428,
+      preview_frames: 301,
+      duration_s: 14.232,
+      state_source: "recorded_qpos_with_forward_kinematics",
+      stale: false,
+      url: `${prefix}/previews/${id}/viewer`,
+    };
+    previews[id] = response;
+    return route.fulfill({ json: response });
+  });
+  await page.route(`**${prefix}/previews/**`, (route) => {
+    const parts = new URL(route.request().url()).pathname.split("/");
+    return parts.at(-1) === "viewer"
+      ? route.fulfill({
+          contentType: "text/html",
+          body: "<p>UI iframe contract only</p>",
+        })
+      : route.fulfill({ json: previews[parts.at(-1)!] });
+  });
   await page.goto(`/runs/${runId}?view=planning`);
   await expect(
     page.getByRole("heading", { name: "规划诊断", exact: true }),
@@ -146,8 +178,30 @@ test("planning trials expose physical failures without certifying dry runs", asy
   ).toBeVisible();
   await expect(page.getByText(/规划报告目录扫描已截断/)).toBeVisible();
   await expect(page.getByText(/报告读取问题/)).toBeVisible();
+  await page
+    .getByRole("button", { name: "生成试验记录回放", exact: true })
+    .click();
+  expect(replayRequest).toEqual({ trial_report_id: "physical" });
+  await expect(
+    page.getByText("此回放与当前所选规划试验不匹配，已阻止展示。"),
+  ).toBeVisible();
+  await expect(
+    page.locator('iframe[title="规划试验实际记录回放"]'),
+  ).toHaveCount(0);
+  replayReport = "physical";
+  await page
+    .getByRole("button", { name: "为当前试验生成回放", exact: true })
+    .click();
+  await expect(
+    page.locator('iframe[title="规划试验实际记录回放"]'),
+  ).toBeVisible();
+  await expect(page.locator(".native-scene")).toContainText("不代表任务成功");
   await page.getByLabel("选择规划试验").selectOption("screen");
   await expect(page).toHaveURL(/trial=screen/);
+  await expect(page).not.toHaveURL(/trial_preview=/);
+  await expect(
+    page.locator('iframe[title="规划试验实际记录回放"]'),
+  ).toHaveCount(0);
   await expect(
     page.getByText("仅可达性预检 / 未运行物理", { exact: true }),
   ).toBeVisible();
@@ -155,6 +209,9 @@ test("planning trials expose physical failures without certifying dry runs", asy
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByLabel("选择规划试验").selectOption("physical");
   await expect(page.getByText("15.7 mm", { exact: true })).toBeVisible();
+  await expect(
+    page.locator('iframe[title="规划试验实际记录回放"]'),
+  ).toHaveCount(0);
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth),
   ).toBeLessThanOrEqual(390);

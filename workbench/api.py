@@ -373,7 +373,7 @@ def create_app(repo: Path | None = None, *, runs_root: Path | None = None,
     @app.post(f'{PREFIX}/runs/{{run_id}}/preview', response_model=Preview)
     def create_preview(run_id: str, body: PreviewRequest):
         try:
-            return previews.start(run_id, body.episode_id)
+            return previews.start(run_id, body.episode_id, trial_report_id=body.trial_report_id)
         except PreviewBusy as exc:
             raise HTTPException(409, str(exc))
 

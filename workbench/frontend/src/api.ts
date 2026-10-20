@@ -116,7 +116,10 @@ export const api = {
   assign: (directory: string, project_id: string) =>
     request<RunDetail>("/imports", { directory, project_id }),
   refresh: () => request<Health>("/refresh", {}),
-  createPreview: (run: string) => request<Preview>(`/runs/${run}/preview`, {}),
+  createPreview: (run: string, trialReportId?: string) =>
+    request<Preview>(`/runs/${run}/preview`, {
+      trial_report_id: trialReportId ?? null,
+    }),
   preview: (id: string) => request<Preview>(`/previews/${id}`),
   artifacts: (run: string, search: string) =>
     request<components["schemas"]["ArtifactPage"]>(

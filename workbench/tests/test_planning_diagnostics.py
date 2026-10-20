@@ -120,6 +120,19 @@ def test_run_boundaries_and_symlinks(setup):
     assert not client.get(url + '/planning-trials').json()['items']
 
 
+def test_trial_replay_rejects_unknown_and_incomplete_sources_as_client_errors(setup):
+    client, root, url = setup
+    response = client.post(url + '/preview', json={'trial_report_id': 'not-registered'})
+    assert response.status_code == 404
+
+    write(root / 'stage3/.candidates/attempt/failed_execution/execution_report.json', report())
+    item, = client.get(url + '/planning-trials').json()['items']
+    response = client.post(url + '/preview', json={'trial_report_id': item['report']['id']})
+    assert response.status_code == 422
+    assert 'scene_physics.xml' in response.json()['detail']
+    assert not client.app.state.previews.processes
+
+
 def test_report_limit_is_explicit(setup, monkeypatch):
     from workbench import diagnostics
     client, root, url = setup

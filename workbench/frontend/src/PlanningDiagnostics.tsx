@@ -4,6 +4,7 @@ import { ArrowUpRight, RefreshCw, TriangleAlert } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { api } from "./api";
 import type { Artifact } from "./api";
+import NativeScene from "./NativeScene";
 import {
   Badge,
   Empty,
@@ -182,10 +183,12 @@ export default function PlanningDiagnostics({
     const next = new URLSearchParams(params);
     if (nextId) next.set("trial", nextId);
     else next.delete("trial");
+    next.delete("trial_preview");
     setParams(next, { replace: true });
   }, [params, selected?.report.id, setParams, trialsQuery.isSuccess]);
 
   const detail =
+    detailQuery.data?.report.id === selected?.report.id &&
     detailQuery.data?.sha256 === selected?.sha256
       ? detailQuery.data
       : undefined;
@@ -209,6 +212,7 @@ export default function PlanningDiagnostics({
     const next = new URLSearchParams(params);
     if (id) next.set("trial", id);
     else next.delete("trial");
+    if (params.get("trial") !== id) next.delete("trial_preview");
     setParams(next);
   }
 
@@ -384,6 +388,18 @@ export default function PlanningDiagnostics({
                       <Step key={`${step.index}:${step.motion}`} step={step} />
                     ))
                   )}
+                  {!detail.dry_run &&
+                    (detail.n_frames != null && detail.n_frames >= 2 ? (
+                      <NativeScene
+                        key={selected.report.id}
+                        runId={runId}
+                        trialReportId={selected.report.id}
+                      />
+                    ) : (
+                      <div className="notice" role="status">
+                        该物理试验没有足够的记录帧可供回放（至少需要 2 帧）。
+                      </div>
+                    ))}
                 </div>
               ) : null}
             </>
