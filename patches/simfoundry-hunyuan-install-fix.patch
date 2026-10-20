@@ -1,0 +1,30 @@
+diff --git a/requirements_hunyuan.txt b/requirements_hunyuan.txt
+index 78ec370..32c3bc1 100644
+--- a/requirements_hunyuan.txt
++++ b/requirements_hunyuan.txt
+@@ -7,6 +7,10 @@ supervision
+ pybullet
+ setuptools<80.0.0
+ google-cloud-aiplatform
++# Hunyuan3D pins `tb_nightly` to a protobuf<5 build, and its Gradio demo requires
++# pydantic<2.12. Keep the SimFoundry additions within both runtime constraints.
++protobuf==4.25.9
++pydantic==2.10.6
+ # google-genai
+ # openai
+ hydra-core
+diff --git a/scripts/installation/install_hunyuan.sh b/scripts/installation/install_hunyuan.sh
+index f973dc2..8129dc7 100644
+--- a/scripts/installation/install_hunyuan.sh
++++ b/scripts/installation/install_hunyuan.sh
+@@ -176,6 +176,10 @@ pip install "setuptools<80"
+ #   - `deepspeed`: NOT imported anywhere in Hunyuan3D, and its setup.py needs a valid
+ #     CUDA_HOME at metadata-generation time — when it failed it aborted the ENTIRE
+ #     requirements install (leaving trimesh/diffusers/transformers/etc. uninstalled).
++#   - The dated `tb_nightly` wheel: regional PyPI mirrors can lag this pinned prerelease.
++#     Fetch that small wheel from PyPI first, then resolve its dependencies with the
++#     configured mirror in the full requirements install below.
++pip install --no-deps --index-url https://pypi.org/simple tb_nightly==2.18.0a20240726
+ pip install -r <(grep -viE '^[[:space:]]*(deepspeed|--extra-index-url.*(aliyun|tencent))' requirements.txt)
+ echo "Installed Hunyuan3D requirements (pypi.org index; deepspeed excluded)"
+ # NOTE: the numpy-2 alignment (numpy/open3d/onnxruntime/opencv) is intentionally done LAST
