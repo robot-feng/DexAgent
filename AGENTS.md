@@ -75,6 +75,24 @@ physical execution, task verification and episode recording path. Reuse existing
 interfaces rather than adding a parallel pipeline framework. See
 `docs/ENVIRONMENT_EMBODIMENT_SOURCE_REVIEW_20261020.md` for audited boundaries.
 
+## Ego capture workflow
+
+For new ego collection, scan/model the environment and reusable objects first,
+then collect operation demonstrations against that versioned scene. Reuse the
+scene across demonstrations; do not reconstruct an unrelated world per video.
+Keep scan footage and operation footage explicitly identified and linked.
+Support monocular, stereo and RGB-D devices through capability-based input
+adapters, with optional poses/SLAM and IMU. Do not require a specific device or
+invent missing depth, metric scale, stereo calibration or camera trajectories.
+Preserve per-stream calibration, timestamps, coordinate conventions and the
+scan-to-demonstration registration. A selected frame's camera pose is not a
+moving camera trajectory. Scene geometry/scale and registration must be checked
+before robot retargeting; missing alignment does not invalidate the raw capture
+but prevents claiming aligned training data.
+For transferable tasks, the shared table can come from the scanned environment.
+An explicitly chosen standard-table migration keeps a recorded source-to-target
+transform and does not silently alter the source scene or per-robot layout.
+
 ## Shared workbench
 
 Use the existing default port 8765 for user-facing updates. Check actual active
