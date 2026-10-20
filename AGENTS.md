@@ -4,10 +4,21 @@ Read `工程开发与系统重构准则.md` before implementation. Inspect curre
 runtime evidence and uncommitted changes; preserve other conversations' work.
 Reuse existing RoboSimStudio, DexAgent and SimFoundry interfaces.
 
-## Mandatory demo coverage
+## Task modes and mandatory demo coverage
 
-The user requires **every future demo** to pass on **all three** baseline
-embodiments:
+The user distinguishes two task objectives:
+
+- **Faithful Real2Sim reconstruction** preserves the source scene, embodiment,
+  calibration and spatial relationships. Do not force a common tabletop or
+  replacement robots; evaluate fidelity and task behavior on the source robot.
+- **Transferable task generation**, especially from ego demonstrations, retains
+  task intent/object relationships and may retarget to different robots in the
+  shared tabletop scene. Every demo in this mode must pass on **all three**
+  baseline embodiments below.
+
+Declare the objective before generation and retain it in the task evidence.
+Do not automatically infer it from a video filename, silently change modes to
+bypass failures, or treat retargeted data as an exact reconstruction.
 
 1. The existing dexterous-hand setup, called “天玑 + Sharpa” by the user.
    Preserve the actual setup unchanged; `setup/setup.yaml` currently identifies
@@ -15,7 +26,7 @@ embodiments:
 2. `GenieSimAssets/robot/G1_omnipicker`.
 3. `GenieSimAssets/robot/G2_omnipicker`.
 
-These are minimum coverage requirements, not optional examples or three demos
+For transferable tasks these are minimum coverage requirements, not optional examples or three demos
 distributed across different robots. The same demo task must be planned,
 physically executed, checked against its task criteria and recorded separately
 for each embodiment. Each robot needs its own matching action/state mapping,
@@ -32,6 +43,22 @@ Keep hardware/import qualification separate from task acceptance. In particular,
 `GenieSimAssets/mujoco/robot/G2_place_workpiece.xml` is not an equivalent model of
 G2 Omnipicker. See `docs/GENIESIM_ASSET_ADOPTION_20261020.md` for audited assets,
 dependencies and current limitations.
+
+## Shared tabletop scene
+
+For transferable tasks, all baseline robots perform each demo on the same table
+and task layout. Faithful Real2Sim tasks retain their source environment.
+Use a common floor, table dimensions/height, table-relative object poses and
+task criteria. Table legs meet the floor; G1/G2 stand on their wheels on that
+floor, while the existing YAM + Sharpa rig uses its fixed table-edge mounts.
+Adapt robot mounting/standing poses without scaling robots or changing the table
+for individual embodiments. Check reach and collisions separately for each.
+
+Reuse RSS `CellSpec` and its surface frame. Preserve existing DexAgent
+tabletop-zero coordinates through an explicit rig-to-world transform; do not
+silently reinterpret old trajectories or shift only the displayed mesh.
+Align wheeled robots using their wheel contact geometry, not an assumed USD
+root origin. The user's static appearance reference is not a dynamic task pass.
 
 ## Shared workbench
 
