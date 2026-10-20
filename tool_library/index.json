@@ -1,6 +1,6 @@
 {
  "counts": {
-  "skills": 153,
+  "skills": 154,
   "verifiers": 208
  },
  "categories": {
@@ -17915,6 +17915,72 @@
    "cli": "python -m tool_library.skills.read_egodex_episode episode.hdf5 out/ --stride 30",
    "file": "skills/read_egodex_episode.py",
    "url": "https://github.com/dexagent1/DexAgent/blob/main/tool_library/skills/read_egodex_episode.py"
+  },
+  {
+   "name": "read_humanego_episode",
+   "title": "Read HumanEgo demonstration",
+   "type": "skill",
+   "category": "Perception & Grounding",
+   "summary": "Read processed HumanEgo RGB/camera/hands with measured timestamps; optionally bind an explicit rig registration.",
+   "description": "Preserves Aria MPS21 skeleton identity, original source frame IDs, nanosecond timestamps and source records. Missing hands remain invalid. A source-world demonstration is not a robot Episode. camera.json is emitted only with an explicit world-from-rig registration; no table plane or scene alignment is inferred.",
+   "inputs": [
+    {
+     "name": "session",
+     "type": "path",
+     "description": "Local session containing preprocess/all_data and aria_cam_rgb_config.json."
+    },
+    {
+     "name": "out_dir",
+     "type": "path",
+     "description": "New output directory; existing outputs are never overwritten."
+    },
+    {
+     "name": "frames",
+     "type": "list[int] | None",
+     "description": "Explicit source frame subset; None requires the complete declared camera sequence.",
+     "optional": true
+    },
+    {
+     "name": "registration",
+     "type": "path | None",
+     "description": "JSON R_world_rig, origin_world and nonempty source description; no implicit identity registration.",
+     "optional": true
+    }
+   ],
+   "outputs": [
+    {
+     "name": "frames",
+     "type": "list[path]",
+     "description": "Raw rectified RGB images, preserving source frame numbers."
+    },
+    {
+     "name": "episode",
+     "type": "dict",
+     "description": "Demo provenance, time convention, missingness, subset and registration status."
+    },
+    {
+     "name": "camera",
+     "type": "dict | None",
+     "description": "Existing rigcam contract only when registration was supplied."
+    }
+   ],
+   "status": "tested",
+   "entrypoint": "read_humanego_episode",
+   "requirements": [
+    "numpy",
+    "opencv-python",
+    "scipy"
+   ],
+   "tags": [
+    "humanego",
+    "camera",
+    "demonstration",
+    "hands"
+   ],
+   "used_in": [],
+   "cli": "python -m tool_library.skills.read_humanego_episode SESSION OUTPUT --frames 413",
+   "file": "skills/read_humanego_episode.py",
+   "url": "https://github.com/dexagent1/DexAgent/blob/main/tool_library/skills/read_humanego_episode.py"
   },
   {
    "name": "reconstruct_object_meshes",

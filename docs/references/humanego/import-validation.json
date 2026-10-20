@@ -1,0 +1,41 @@
+{
+  "scope": "Complete session metadata/RGB import integrity; no scene registration, independent geometry ground truth, retargeting, physical episode or policy training acceptance.",
+  "source_revision": "f0aa87fade6a41316d65322512f56f066dec62e3",
+  "frame_count": 544,
+  "raw_rgb_sha256_all_match": true,
+  "source_frame_ids_complete": true,
+  "timestamp_first_ns": 351521388068186,
+  "timestamp_last_ns": 351539485175811,
+  "duration_s": 18.097107625,
+  "timestamp_delta_ns_min": 33278912,
+  "timestamp_delta_ns_max": 33375750,
+  "timestamp_delta_ns_median": 33327337.0,
+  "strictly_increasing_timestamps": true,
+  "camera_pose_composition_max_error": 2.220446049250313e-16,
+  "exact_identity_camera_frames": [],
+  "aria_hands_files": 544,
+  "training_data_files": 430,
+  "valid_hands_left_right": [
+    0,
+    468
+  ],
+  "frames_no_valid_hands": 76,
+  "hand_keypoint_shape": [
+    544,
+    2,
+    21,
+    3
+  ],
+  "stored_uv_projection_max_component_error_px": 0.0021734481356361357,
+  "registration_status": "not_supplied",
+  "training_eligible": false,
+  "independent_sensor_synchronization_verified": false,
+  "training_frame_first": 104,
+  "training_frame_last": 533,
+  "training_frames_no_hands": [],
+  "importer_sha256_observed_after_run": "7483c19602097954d5bc60e5541cb796aa69e8a407398c2458e3c1fa4b3f3d8c",
+  "source_archive_sha256": "6318fca67b83264791ed49fdfc2aa51a73f1903561dbf9b26ca86218595d6e13",
+  "source_archive_url": "https://huggingface.co/datasets/Leo-TX/HumanEgo/resolve/f0aa87fade6a41316d65322512f56f066dec62e3/serve_bread/aria/mps_serve_bread_040_vrs/preprocess/all_data.tar",
+  "source_archive_bytes": 782848000,
+  "agent_dispatch_verified": true
+}
