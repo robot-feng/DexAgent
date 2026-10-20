@@ -17,7 +17,7 @@
 ## Any6D 环境
 
 - 环境：`/data/miniconda3/envs/any6d`，Python 3.10；创建成功。
-- 正在安装 PyTorch 2.7.0 / torchvision 0.22.0 / torchaudio 2.7.0（CUDA 12.8）和 xformers。大体积 CUDA wheel 下载期间出现过代理 SSL EOF，pip 正在自动续传；因此当前环境尚不能用于 Any6D 推理。
+- 截至 2026-10-21 01:45 CST，PyTorch 2.7.0 / torchvision 0.22.0 / torchaudio 2.7.0（CUDA 12.8）和 xformers 已安装。Any6D `requirements.txt` 正由安装脚本继续安装（当前正在下载 Open3D）；大体积 CUDA wheel 阶段曾遇到代理 SSL EOF，pip 自动续传并完成。当前环境仍不能用于 Any6D 推理。
 - 安装脚本后续还会安装 Any6D 依赖并构建 NVDiffRast、FoundationPose、Kaolin 与 PyTorch3D。所有扩展必须编译后通过导入和 CUDA 冒烟测试，才可标为可用。
 
 ## 分割与模型权重边界
