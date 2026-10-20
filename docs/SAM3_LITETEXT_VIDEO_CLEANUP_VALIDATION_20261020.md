@@ -14,6 +14,8 @@ SimFoundry 的 Stage 1b、Hydra mask stage、对象提案、VOID 补洞、人工
 
 本机也有 SAM2.1 Hiera-Small checkpoint（约 184 MB），但 SimFoundry 原始 SAM3+SAM2 路线固定查找 `sam2.1_hiera_large.pt` 并使用 Hiera-L 配置；Workbench 不会把 Small 权重冒充 Large。LiteText-S0 只替换文本编码器，SAM3 视觉主干与视频 tracker 仍保留，因此适合优先维持 SAM3 的跟踪能力，但它不是与 SAM2-Small 同级的整体显存缩小方案。上游 LiteText 基准报告性能接近教师模型，不能保证每个机器人场景零精度损失；本次真实视频冒烟没有逐像素真值，仍需人审 mask。
 
+因此当前默认选 SAM3 LiteText，而不是仅因 checkpoint 文件小就切到本机 SAM2 Small。LiteText 复用 SAM3 原生图像与视频跟踪路径；它主要减轻文本编码器，不会把整套视觉跟踪器缩小。本次 A100 推理记录的 SAM3 峰值显存约 9.3 GiB。SAM2 Small 的 184 MB 是权重文件大小，不能直接代表显存占用，也没有在同一场景上完成效果对照。已有文本编码器输出对照最大绝对误差 `3.34e-6`，但不能据此声称整段视频的 mask 与原始 SAM3 完全无损。
+
 ## 真实冒烟结果
 
 使用 SimFoundry 示例 `ThrowAwayTrash.mp4` 经 Workbench `/background-cleanup` 页面和 API 创建任务，选择三个手动提示词，完整运行 Stage 1b 与 LiteText mask 阶段。Workbench 任务最终进入 `review_mask`，并生成人工复核所需 overlay、黑白 mask 视频和 `quadmask_meta.json`。
@@ -28,6 +30,8 @@ SimFoundry 的 Stage 1b、Hydra mask stage、对象提案、VOID 补洞、人工
 
 此示例属于固定机位操作演示，仅适用于 mask / 补洞冒烟，不能用于 3D 相机扫描重建。当前任务停在 `review_mask`；VOID 尚未运行，避免未经人工检查就进入补洞。屏幕中的黑白 mask 以黑色表示待移除区域。
 
+另外使用 SimFoundry 示例 `Fruits.mp4` 做了相机扫描视角变化下的 SAM3 LiteText mask 冒烟。该视频 1280×720、15.07 秒；抽帧后为 400 帧、672×384。手动提示词 `banana` 在第 0 帧播种，分数为 `0.965`，SAM3 原生跟踪器双向传播覆盖 400 / 400 帧。对 mask 视频按黑色待移除区域统计，面积占比为 `1.67%–3.52%`、中位数 `2.91%`；相邻帧 IoU 中位数 `0.970`、最低 `0.892`，没有空 mask。抽查第 0、40、80、120、160、200、240、280、320、360、399 帧，目标 mask 随相机视角变化保持在香蕉上，未见明显覆盖相邻水果。这个输入不含机器人，因此只验证多视角目标分割与传播，不能替代机器人移除或背景补全验证。
+
 mask 人审界面现在将原始视频与 mask 视频并排同步播放，任一侧的播放、暂停、进度拖动和速度调整都会同步到另一侧；VOID 复核界面复用同一组件对照输入与清理结果。默认 8765 上的真实浏览器回归验证了当前 `review_mask` 任务两边拖动时间轴的同步；测试没有调用确认接口，因此任务仍停在人审门。当前缺少 VOID 真实产物，清理前后视图尚未有运行数据可做端到端验证。
 
 ## 验证命令与边界
@@ -41,5 +45,6 @@ mask 人审界面现在将原始视频与 mask 视频并排同步播放，任一
 - `npm run test:e2e -- --grep 'background cleanup defaults'`：1 passed；默认 LiteText 可提交，其他传播组合按依赖预检禁用或启用。
 - `npm run test:e2e -- --grep 'background cleanup'`：2 passed；另在真实 `review_mask` 任务上验证原视频与 mask 视频双向拖动同步，不推进人工确认门。
 - Workbench API 冒烟：Stage 1b → SAM3 LiteText 原生双向跟踪 → 400 帧 mask → 人工复核状态。
+- `Fruits.mp4` scene-scan 冒烟：SAM3 LiteText 原生双向跟踪 → 400 帧 mask → 11 个视角样本视觉检查和整段 mask 面积 / 相邻帧 IoU 检查 → 人工复核状态。
 
 运行环境、checkpoint 或论文结果不能替代场景级质量评估。当前冒烟没有逐像素真值，也没有证明遮挡边缘、极小目标和所有视角都与完整 SAM3 相同。原 `droid_v1.usdz` 的机器人残影问题仍需该场景原始扫描视频重新分割与 VOID 修复；`ThrowAwayTrash.mp4` 不代表它已经清理。没有人工确认 mask 前，不应运行 VOID 或把结果作为干净背景使用。
