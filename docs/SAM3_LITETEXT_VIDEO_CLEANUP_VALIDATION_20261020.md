@@ -28,6 +28,8 @@ SimFoundry 的 Stage 1b、Hydra mask stage、对象提案、VOID 补洞、人工
 
 此示例属于固定机位操作演示，仅适用于 mask / 补洞冒烟，不能用于 3D 相机扫描重建。当前任务停在 `review_mask`；VOID 尚未运行，避免未经人工检查就进入补洞。屏幕中的黑白 mask 以黑色表示待移除区域。
 
+mask 人审界面现在将原始视频与 mask 视频并排同步播放，任一侧的播放、暂停、进度拖动和速度调整都会同步到另一侧；VOID 复核界面复用同一组件对照输入与清理结果。默认 8765 上的真实浏览器回归验证了当前 `review_mask` 任务两边拖动时间轴的同步；测试没有调用确认接口，因此任务仍停在人审门。当前缺少 VOID 真实产物，清理前后视图尚未有运行数据可做端到端验证。
+
 ## 验证命令与边界
 
 已通过：
@@ -37,6 +39,7 @@ SimFoundry 的 Stage 1b、Hydra mask stage、对象提案、VOID 补洞、人工
 - `.workbench/venv/bin/python -m pytest -q workbench/tests/test_workbench.py -k background_cleanup`：6 passed。
 - `npm run build`：TypeScript 与 Vite 生产构建通过。
 - `npm run test:e2e -- --grep 'background cleanup defaults'`：1 passed；默认 LiteText 可提交，其他传播组合按依赖预检禁用或启用。
+- `npm run test:e2e -- --grep 'background cleanup'`：2 passed；另在真实 `review_mask` 任务上验证原视频与 mask 视频双向拖动同步，不推进人工确认门。
 - Workbench API 冒烟：Stage 1b → SAM3 LiteText 原生双向跟踪 → 400 帧 mask → 人工复核状态。
 
 运行环境、checkpoint 或论文结果不能替代场景级质量评估。当前冒烟没有逐像素真值，也没有证明遮挡边缘、极小目标和所有视角都与完整 SAM3 相同。原 `droid_v1.usdz` 的机器人残影问题仍需该场景原始扫描视频重新分割与 VOID 修复；`ThrowAwayTrash.mp4` 不代表它已经清理。没有人工确认 mask 前，不应运行 VOID 或把结果作为干净背景使用。

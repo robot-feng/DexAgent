@@ -38,6 +38,50 @@ test("background cleanup defaults to native SAM3 LiteText tracking and keeps mod
   expect(errors).toEqual([]);
 });
 
+test("background cleanup mask review synchronizes the source and mask timelines", async ({ page, request }) => {
+  const jobs = await (await request.get(`${prefix}/background-cleanups/jobs`)).json();
+  const reviewJob = jobs.find((job: { status: string }) => job.status === "review_mask");
+  if (!reviewJob) {
+    test.skip(true, "requires a real cleanup task waiting at the mask review gate");
+    return;
+  }
+
+  await page.goto("/background-cleanup");
+  await page.locator(".cleanup-job-row")
+    .filter({ hasText: reviewJob.source_video.name })
+    .filter({ hasText: "待检查 mask" })
+    .first()
+    .click();
+
+  const source = page.getByTestId("mask-review-source");
+  const mask = page.getByTestId("mask-review-output");
+  await expect(page.getByTestId("cleanup-synchronized-review")).toBeVisible();
+  await expect(source).toHaveAttribute("src", reviewJob.source_video_url);
+  await expect(mask).toHaveAttribute("src", reviewJob.mask_video_url);
+  await expect(source).toHaveAttribute("aria-label", "原始视频");
+  await expect(mask).toHaveAttribute("aria-label", "对象 mask（黑色为待移除区域）");
+
+  await page.waitForFunction(() => {
+    const sourceVideo = document.querySelector('[data-testid="mask-review-source"]') as HTMLVideoElement | null;
+    const maskVideo = document.querySelector('[data-testid="mask-review-output"]') as HTMLVideoElement | null;
+    return Boolean(sourceVideo && maskVideo && sourceVideo.readyState >= 1 && maskVideo.readyState >= 1);
+  });
+  await source.evaluate((node) => {
+    const video = node as HTMLVideoElement;
+    video.currentTime = Math.min(3, video.duration / 2);
+    video.dispatchEvent(new Event("seeking"));
+  });
+  await expect.poll(() => mask.evaluate((node) => (node as HTMLVideoElement).currentTime))
+    .toBeGreaterThan(1);
+  await mask.evaluate((node) => {
+    const video = node as HTMLVideoElement;
+    video.currentTime = Math.min(6, video.duration / 2);
+    video.dispatchEvent(new Event("seeking"));
+  });
+  await expect.poll(() => source.evaluate((node) => (node as HTMLVideoElement).currentTime))
+    .toBeGreaterThan(4);
+});
+
 test("workspace overview links to real runs, scenes, editor sessions and capability status", async ({
   page,
   request,

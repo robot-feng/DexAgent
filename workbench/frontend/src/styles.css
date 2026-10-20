@@ -1471,7 +1471,8 @@ dd {
 .cleanup-object-tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .cleanup-object-tags span { border: 1px solid #40536e; border-radius: 16px; padding: 4px 8px; background: var(--selected); color: #d4e4fa; font-size: 11px; }
 .cleanup-preview-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.mask-review-grid { grid-template-columns: minmax(200px, 0.8fr) minmax(300px, 1.2fr); }
+.mask-review-keyframe { grid-template-columns: minmax(0, 1fr); max-width: 720px; }
+.cleanup-synchronized-pair { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .cleanup-preview-grid figure { display: grid; min-width: 0; gap: 6px; margin: 0; }
 .cleanup-preview-grid img, .cleanup-preview-grid video, .cleanup-source-player { width: 100%; max-height: 430px; aspect-ratio: 16 / 9; object-fit: contain; background: #080a0d; border: 1px solid var(--line); border-radius: 6px; }
 .cleanup-preview-grid figcaption { color: var(--muted); font-size: 11px; }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Check, Film, Play, ShieldCheck, Square, WandSparkles } from "lucide-react";
 import { api } from "./api";
@@ -282,12 +282,24 @@ function CleanupReview({ job, onApprove, onBuild, onStop, busy, canBuild }: {
       )}
       {job.status === "review_mask" && (
         <>
-          <div className="notice warning cleanup-warning"><AlertTriangle size={16} /><span>确认彩色区域只覆盖要移除的对象，并检查黑白视频中的运动、遮挡和自动选取的种子帧。mask 不正确时请调整对象提示词后重新生成。</span></div>
+          <div className="notice warning cleanup-warning"><AlertTriangle size={16} /><span>确认彩色区域只覆盖要移除的对象，并检查黑白视频中的运动、遮挡和自动选取的种子帧。播放、暂停或拖动任一侧都会同步另一侧；mask 不正确时请调整对象提示词后重新生成。</span></div>
           {job.detected_objects.length > 0 && <div className="cleanup-object-tags">{job.detected_objects.map((name) => <span key={name}>{name}</span>)}</div>}
-          <div className="cleanup-preview-grid mask-review-grid">
-            {job.mask_preview_url && <figure><img src={job.mask_preview_url} alt="SAM 关键帧对象分割 overlay" /><figcaption>关键帧分割 overlay</figcaption></figure>}
-            {job.mask_video_url && <figure><video controls src={job.mask_video_url} /><figcaption>视频目标 mask（黑色为待移除区域）</figcaption></figure>}
-          </div>
+          {job.mask_preview_url && (
+            <div className="cleanup-preview-grid mask-review-keyframe">
+              <figure><img src={job.mask_preview_url} alt="SAM 关键帧对象分割 overlay" /><figcaption>关键帧分割 overlay</figcaption></figure>
+            </div>
+          )}
+          {job.mask_video_url && (
+            <SynchronizedVideoPair
+              leftUrl={job.source_video_url}
+              leftLabel="原始视频"
+              leftTestId="mask-review-source"
+              rightUrl={job.mask_video_url}
+              rightLabel="对象 mask（黑色为待移除区域）"
+              rightTestId="mask-review-output"
+              testId="cleanup-synchronized-review"
+            />
+          )}
           <div className="cleanup-actions">
             <button className="button primary" onClick={onApprove} disabled={busy}><Check size={15} />确认 mask，运行 VOID 补洞</button>
             <a className="button" href={job.log_url} target="_blank" rel="noreferrer">查看运行日志</a>
@@ -297,11 +309,16 @@ function CleanupReview({ job, onApprove, onBuild, onStop, busy, canBuild }: {
       {job.status === "inpainting" && <video className="cleanup-source-player" controls src={job.source_video_url} />}
       {job.status === "review_clean" && (
         <>
-          <div className="notice warning cleanup-warning"><AlertTriangle size={16} /><span>检查机器人和对象是否移除、背景是否自然、是否出现漂浮/闪烁伪影。补洞结果需要人工确认。</span></div>
-          <div className="cleanup-preview-grid">
-            <figure><video controls src={job.source_video_url} /><figcaption>输入视频</figcaption></figure>
-            {job.cleaned_video_url && <figure><video controls src={job.cleaned_video_url} /><figcaption>VOID Pass 2 清理结果</figcaption></figure>}
-          </div>
+          <div className="notice warning cleanup-warning"><AlertTriangle size={16} /><span>同步对照输入与清理结果，检查机器人和对象是否移除、背景是否自然、是否出现漂浮/闪烁伪影。补洞结果需要人工确认。</span></div>
+          {job.cleaned_video_url && (
+            <SynchronizedVideoPair
+              leftUrl={job.source_video_url}
+              leftLabel="输入视频"
+              rightUrl={job.cleaned_video_url}
+              rightLabel="VOID Pass 2 清理结果"
+              testId="cleanup-synchronized-result"
+            />
+          )}
           {job.can_build_scene ? (
             <div className="cleanup-actions">
               <button className="button primary" onClick={onBuild} disabled={busy || !canBuild}><Check size={15} />确认结果，构建 3D 场景</button>
@@ -314,6 +331,80 @@ function CleanupReview({ job, onApprove, onBuild, onStop, busy, canBuild }: {
       {job.status === "ready" && <div className="notice success cleanup-note">场景已生成：<span className="mono">{job.scene_path}</span></div>}
       {job.status === "failed" && <div className="notice danger cleanup-note">阶段失败，已保留日志和中间产物。<a href={job.log_url} target="_blank" rel="noreferrer">打开日志</a></div>}
       {job.status === "stopped" && <div className="notice cleanup-note">任务已停止，已保留日志和中间产物。</div>}
+    </div>
+  );
+}
+
+function SynchronizedVideoPair({
+  leftUrl,
+  leftLabel,
+  leftTestId,
+  rightUrl,
+  rightLabel,
+  rightTestId,
+  testId,
+}: {
+  leftUrl: string;
+  leftLabel: string;
+  leftTestId?: string;
+  rightUrl: string;
+  rightLabel: string;
+  rightTestId?: string;
+  testId: string;
+}) {
+  const leftRef = useRef<HTMLVideoElement>(null);
+  const rightRef = useRef<HTMLVideoElement>(null);
+
+  const syncTime = (from: React.RefObject<HTMLVideoElement | null>, to: React.RefObject<HTMLVideoElement | null>) => {
+    const source = from.current;
+    const target = to.current;
+    if (!source || !target || target.readyState < HTMLMediaElement.HAVE_METADATA) return;
+    const desired = Math.min(source.currentTime, Number.isFinite(target.duration) ? target.duration : source.currentTime);
+    if (Math.abs(target.currentTime - desired) > 0.12) target.currentTime = desired;
+  };
+  const playTogether = (from: React.RefObject<HTMLVideoElement | null>, to: React.RefObject<HTMLVideoElement | null>) => {
+    syncTime(from, to);
+    if (to.current?.paused) void to.current.play().catch(() => undefined);
+  };
+  const pauseTogether = (to: React.RefObject<HTMLVideoElement | null>) => {
+    if (to.current && !to.current.paused) to.current.pause();
+  };
+
+  return (
+    <div className="cleanup-preview-grid cleanup-synchronized-pair" data-testid={testId}>
+      <figure>
+        <video
+          ref={leftRef}
+          data-testid={leftTestId}
+          aria-label={leftLabel}
+          controls
+          preload="metadata"
+          src={leftUrl}
+          onPlay={() => playTogether(leftRef, rightRef)}
+          onPause={() => pauseTogether(rightRef)}
+          onSeeking={() => syncTime(leftRef, rightRef)}
+          onTimeUpdate={() => syncTime(leftRef, rightRef)}
+          onLoadedMetadata={() => syncTime(leftRef, rightRef)}
+          onRateChange={() => { if (leftRef.current && rightRef.current) rightRef.current.playbackRate = leftRef.current.playbackRate; }}
+        />
+        <figcaption>{leftLabel}</figcaption>
+      </figure>
+      <figure>
+        <video
+          ref={rightRef}
+          data-testid={rightTestId}
+          aria-label={rightLabel}
+          controls
+          preload="metadata"
+          src={rightUrl}
+          onPlay={() => playTogether(rightRef, leftRef)}
+          onPause={() => pauseTogether(leftRef)}
+          onSeeking={() => syncTime(rightRef, leftRef)}
+          onLoadedMetadata={() => syncTime(rightRef, leftRef)}
+          onRateChange={() => { if (rightRef.current && leftRef.current) leftRef.current.playbackRate = rightRef.current.playbackRate; }}
+        />
+        <figcaption>{rightLabel}</figcaption>
+      </figure>
     </div>
   );
 }
