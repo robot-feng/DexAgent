@@ -36,6 +36,12 @@ SimFoundry 的 Stage 1b、Hydra mask stage、对象提案、VOID 补洞、人工
 
 mask 人审界面现在将原始视频与 mask 视频并排同步播放，任一侧的播放、暂停、进度拖动和速度调整都会同步到另一侧；VOID 复核界面复用同一组件对照输入与清理结果。默认 8765 上的真实浏览器回归验证了当前 `review_mask` 任务两边拖动时间轴的同步；测试没有调用确认接口，因此任务仍停在人审门。当前缺少 VOID 真实产物，清理前后视图尚未有运行数据可做端到端验证。
 
+## VOID 补洞依赖预检
+
+补洞启动门现在按 SimFoundry 实际执行路径检查 Pass 1/2 driver、VOID 推理源码和配置、`auto_bg.yaml` 中配置的两份 VOID checkpoint，以及本地 CogVideoX-Fun 基础模型的配置、分词器、调度器和 transformer/VAE/text-encoder 权重文件。这样 Conda 环境里模块可导入、但模型未下载完整时，Workbench 会明确报缺项并阻止创建昂贵的补洞任务。自动背景流程实际调用本地模型目录；仅有 Hugging Face 缓存或权重文件名不能代替该目录。
+
+当前本机预检确认 VOID Python 模块和上游脚本已存在，仍缺 `void_pass1.safetensors`、`void_pass2.safetensors` 和 `CogVideoX-Fun-V1.5-5b-InP` 基础模型目录，因此没有运行 VOID。CogVideoX-Fun 官方模型页标明 5B Transformer 权重按 CogVideoX License 发布，代码仓库的 Apache-2.0 许可不等同于 5B 权重许可；若用于商业服务，模型许可要求先单独核验。[CogVideoX-Fun 5B 模型卡](https://huggingface.co/alibaba-pai/CogVideoX-Fun-V1.5-5b-InP) · [CogVideoX License](https://github.com/alibaba/Tora/blob/main/CogVideoX_LICENSE)
+
 ## 验证命令与边界
 
 已通过：
@@ -43,6 +49,7 @@ mask 人审界面现在将原始视频与 mask 视频并排同步播放，任一
 - `scripts/setup_sam3_litetext_video.sh`：本机原生视频依赖和锁定源码检查通过。
 - `.workbench/venv/bin/python -m pytest -q workbench/tests/test_cleanup_segmentation.py`：1 passed。
 - `.workbench/venv/bin/python -m pytest -q workbench/tests/test_workbench.py -k background_cleanup`：7 passed。
+- `.workbench/venv/bin/python -m pytest -q workbench/tests/test_cleanup_readiness.py workbench/tests/test_workbench.py -k 'cleanup or inpainting or void_preflight'`：24 passed，覆盖 VOID 两遍实际脚本、推理配置、配置指定权重及 CogVideoX 基础模型完整/缺失。
 - `npm run build`：TypeScript 与 Vite 生产构建通过。
 - `npm run test:e2e -- --grep 'background cleanup defaults'`：1 passed；默认 LiteText 可提交，其他传播组合按依赖预检禁用或启用；操作演示提示准确说明其不保证完整场景覆盖，不再误称固定机位。
 - `npm run test:e2e -- --grep 'background cleanup'`：2 passed；另在真实 `review_mask` 任务上验证原视频与 mask 视频双向拖动同步，不推进人工确认门。

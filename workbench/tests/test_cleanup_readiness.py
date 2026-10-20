@@ -109,6 +109,92 @@ def test_inpainting_requires_both_environment_dependencies_and_weight_files(mana
     assert 'missing torch' in requirement.detail
 
 
+def test_void_preflight_reports_both_passes_and_base_model(manager):
+    sim = manager.simfoundry
+    cfg = sim / 'scripts/cfg/auto_bg.yaml'
+    cfg.parent.mkdir(parents=True)
+    cfg.write_text(
+        's2_pass1:\n  model_name: CogVideoX-Fun-V1.5-5b-InP\n  model_checkpoint: void_pass1.safetensors\n'
+        's3_pass2:\n  model_name: CogVideoX-Fun-V1.5-5b-InP\n  model_checkpoint: void_pass2.safetensors\n',
+        encoding='utf-8',
+    )
+
+    ready, detail = manager._void_artifact_status()
+
+    assert not ready
+    assert '2_run_void_pass1.py' in detail
+    assert '3_run_void_pass2.py' in detail
+    assert 'predict_v2v.py' in detail
+    assert 'inference_with_pass1_warped_noise.py' in detail
+    assert 'quadmask_cogvideox.py' in detail
+    assert 'void_pass1.safetensors' in detail
+    assert 'void_pass2.safetensors' in detail
+    assert 'CogVideoX-Fun-V1.5-5b-InP' in detail
+
+
+def test_void_preflight_passes_when_every_configured_artifact_exists(manager):
+    sim = manager.simfoundry
+    cfg = sim / 'scripts/cfg/auto_bg.yaml'
+    cfg.parent.mkdir(parents=True)
+    cfg.write_text(
+        's2_pass1:\n  model_name: CogVideoX-Fun-V1.5-5b-InP\n  model_checkpoint: void_pass1.safetensors\n'
+        's3_pass2:\n  model_name: CogVideoX-Fun-V1.5-5b-InP\n  model_checkpoint: void_pass2.safetensors\n',
+        encoding='utf-8',
+    )
+    for relative in (
+        'scripts/pipeline/A_reconstruction/stages/auto_bg_reconstruction/2_run_void_pass1.py',
+        'scripts/pipeline/A_reconstruction/stages/auto_bg_reconstruction/3_run_void_pass2.py',
+        'deps/void-model/inference/cogvideox_fun/predict_v2v.py',
+        'deps/void-model/inference/cogvideox_fun/inference_with_pass1_warped_noise.py',
+        'deps/void-model/config/quadmask_cogvideox.py',
+        'deps/void-model/void_pass1.safetensors',
+        'deps/void-model/void_pass2.safetensors',
+    ):
+        path = sim / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.touch()
+    model = sim / 'deps/void-model/CogVideoX-Fun-V1.5-5b-InP'
+    for relative in (
+        'transformer/config.json', 'transformer/diffusion_pytorch_model.safetensors',
+        'vae/config.json', 'vae/diffusion_pytorch_model.safetensors',
+        'text_encoder/config.json', 'text_encoder/model.safetensors',
+        'tokenizer/tokenizer_config.json', 'tokenizer/spiece.model',
+        'scheduler/scheduler_config.json',
+    ):
+        path = model / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.touch()
+
+    ready, detail = manager._void_artifact_status()
+
+    assert ready
+    assert 'Pass 1/2 权重' in detail
+    assert 'CogVideoX-Fun 基础模型' in detail
+
+
+def test_void_preflight_rejects_partial_base_model_directory(manager):
+    sim = manager.simfoundry
+    cfg = sim / 'scripts/cfg/auto_bg.yaml'
+    cfg.parent.mkdir(parents=True)
+    cfg.write_text(
+        's2_pass1:\n  model_name: CogVideoX-Fun-V1.5-5b-InP\n  model_checkpoint: void_pass1.safetensors\n'
+        's3_pass2:\n  model_name: CogVideoX-Fun-V1.5-5b-InP\n  model_checkpoint: void_pass2.safetensors\n',
+        encoding='utf-8',
+    )
+    model = sim / 'deps/void-model/CogVideoX-Fun-V1.5-5b-InP'
+    (model / 'transformer').mkdir(parents=True)
+    (model / 'transformer/config.json').touch()
+
+    ready, detail = manager._void_artifact_status()
+
+    assert not ready
+    assert 'transformer model weights' in detail
+    assert 'vae/config.json' in detail
+    assert 'text_encoder/config.json' in detail
+    assert 'tokenizer/spiece.model' in detail
+    assert 'scheduler/scheduler_config.json' in detail
+
+
 def test_custom_conda_environment_roots_are_discovered(tmp_path, monkeypatch):
     envs = tmp_path / 'configured_envs'
     envs.mkdir()

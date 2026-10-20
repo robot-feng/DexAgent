@@ -181,24 +181,86 @@ print(json.dumps({"missing": missing}))
         ready, detail = self._environment_ready(name)
         return CleanupRequirement(id=requirement_id, title=title, available=ready, detail=detail)
 
+    def _void_artifact_status(self) -> tuple[bool, str]:
+        """Check the exact files loaded by SimFoundry's two VOID passes."""
+        sim = self.simfoundry
+        void_root = sim / 'deps/void-model'
+        missing: list[str] = []
+        source_files = (
+            ('scripts/pipeline/A_reconstruction/stages/auto_bg_reconstruction/2_run_void_pass1.py',
+             'SimFoundry 2_run_void_pass1.py'),
+            ('scripts/pipeline/A_reconstruction/stages/auto_bg_reconstruction/3_run_void_pass2.py',
+             'SimFoundry 3_run_void_pass2.py'),
+            ('deps/void-model/inference/cogvideox_fun/predict_v2v.py', 'VOID predict_v2v.py'),
+            ('deps/void-model/inference/cogvideox_fun/inference_with_pass1_warped_noise.py',
+             'VOID inference_with_pass1_warped_noise.py'),
+            ('deps/void-model/config/quadmask_cogvideox.py', 'VOID quadmask_cogvideox.py'),
+        )
+        for relative, label in source_files:
+            if not (sim / relative).is_file():
+                missing.append(label)
+
+        config_path = sim / 'scripts/cfg/auto_bg.yaml'
+        try:
+            import yaml
+        except ImportError:
+            return False, 'VOID 补洞预检无法读取 auto_bg.yaml：Workbench 缺少 PyYAML。'
+        try:
+            config = yaml.safe_load(config_path.read_text())
+            if not isinstance(config, dict):
+                raise ValueError('expected a mapping')
+            for section, key, is_dir in (
+                ('s2_pass1', 'model_name', True),
+                ('s2_pass1', 'model_checkpoint', False),
+                ('s3_pass2', 'model_name', True),
+                ('s3_pass2', 'model_checkpoint', False),
+            ):
+                value = (config.get(section) or {}).get(key)
+                if not isinstance(value, str) or not value.strip():
+                    missing.append(f'auto_bg.yaml:{section}.{key}')
+                    continue
+                path = Path(value).expanduser()
+                if not path.is_absolute():
+                    path = void_root / path
+                exists = path.is_dir() if is_dir else path.is_file()
+                if not exists:
+                    missing.append(path.name or f'{section}.{key}')
+                elif is_dir:
+                    for relative in (
+                        'transformer/config.json',
+                        'vae/config.json',
+                        'text_encoder/config.json',
+                        'tokenizer/tokenizer_config.json',
+                        'tokenizer/spiece.model',
+                        'scheduler/scheduler_config.json',
+                    ):
+                        if not (path / relative).is_file():
+                            missing.append(f'{path.name}/{relative}')
+                    for component in ('transformer', 'vae', 'text_encoder'):
+                        component_dir = path / component
+                        has_weights = any(component_dir.glob('*.safetensors')) or any(component_dir.glob('*.bin'))
+                        if not has_weights:
+                            missing.append(f'{path.name}/{component} model weights')
+        except (OSError, ValueError, TypeError, AttributeError, yaml.YAMLError) as exc:
+            missing.append(f'auto_bg.yaml 配置无法读取（{type(exc).__name__}）')
+
+        missing = list(dict.fromkeys(missing))
+        if missing:
+            return False, 'VOID 补洞还缺少：' + '、'.join(missing)
+        return True, 'SimFoundry VOID 两遍运行脚本、配置、Pass 1/2 权重和 CogVideoX-Fun 基础模型均已找到。'
+
     def _requirements(self) -> list[CleanupRequirement]:
         from .cleanup_segmentation import runtime
         lite = runtime(self.repo)
         auto_bg = self.simfoundry / 'scripts/pipeline/A_reconstruction/stages/auto_bg_reconstruction'
-        void_root = self.simfoundry / 'deps/void-model'
         sam2_paths = [
             self.simfoundry / 'deps/Any6D/sam2/checkpoints/sam2.1_hiera_large.pt',
             self.simfoundry / 'checkpoints/sam2.1_hiera_large.pt',
         ]
         has_sam2 = any(p.is_file() for p in sam2_paths)
-        has_void = ((void_root / 'inference/cogvideox_fun/inference_with_pass1_warped_noise.py').is_file()
-                    and (void_root / 'void_pass1.safetensors').is_file()
-                    and (void_root / 'void_pass2.safetensors').is_file())
         void_ready, void_detail = self._environment_ready('void')
-        if void_ready and not has_void:
-            void_detail = 'VOID Python 模块已找到，但缺少 VOID 源码或 pass1/pass2 权重。'
-        elif void_ready:
-            void_detail += ' VOID 源码和 pass1/pass2 权重文件已找到。'
+        void_artifacts_ready, void_artifacts_detail = self._void_artifact_status()
+        void_detail = f'{void_detail} {void_artifacts_detail}'
         has_gemini_auth, gemini_detail = _gemini_capability()
         values = [
             CleanupRequirement(id='video_tools', title='视频工具', available=bool(shutil.which('ffmpeg')),
@@ -212,7 +274,7 @@ print(json.dumps({"missing": missing}))
             CleanupRequirement(id='sam2_checkpoint', title='SAM2.1 Hiera Large 权重', available=has_sam2,
                                detail=('缺少 sam2.1_hiera_large.pt；SimFoundry 原流程固定使用 Hiera-L 配置，本机 Hiera-Small 不会自动替代。'
                                        if not has_sam2 else 'SimFoundry SAM2.1 Hiera Large 权重已找到。')),
-            CleanupRequirement(id='void_env', title='VOID 环境与权重', available=void_ready and has_void,
+            CleanupRequirement(id='void_env', title='VOID 环境与权重', available=void_ready and void_artifacts_ready,
                                detail=void_detail),
             CleanupRequirement(id='gemini', title='上游 Gemini 后端（兼容项）', available=has_gemini_auth,
                                detail=(f'当前全量 A 仍有对象图像编辑、模型分类等 Gemini 调用。{gemini_detail}'
