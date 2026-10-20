@@ -31,11 +31,13 @@ import {
 } from "./components";
 import { ArtifactList, EpisodeList } from "./pages";
 import NativeScene from "./NativeScene";
+import PlanningDiagnostics from "./PlanningDiagnostics";
 
 const tabs = [
   ["overview", "概览"],
   ["scene", "场景"],
   ["trajectory", "轨迹与回放"],
+  ["planning", "规划诊断"],
   ["validation", "验收"],
   ["artifacts", "产物"],
 ];
@@ -624,6 +626,9 @@ export function RunWorkbench() {
                   </div>
                 </div>
               </>
+            )}
+            {view === "planning" && (
+              <PlanningDiagnostics runId={run.id} open={setPreview} />
             )}
           </div>
           <LogConsole runId={run.id} key={run.id} />

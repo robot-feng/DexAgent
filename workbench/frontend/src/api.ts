@@ -103,6 +103,14 @@ export const api = {
   runs: (search: string) =>
     request<components["schemas"]["RunPage"]>(`/runs?${search}`),
   run: (id: string) => request<RunDetail>(`/runs/${id}`),
+  planningTrials: (id: string) =>
+    request<components["schemas"]["PlanningTrials"]>(
+      `/runs/${id}/planning-trials`,
+    ),
+  planningTrial: (id: string, report: string) =>
+    request<components["schemas"]["PlanningTrialDetail"]>(
+      `/runs/${id}/planning-trials/${report}`,
+    ),
   projects: () => request<Project[]>("/projects"),
   createProject: (name: string) => request<Project>("/projects", { name }),
   assign: (directory: string, project_id: string) =>

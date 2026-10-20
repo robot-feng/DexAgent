@@ -47,6 +47,8 @@ python -m agent.external respond "/path/to/requests/<session-turn>.json" /path/t
 
 ## 界面与自动验证
 
+后续增加[原生任务规划诊断页](WORKBENCH_PLANNING_DIAGNOSTICS_20261020.md)，可直接检查隐藏候选目录中的失败尝试、子目标与原始测量；部署状态和验证范围以该说明为准。
+
 默认 8765 工作台的桌面（1512×1100）和手机（390 像素）浏览器检查均无 page error、无横向溢出；执行详情存在“查看执行进程”反向链接。本机截图：`.workbench/previews/task-replan-desktop-20261020.png`、`.workbench/previews/task-replan-mobile-20261020.png`。
 
 共享工作树联合检查：`workbench/tests` 与 `agent/tests/test_reference_evidence.py` 合计 **132 passed、14 subtests passed（41.54 秒）**，包含并行背景清理增量。来源检查单独执行为 35 passed；同像素跨时间的绝对与相对帧索引均覆盖第 0 帧接受、第 2 帧拒绝。输入与执行测试覆盖父候选链、来源变化、文件/目录/清单符号链接、畸形 JSON、绝对引用、上游删除后重试及外部证书拒绝。

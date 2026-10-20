@@ -107,6 +107,41 @@ class ArtifactPage(ReadModel):
     total: int
 
 
+class PlanningTrial(ReadModel):
+    report: Artifact
+    sha256: str
+    outcome: Literal['passed', 'failed', 'incomplete']
+    dry_run: bool
+    expected_subgoals: int
+    recorded_subgoals: int
+    passed_subgoals: int
+    failed_checks: list[str]
+    duration_s: float | None = None
+    n_frames: int | None = None
+
+
+class PlanningStep(ReadModel):
+    index: int
+    motion: str
+    side: str | None = None
+    object: str | None = None
+    ok: bool
+    failed: list[str]
+    frames: list[int] | None = None
+    measured: dict[str, Any]
+    error: str | None = None
+
+
+class PlanningTrialDetail(PlanningTrial):
+    subgoals: list[PlanningStep]
+
+
+class PlanningTrials(ReadModel):
+    items: list[PlanningTrial]
+    issues: list[Issue]
+    truncated: bool = False
+
+
 class Episode(ReadModel):
     id: str
     run_id: str

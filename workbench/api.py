@@ -22,6 +22,8 @@ from .rss_live import RssLiveInspector
 from .background_cleanups import BackgroundCleanups, CleanupBusy, CleanupUnavailable
 from .executions import Executions, ExecutionBusy
 from .models import CandidateScene, Execution, ExecutionCatalog, ExecutionCreate, ExecutionLog, TaskVariantInputs
+from .models import PlanningTrials, PlanningTrialDetail
+from .diagnostics import planning_trials, planning_trial
 
 PREFIX = '/api/workbench/v1'
 LOGGER = logging.getLogger(__name__)
@@ -268,6 +270,14 @@ def create_app(repo: Path | None = None, *, runs_root: Path | None = None,
     @app.get(f'{PREFIX}/runs/{{run_id}}', response_model=RunDetail)
     def run(run_id: str):
         return index.run(run_id)
+
+    @app.get(f'{PREFIX}/runs/{{run_id}}/planning-trials', response_model=PlanningTrials)
+    def trials(run_id: str):
+        return planning_trials(index, run_id)
+
+    @app.get(f'{PREFIX}/runs/{{run_id}}/planning-trials/{{report_id}}', response_model=PlanningTrialDetail)
+    def trial(run_id: str, report_id: str):
+        return planning_trial(index, run_id, report_id)
 
     @app.post(f'{PREFIX}/refresh', response_model=Health)
     def refresh():
