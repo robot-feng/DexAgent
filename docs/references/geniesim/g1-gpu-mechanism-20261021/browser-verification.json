@@ -1,0 +1,14 @@
+{
+  "run": "9c8268e5ce354d38401e4ead",
+  "status": 200,
+  "playback": {
+    "readyState": 4,
+    "time": 1.820344,
+    "duration": 7.64,
+    "error": null
+  },
+  "errors": [],
+  "validation": "warning",
+  "release": "not_evaluated",
+  "checkCount": 23
+}

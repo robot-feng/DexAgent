@@ -1,0 +1,93 @@
+{
+  "scope": "full_G1_single_world_RSS_GPU_adapted_mechanism_qualification",
+  "status": "PASS_bounded_adapted_mechanism_only",
+  "physical_steps": 1900,
+  "saved_samples_including_initial": 1901,
+  "RSS_control_frames": 950,
+  "integration_dt_s": 0.001,
+  "backend": "Newton1.7.0/MuJoCoWarp3.15.0/Warp1.18.0 CUDA discrete singleworld",
+  "protocol_sha256": "7f35322233557c4847fd8efbdc50325ec48475f980e66266f359cc6d03651c72",
+  "runner_sha256": "bff94a247fd4cc1e55c677511217f0bdc85c3e8b6cf849865ea94815d5dfb491",
+  "per_hand": [
+    {
+      "side": "left",
+      "peak_rad": 0.08705989271402359,
+      "final_rad": 0.0003859846037812531,
+      "hold700_error_rad": 0.014966078102588654,
+      "passed": true
+    },
+    {
+      "side": "right",
+      "peak_rad": 0.08705989271402359,
+      "final_rad": 0.0003859827120322734,
+      "hold700_error_rad": 0.014966070652008057,
+      "passed": true
+    }
+  ],
+  "maximum_metrics": {
+    "source_loop_Newton_state_m": 0.0005676395420263434,
+    "source_loop_independent_GPU_q_native_FK_m": 0.0005651009666665773,
+    "mimic_rad": 8.645542948215734e-08,
+    "joint_limit_violation_SI": 2.4612623050757065e-09,
+    "scalar_velocity_SI_per_s": 2.9222500324249268,
+    "effort_excess_N_or_Nm": 0.0,
+    "base_drift_m": 0.0,
+    "base_drift_rad": 0.0,
+    "state_sync_q_qd_position_quaternion": [
+      0.0,
+      0.0,
+      9.089105741599823e-06,
+      8.771193416690082e-06
+    ],
+    "contact_force_N": 0.0,
+    "contact_candidates": 0,
+    "GPU_clock_error_ULP": 0.0
+  },
+  "time": {
+    "ideal_duration_s": 1.9,
+    "GPU_float32_s": 1.9000327587127686,
+    "RSS_frame_clock_s": 1.9000000000000015,
+    "GPU_error_from_ideal_s": 3.2758712768643505e-05,
+    "comparison": "exact repeated float32 addition; original physical step budget/count unchanged"
+  },
+  "offline_checks": {
+    "all1900_physical_steps": true,
+    "independent_hook_and_solver_counts": true,
+    "GPU_clock_equals_independent_float32_recurrence": true,
+    "all_source_loops_independent_postq_FK_below_1mm": true,
+    "recorded_Newton_loops_below_original_limit": true,
+    "mimic": true,
+    "joint_limits": true,
+    "scalar_velocity": true,
+    "effort_caps": true,
+    "base_position": true,
+    "base_orientation": true,
+    "state_sync": true,
+    "all_finite": true,
+    "all_constraints_active": true,
+    "no_GPU_overflow": true,
+    "no_unexpected_physical_contacts": true,
+    "both_hands_motion": true,
+    "runtime_GPU_parameters_unchanged": true,
+    "source_and_protocol_inputs_unchanged": true
+  },
+  "new_physics_steps_for_this_review": 0,
+  "offline_forward_positions": 1901,
+  "task_success_evaluated": false,
+  "exact_source_qualification": "failed_retained",
+  "contact_grasp_lift_acceptance_evaluated": false,
+  "limitations": [
+    "Singleworld host-synchronized mechanism trial, not GPU parallel G1 task evidence.",
+    "No object or task; no contacts occurred, so grasp/contact response remains unqualified.",
+    "Exact source fidelity remains failed; strict six-equality profile is an explicit runtime adaptation.",
+    "Profile currently requires explicit GPU upload; reset/notify persistence is not production qualified.",
+    "This does not complete G1/G2/Sharpa common-demo coverage."
+  ],
+  "source_inputs_sha256": {
+    "mechanism-attempt01/trajectory.npz": "b767727ac496a23ad041cbe40b1d7fc16168449f1f248b9bd8b03c4aff1be472",
+    "mechanism-attempt01/report.json": "b93b64facceaca5ff7e785e651e0d010c04b9279a42eb1e06d57f6465b78e4d6",
+    "mechanism-attempt01/protocol.json": "7f35322233557c4847fd8efbdc50325ec48475f980e66266f359cc6d03651c72",
+    "mechanism-attempt01/contacts.jsonl": "3ecf7dec7dd5d13ac28d2546ed1db82519966f7fbeb0ad6a9eb2616eb541360a",
+    "mechanism-attempt01/preflight/native-profile-mirror.mjb": "9fa7c482aee20ae2560e78649a61bf2392435a24ac8b38f6b4327ffc37e56936"
+  }
+}

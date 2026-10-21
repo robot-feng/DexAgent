@@ -1,0 +1,233 @@
+{
+ "schema": "dexagent.step_report.v1",
+ "run": "g1_rss_gpu_mechanism_20261021",
+ "profile": "G1 \u00b7 GPU \u7a7a\u8f7d\u673a\u6784\u9a8c\u8bc1\uff08\u975e\u6293\u53d6\u4efb\u52a1\uff09",
+ "stage": "backend",
+ "step": null,
+ "status": "warning",
+ "checks": [
+  {
+   "id": "all1900_physical_steps",
+   "required": true,
+   "status": "passed",
+   "observed": true,
+   "evidence": "mechanism-summary.json"
+  },
+  {
+   "id": "independent_hook_and_solver_counts",
+   "required": true,
+   "status": "passed",
+   "observed": true,
+   "evidence": "mechanism-summary.json"
+  },
+  {
+   "id": "GPU_clock_equals_independent_float32_recurrence",
+   "required": true,
+   "status": "passed",
+   "observed": true,
+   "evidence": "mechanism-summary.json"
+  },
+  {
+   "id": "all_source_loops_independent_postq_FK_below_1mm",
+   "required": true,
+   "status": "passed",
+   "observed": true,
+   "evidence": "mechanism-summary.json"
+  },
+  {
+   "id": "recorded_Newton_loops_below_original_limit",
+   "required": true,
+   "status": "passed",
+   "observed": true,
+   "evidence": "mechanism-summary.json"
+  },
+  {
+   "id": "mimic",
+   "required": true,
+   "status": "passed",
+   "observed": true,
+   "evidence": "mechanism-summary.json"
+  },
+  {
+   "id": "joint_limits",
+   "required": true,
+   "status": "passed",
+   "observed": true,
+   "evidence": "mechanism-summary.json"
+  },
+  {
+   "id": "scalar_velocity",
+   "required": true,
+   "status": "passed",
+   "observed": true,
+   "evidence": "mechanism-summary.json"
+  },
+  {
+   "id": "effort_caps",
+   "required": true,
+   "status": "passed",
+   "observed": true,
+   "evidence": "mechanism-summary.json"
+  },
+  {
+   "id": "base_position",
+   "required": true,
+   "status": "passed",
+   "observed": true,
+   "evidence": "mechanism-summary.json"
+  },
+  {
+   "id": "base_orientation",
+   "required": true,
+   "status": "passed",
+   "observed": true,
+   "evidence": "mechanism-summary.json"
+  },
+  {
+   "id": "state_sync",
+   "required": true,
+   "status": "passed",
+   "observed": true,
+   "evidence": "mechanism-summary.json"
+  },
+  {
+   "id": "all_finite",
+   "required": true,
+   "status": "passed",
+   "observed": true,
+   "evidence": "mechanism-summary.json"
+  },
+  {
+   "id": "all_constraints_active",
+   "required": true,
+   "status": "passed",
+   "observed": true,
+   "evidence": "mechanism-summary.json"
+  },
+  {
+   "id": "no_GPU_overflow",
+   "required": true,
+   "status": "passed",
+   "observed": true,
+   "evidence": "mechanism-summary.json"
+  },
+  {
+   "id": "no_unexpected_physical_contacts",
+   "required": true,
+   "status": "passed",
+   "observed": true,
+   "evidence": "mechanism-summary.json"
+  },
+  {
+   "id": "both_hands_motion",
+   "required": true,
+   "status": "passed",
+   "observed": true,
+   "evidence": "mechanism-summary.json"
+  },
+  {
+   "id": "runtime_GPU_parameters_unchanged",
+   "required": true,
+   "status": "passed",
+   "observed": true,
+   "evidence": "mechanism-summary.json"
+  },
+  {
+   "id": "source_and_protocol_inputs_unchanged",
+   "required": true,
+   "status": "passed",
+   "observed": true,
+   "evidence": "mechanism-summary.json"
+  },
+  {
+   "id": "source_exact_fidelity",
+   "required": false,
+   "status": "failed",
+   "observed": "failed_retained",
+   "evidence": "source-import-report.json; exact-source checks remain failed; this run scope is explicitly adapted unloaded mechanism only"
+  },
+  {
+   "id": "runtime_profile_persistence",
+   "required": false,
+   "status": "warning",
+   "observed": "GPU upload/readback in frozen run only",
+   "evidence": "Reset/notify persistence not qualified; no production control readiness claim."
+  },
+  {
+   "id": "contact_grasp_and_task",
+   "required": false,
+   "status": "skipped",
+   "observed": false,
+   "evidence": "No object/contact in this run. Not a grasp, task episode or three-embodiment demo."
+  },
+  {
+   "id": "wheel_ground_and_full_body_collision",
+   "required": false,
+   "status": "skipped",
+   "observed": false,
+   "evidence": "42 source bodies / 34 coordinates preserved; active collision geoms are source gripper colliders. Fixed base and gravity compensation do not qualify wheel standing or full-body collision."
+  }
+ ],
+ "inputs": {
+  "protocol": {
+   "path": "/data/tzq/DexAgent/.workbench/previews/geniesim-g1-portable-20261021/gpu/mechanism-attempt01/protocol.json",
+   "sha256": "7f35322233557c4847fd8efbdc50325ec48475f980e66266f359cc6d03651c72"
+  },
+  "trajectory": {
+   "path": "/data/tzq/DexAgent/.workbench/previews/geniesim-g1-portable-20261021/gpu/mechanism-attempt01/trajectory.npz",
+   "sha256": "b767727ac496a23ad041cbe40b1d7fc16168449f1f248b9bd8b03c4aff1be472"
+  }
+ },
+ "config_sha256": null,
+ "model_identity": {},
+ "artifacts": [
+  "mechanism-summary.json",
+  "mechanism-raw-report.json",
+  "mechanism-protocol.json",
+  "root-review.json",
+  "replay-manifest.json",
+  "replay_mechanism.mp4",
+  "preview_mechanism.png",
+  "preview_diagnostics.png",
+  "source-import-report.json",
+  "trajectory.npz",
+  "contacts.jsonl"
+ ],
+ "metrics": {
+  "source_loop_Newton_state_m": 0.0005676395420263434,
+  "source_loop_independent_GPU_q_native_FK_m": 0.0005651009666665773,
+  "mimic_rad": 8.645542948215734e-08,
+  "joint_limit_violation_SI": 2.4612623050757065e-09,
+  "scalar_velocity_SI_per_s": 2.9222500324249268,
+  "effort_excess_N_or_Nm": 0.0,
+  "base_drift_m": 0.0,
+  "base_drift_rad": 0.0,
+  "state_sync_q_qd_position_quaternion": [
+   0.0,
+   0.0,
+   9.089105741599823e-06,
+   8.771193416690082e-06
+  ],
+  "contact_force_N": 0.0,
+  "contact_candidates": 0,
+  "GPU_clock_error_ULP": 0.0,
+  "physical_steps": 1900,
+  "recorded_samples": 1901,
+  "control_frames": 950,
+  "adapted_mechanism_qualified": true,
+  "exact_source_qualified": false,
+  "task_success_evaluated": false,
+  "training_eligible": false,
+  "aggregate_demo_complete": false,
+  "backend": "Newton1.7.0/MuJoCoWarp3.15.0/Warp1.18.0 CUDA discrete singleworld"
+ },
+ "elapsed_s": null,
+ "failure": null,
+ "next_action": "Validate contact response with the full source joint tree, actual finger colliders and fixed original gates; then qualify task scene, wheel-ground setup and same task on all three embodiments.",
+ "updated_at": "2026-10-21 16:03:26",
+ "scope": "G1 GPU \u7a7a\u8f7d\u673a\u6784\u901a\u8fc7\uff1b\u6e90\u4fdd\u771f\u5931\u8d25\u4fdd\u7559\uff1b\u63a5\u89e6\u4e0e\u4efb\u52a1\u672a\u9a8c\u8bc1",
+ "objective": "hardware/import/control qualification only; neither faithful task reconstruction nor transferable task generation",
+ "task_success_evaluated": false,
+ "training_eligible": false,
+ "aggregate_demo_complete": false
+}
