@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
   Boxes,
@@ -10,20 +11,20 @@ import {
   Radio,
   Settings2,
   WifiOff,
-  Wrench,
+  Film,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { api } from "./api";
-import { Badge, ErrorNotice, Loading, formatTime } from "./components";
+import { api, contentUrl } from "./api";
+import { Badge, ErrorNotice, Loading, Media, formatTime } from "./components";
 import { SimulationRuntimePanel } from "./SimulationRuntime";
 
 const destinations = [
   {
-    to: "/projects",
-    title: "项目与运行",
-    description: "查看原始输入、各阶段报告、失败原因和验收证据。",
-    icon: FolderOpen,
-    query: "runs",
+    to: "/executions",
+    title: "执行任务",
+    description: "配置任务输入，启动执行并检查结果。",
+    icon: PlayCircle,
+    query: "executions",
   },
   {
     to: "/scenes",
@@ -38,13 +39,6 @@ const destinations = [
     description: "浏览已有 Episode、视频、轨迹曲线和 3D 记录。",
     icon: Database,
     query: "episodes",
-  },
-  {
-    to: "/tools",
-    title: "工具库",
-    description: "查找当前工作树已有工具及其输入、输出说明。",
-    icon: Wrench,
-    query: "tools",
   },
 ];
 
@@ -73,7 +67,8 @@ const nativeViewerUrl = (value: string | null) => {
   try {
     const url = new URL(value);
     if (url.protocol !== "http:" && url.protocol !== "https:") return null;
-    if (!["localhost", "127.0.0.1", "0.0.0.0", "::1"].includes(url.hostname)) return null;
+    if (!["localhost", "127.0.0.1", "0.0.0.0", "::1"].includes(url.hostname))
+      return null;
     url.hostname = window.location.hostname;
     return url.toString();
   } catch {
@@ -92,6 +87,33 @@ export function OverviewPage() {
     queryKey: ["overview-runs"],
     queryFn: () => api.runs("limit=5&offset=0"),
   });
+  const [selectedRun, setSelectedRun] = useState<string | null>(null);
+  const previews = useQueries({
+    queries: (recent.data?.items ?? []).map((run) => ({
+      queryKey: ["run", run.id],
+      queryFn: () => api.run(run.id),
+      staleTime: 30_000,
+    })),
+  });
+  const previewsPending = previews.some((query) => query.isPending);
+  const previewId =
+    selectedRun ??
+    (previewsPending
+      ? undefined
+      : (previews.find((query) =>
+          query.data?.media.some(
+            (item) => item.kind === "video" || item.kind === "image",
+          ),
+        )?.data?.id ?? recent.data?.items[0]?.id));
+  const previewIndex =
+    recent.data?.items.findIndex((run) => run.id === previewId) ?? -1;
+  const previewQuery = previews[previewIndex];
+  const previewRun = previewQuery?.data;
+  const previewSummary = recent.data?.items[previewIndex];
+  const previewMedia =
+    previewRun?.media.find((item) => item.kind === "video") ??
+    previewRun?.media.find((item) => item.kind === "image");
+  const previewPoster = previewRun?.media.find((item) => item.kind === "image");
   const editors = useQuery({ queryKey: ["editors"], queryFn: api.editors });
   const studioLive = useQuery({
     queryKey: ["studio-live"],
@@ -120,11 +142,9 @@ export function OverviewPage() {
     <main className="page overview-page">
       <div className="page-title">
         <div>
-          <p className="eyebrow">EMBODIFORGE STUDIO</p>
+          <p className="eyebrow">WORKSPACE / 工作空间</p>
           <h1>工作空间总览</h1>
-          <p className="muted">
-            启动任务、检查场景、追踪执行与验收，浏览生成的数据。
-          </p>
+          <p className="muted">从真实场景到机器人数据，在这里继续你的工作。</p>
         </div>
         <Link className="button primary" to="/executions">
           <PlayCircle size={16} />
@@ -161,41 +181,48 @@ export function OverviewPage() {
         </div>
       </section>
 
-      <SimulationRuntimePanel overview />
-
-      <section className="overview-section">
-        <div className="section-heading">
-          <div>
-            <h2>现有工作入口</h2>
-            <p className="muted">直接进入已有功能，不重复创建另一套流程。</p>
+      <div className="workspace-results">
+        <section className="panel workspace-preview" aria-label="最近运行预览">
+          <div className="section-heading">
+            <h2>运行预览</h2>
+            {previewSummary && <Badge value={previewSummary.validation} />}
           </div>
-        </div>
-        <div className="overview-destinations">
-          {destinations.map(({ to, title, description, icon: Icon, query }) => {
-            const count =
-              query === "runs"
-                ? health.data?.run_count
-                : query === "scenes"
-                  ? scenes.data?.items.length
-                  : undefined;
-            return (
-              <Link className="overview-destination" key={to} to={to}>
-                <span className="overview-icon">
-                  <Icon size={18} />
-                </span>
-                <span className="overview-destination-copy">
-                  <strong>{title}</strong>
-                  <small>{description}</small>
-                </span>
-                {count !== undefined && <span className="counter">{count}</span>}
-                <ArrowRight size={16} />
+          <div className="workspace-preview-media">
+            {previewQuery?.isPending ||
+            (!selectedRun && (recent.isPending || previewsPending)) ? (
+              <Loading />
+            ) : previewQuery?.error ? (
+              <ErrorNotice error={previewQuery.error} />
+            ) : previewMedia ? (
+              <Media
+                artifact={previewMedia}
+                poster={previewPoster ? contentUrl(previewPoster) : undefined}
+              />
+            ) : (
+              <div className="workspace-preview-empty">
+                <Film size={32} />
+                <p>暂无可预览结果</p>
+                <small>运行生成的视频或图像会显示在这里。</small>
+              </div>
+            )}
+          </div>
+          <div className="workspace-preview-caption">
+            <div>
+              <strong>{previewSummary?.name ?? "选择一条运行查看结果"}</strong>
+              <small>
+                {previewSummary
+                  ? `${formatTime(previewSummary.updated_at)} · 运行产物，任务结论见验收`
+                  : "保留原始结果与验收证据"}
+              </small>
+            </div>
+            {previewSummary && (
+              <Link className="button" to={`/runs/${previewSummary.id}`}>
+                打开工作台 <ArrowRight size={15} />
               </Link>
-            );
-          })}
-        </div>
-      </section>
+            )}
+          </div>
+        </section>
 
-      <div className="overview-lower">
         <section className="panel overview-recent">
           <div className="section-heading">
             <div>
@@ -203,7 +230,7 @@ export function OverviewPage() {
               <p className="muted">按本机原始报告更新时间排序</p>
             </div>
             <Link className="link-button" to="/projects">
-              全部运行 <ArrowRight size={14} />
+              项目与运行 <ArrowRight size={14} />
             </Link>
           </div>
           {activeEditor && editorHref && (
@@ -236,16 +263,32 @@ export function OverviewPage() {
           ) : recent.data?.items.length ? (
             <div className="overview-run-list">
               {recent.data.items.map((run) => (
-                <Link className="overview-run" key={run.id} to={`/runs/${run.id}`}>
-                  <span className="overview-run-name">
-                    <strong>{run.name}</strong>
-                    <small>
-                      {formatTime(run.updated_at)} · {run.stage_count} 个阶段
-                    </small>
-                  </span>
-                  <Badge value={run.validation} />
-                  <ArrowRight size={15} />
-                </Link>
+                <div
+                  className={`overview-run ${previewId === run.id ? "selected" : ""}`}
+                  key={run.id}
+                >
+                  <button
+                    className="workspace-select-run"
+                    onClick={() => setSelectedRun(run.id)}
+                    aria-label={`预览 ${run.name}`}
+                    aria-pressed={previewId === run.id}
+                  >
+                    <span className="overview-run-name">
+                      <strong>{run.name}</strong>
+                      <small>
+                        {formatTime(run.updated_at)} · {run.stage_count} 个阶段
+                      </small>
+                    </span>
+                    <Badge value={run.validation} />
+                  </button>
+                  <Link
+                    className="icon-button"
+                    to={`/runs/${run.id}`}
+                    aria-label={`打开 ${run.name}`}
+                  >
+                    <ArrowRight size={15} />
+                  </Link>
+                </div>
               ))}
             </div>
           ) : (
@@ -255,102 +298,200 @@ export function OverviewPage() {
             </div>
           )}
         </section>
-
-        <section className="panel overview-capabilities">
-          <div className="section-heading">
-            <div>
-              <h2>能力状态</h2>
-              <p className="muted">按当前服务检测结果显示</p>
-            </div>
-            <Link
-              className="icon-button"
-              aria-label="打开环境与能力"
-              to="/settings/environment"
-            >
-              <Settings2 size={16} />
-            </Link>
-          </div>
-          {capabilities.isLoading ? (
-            <Loading />
-          ) : capabilities.error ? (
-            <ErrorNotice error={capabilities.error} />
-          ) : (
-            <ul className="capability-list">
-              {capabilities.data?.map((capability) => (
-                <li key={capability.id}>
-                  <span
-                    className={
-                      capability.available
-                        ? "capability-dot ready"
-                        : "capability-dot pending"
-                    }
-                  />
-                  <span className="capability-copy">
-                    <strong>{capabilityLabels[capability.id] ?? capability.title}</strong>
-                    <small>{capabilityStatus(capability.level, capability.available)}</small>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-          <p className="overview-boundary">
-            任务执行已接入既有 CLI；实时物理交互和训练格式导出仍需单独验收。
-          </p>
-        </section>
       </div>
-
-      <section className="panel studio-live-panel" aria-labelledby="studio-live-title">
+      <section className="overview-section">
         <div className="section-heading">
           <div>
-            <h2 id="studio-live-title">RoboSimStudio 实时状态</h2>
-            <p className="muted">直接读取仿真主线程状态，每 2 秒刷新；EmbodiForge Studio 不发送控制命令。</p>
+            <h2>开始工作</h2>
+            <p className="muted">场景、任务和数据独立管理，按需要进入。</p>
           </div>
-          <span className={`studio-live-badge ${studioLive.data?.connected ? "online" : "offline"}`}>
-            {studioLive.data?.connected ? <Radio size={14} /> : <WifiOff size={14} />}
-            {studioLive.data?.connected ? "已连接" : studioLive.data?.configured ? "未连接" : "未配置"}
-          </span>
         </div>
-        {studioLive.isLoading ? (
-          <Loading />
-        ) : studioLive.error ? (
-          <ErrorNotice error={studioLive.error} />
-        ) : studioLive.data?.connected ? (
-          <>
-            <div className="studio-live-metrics">
-              <div><small>仿真步</small><strong>{studioLive.data.step ?? "—"}</strong></div>
-              <div><small>仿真时间</small><strong>{studioLive.data.sim_time?.toFixed(3) ?? "—"} s</strong></div>
-              <div><small>状态</small><strong>{studioLive.data.paused ? "已暂停" : "运行中"}</strong></div>
-              <div><small>数值状态</small><strong>{studioLive.data.finite ? "有限" : "需检查"}</strong></div>
-              <div><small>场景实体</small><strong>{studioLive.data.names.length}</strong></div>
-            </div>
-            {Object.keys(studioLive.data.positions).length > 0 && (
-              <div className="studio-live-entities">
-                {Object.entries(studioLive.data.positions).slice(0, 8).map(([name, position]) => (
-                  <div className="studio-live-entity" key={name}>
-                    <span>{name}</span>
-                    <code>{Array.isArray(position) ? position.map((value) => value.toFixed(3)).join(", ") : position}</code>
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="studio-live-footer">
-              <span className="muted">最近读取 {formatTime(studioLive.data.checked_at)}</span>
-              {studioViewerUrl && (
-                <a className="link-button" href={studioViewerUrl} target="_blank" rel="noreferrer">
-                  打开 RSS 原生 Viewer <ExternalLink size={14} />
-                </a>
-              )}
-            </div>
-          </>
-        ) : (
-          <div className="studio-live-empty">
-            <p>{studioLive.data?.error ?? "当前没有已连接的 RSS live 会话。"}</p>
-            <small>
-              配置环境变量 <code>WORKBENCH_RSS_RUN_DIR</code>，指向运行 RSS live 服务时使用的 run 目录；连接后这里只读取状态，不会启动或驱动仿真。
-            </small>
-          </div>
-        )}
+        <div className="overview-destinations">
+          {destinations.map(({ to, title, description, icon: Icon, query }) => {
+            const count =
+              query === "scenes" ? scenes.data?.items.length : undefined;
+            return (
+              <Link className="overview-destination" key={to} to={to}>
+                <span className="overview-icon">
+                  <Icon size={18} />
+                </span>
+                <span className="overview-destination-copy">
+                  <strong>{title}</strong>
+                  <small>{description}</small>
+                </span>
+                {count !== undefined && (
+                  <span className="counter">{count}</span>
+                )}
+                <ArrowRight size={16} />
+              </Link>
+            );
+          })}
+        </div>
       </section>
+
+      <details className="workspace-diagnostics">
+        <summary>
+          系统状态与诊断 <span>环境、能力与实时会话</span>
+        </summary>
+        <div className="overview-lower">
+          <SimulationRuntimePanel overview />
+          <section className="panel overview-capabilities">
+            <div className="section-heading">
+              <div>
+                <h2>能力状态</h2>
+                <p className="muted">按当前服务检测结果显示</p>
+              </div>
+              <Link
+                className="icon-button"
+                aria-label="打开环境与能力"
+                to="/settings/environment"
+              >
+                <Settings2 size={16} />
+              </Link>
+            </div>
+            {capabilities.isLoading ? (
+              <Loading />
+            ) : capabilities.error ? (
+              <ErrorNotice error={capabilities.error} />
+            ) : (
+              <ul className="capability-list">
+                {capabilities.data?.map((capability) => (
+                  <li key={capability.id}>
+                    <span
+                      className={
+                        capability.available
+                          ? "capability-dot ready"
+                          : "capability-dot pending"
+                      }
+                    />
+                    <span className="capability-copy">
+                      <strong>
+                        {capabilityLabels[capability.id] ?? capability.title}
+                      </strong>
+                      <small>
+                        {capabilityStatus(
+                          capability.level,
+                          capability.available,
+                        )}
+                      </small>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p className="overview-boundary">
+              任务执行已接入既有 CLI；实时物理交互和训练格式导出仍需单独验收。
+            </p>
+          </section>
+        </div>
+
+        <section
+          className="panel studio-live-panel"
+          aria-labelledby="studio-live-title"
+        >
+          <div className="section-heading">
+            <div>
+              <h2 id="studio-live-title">RoboSimStudio 实时状态</h2>
+              <p className="muted">
+                直接读取仿真主线程状态，每 2 秒刷新；EmbodiForge Studio
+                不发送控制命令。
+              </p>
+            </div>
+            <span
+              className={`studio-live-badge ${studioLive.data?.connected ? "online" : "offline"}`}
+            >
+              {studioLive.data?.connected ? (
+                <Radio size={14} />
+              ) : (
+                <WifiOff size={14} />
+              )}
+              {studioLive.data?.connected
+                ? "已连接"
+                : studioLive.data?.configured
+                  ? "未连接"
+                  : "未配置"}
+            </span>
+          </div>
+          {studioLive.isLoading ? (
+            <Loading />
+          ) : studioLive.error ? (
+            <ErrorNotice error={studioLive.error} />
+          ) : studioLive.data?.connected ? (
+            <>
+              <div className="studio-live-metrics">
+                <div>
+                  <small>仿真步</small>
+                  <strong>{studioLive.data.step ?? "—"}</strong>
+                </div>
+                <div>
+                  <small>仿真时间</small>
+                  <strong>
+                    {studioLive.data.sim_time?.toFixed(3) ?? "—"} s
+                  </strong>
+                </div>
+                <div>
+                  <small>状态</small>
+                  <strong>
+                    {studioLive.data.paused ? "已暂停" : "运行中"}
+                  </strong>
+                </div>
+                <div>
+                  <small>数值状态</small>
+                  <strong>{studioLive.data.finite ? "有限" : "需检查"}</strong>
+                </div>
+                <div>
+                  <small>场景实体</small>
+                  <strong>{studioLive.data.names.length}</strong>
+                </div>
+              </div>
+              {Object.keys(studioLive.data.positions).length > 0 && (
+                <div className="studio-live-entities">
+                  {Object.entries(studioLive.data.positions)
+                    .slice(0, 8)
+                    .map(([name, position]) => (
+                      <div className="studio-live-entity" key={name}>
+                        <span>{name}</span>
+                        <code>
+                          {Array.isArray(position)
+                            ? position
+                                .map((value) => value.toFixed(3))
+                                .join(", ")
+                            : position}
+                        </code>
+                      </div>
+                    ))}
+                </div>
+              )}
+              <div className="studio-live-footer">
+                <span className="muted">
+                  最近读取 {formatTime(studioLive.data.checked_at)}
+                </span>
+                {studioViewerUrl && (
+                  <a
+                    className="link-button"
+                    href={studioViewerUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    打开 RSS 原生 Viewer <ExternalLink size={14} />
+                  </a>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="studio-live-empty">
+              <p>
+                {studioLive.data?.error ?? "当前没有已连接的 RSS live 会话。"}
+              </p>
+              <small>
+                配置环境变量 <code>WORKBENCH_RSS_RUN_DIR</code>，指向运行 RSS
+                live 服务时使用的 run
+                目录；连接后这里只读取状态，不会启动或驱动仿真。
+              </small>
+            </div>
+          )}
+        </section>
+      </details>
     </main>
   );
 }

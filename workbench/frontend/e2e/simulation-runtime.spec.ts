@@ -51,8 +51,9 @@ test.beforeEach(async ({ page }) => mockWorkspace(page));
 
 test("overview shows detected runtime and opens the rigid mode", async ({ page }) => {
   await page.goto("/");
+  await page.locator(".workspace-diagnostics > summary").click();
   const card = page.getByRole("region", { name: "仿真运行环境" });
-  await expect(card).toContainText("Newton · RoboSimStudio");
+  await expect(card).toContainText("Newton 1.6.0 · RoboSimStudio");
   await expect(card).toContainText("环境已检测");
   await expect(card).toContainText("环境检测不等于任务通过");
   await card.getByText("环境版本与检测时间").click();

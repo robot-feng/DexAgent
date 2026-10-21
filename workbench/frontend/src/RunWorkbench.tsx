@@ -14,6 +14,7 @@ import {
   Image,
   Layers3,
   Terminal,
+  PanelRight,
 } from "lucide-react";
 import { api, contentUrl } from "./api";
 import type { Artifact, RunDetail } from "./api";
@@ -285,6 +286,7 @@ export function RunWorkbench() {
   const { runId = "" } = useParams();
   const [params, setParams] = useSearchParams();
   const [preview, setPreview] = useState<Artifact | null>(null);
+  const [inspect, setInspect] = useState(false);
   const runQuery = useQuery({
     queryKey: ["run", runId],
     queryFn: () => api.run(runId),
@@ -366,6 +368,15 @@ export function RunWorkbench() {
           </div>
         </div>
         <div className="run-header-right">
+          <button
+            className="button"
+            aria-expanded={inspect}
+            aria-controls="run-inspector"
+            onClick={() => setInspect(!inspect)}
+          >
+            <PanelRight size={15} />
+            检查器
+          </button>
           {managed && (
             <Link className="button" to={`/executions?job=${managed.id}`}>
               查看执行进程
@@ -430,7 +441,9 @@ export function RunWorkbench() {
           发布资格：{run.release === "ready" ? "源报告标记就绪" : "未确认"}
         </span>
       </div>
-      <div className="run-layout">
+      <div
+        className={`run-layout ${inspect ? "with-inspector" : "without-inspector"}`}
+      >
         <aside className="stage-rail">
           <div className="rail-title">
             <Layers3 size={15} />
@@ -633,10 +646,13 @@ export function RunWorkbench() {
           </div>
           <LogConsole runId={run.id} key={run.id} />
         </section>
-        <aside className="inspector">
+        <aside className="inspector" id="run-inspector" hidden={!inspect}>
           <div className="rail-title">
             <FileText size={14} />
             检查器
+            <button className="link-button" onClick={() => setInspect(false)}>
+              收起
+            </button>
           </div>
           <section>
             <p className="eyebrow">SELECTED STAGE</p>

@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import {
   NavLink,
   Outlet,
@@ -70,24 +71,32 @@ function Shell() {
             <small>STUDIO</small>
           </span>
         </NavLink>
-        <div className="workspace-label">
-          WORKSPACE <span>LOCAL</span>
-        </div>
+
         <nav aria-label="主导航">
           {navigation.map(({ path, title, icon: Icon }) => (
-            <NavLink
-              key={title}
-              to={path}
-              aria-label={title}
-              title={title}
-              className={({ isActive }) =>
-                `nav-item ${isActive && (title !== "工作台" || location.pathname.startsWith("/runs/")) ? "active" : ""}`
-              }
-            >
-              <Icon size={18} />
-              <span>{title}</span>
-              {title === "工作台" && <ChevronRight size={13} />}
-            </NavLink>
+            <Fragment key={title}>
+              {["总览", "场景与资产", "工具库"].includes(title) && (
+                <span className="nav-group-label">
+                  {title === "总览"
+                    ? "工作空间"
+                    : title === "场景与资产"
+                      ? "资产与数据"
+                      : "系统"}
+                </span>
+              )}
+              <NavLink
+                to={path}
+                aria-label={title}
+                title={title}
+                className={({ isActive }) =>
+                  `nav-item ${isActive && (title !== "工作台" || location.pathname.startsWith("/runs/")) ? "active" : ""}`
+                }
+              >
+                <Icon size={18} />
+                <span>{title}</span>
+                {title === "工作台" && <ChevronRight size={13} />}
+              </NavLink>
+            </Fragment>
           ))}
         </nav>
         <div className="sidebar-bottom">
@@ -131,7 +140,7 @@ function Shell() {
                 className={refresh.isPending ? "spin" : ""}
               />
             </button>
-            <span className="avatar">L</span>
+            <span className="local-label">本地工作空间</span>
           </div>
         </header>
         <ErrorNotice error={refresh.error ?? health.error} />

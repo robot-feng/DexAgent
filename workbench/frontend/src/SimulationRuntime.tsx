@@ -55,34 +55,45 @@ export function SimulationRuntimePanel({
       {!overview && !configId ? (
         <p className="muted">选择运行配置后检测其仿真环境。</p>
       ) : runtime.isPending ? (
-        <p className="muted" role="status">正在检测配置对应的仿真环境…</p>
+        <p className="muted" role="status">
+          正在检测配置对应的仿真环境…
+        </p>
       ) : runtime.isError ? (
         <ErrorNotice error={runtime.error} />
       ) : data ? (
         <>
           <div className="simulation-runtime-summary">
-            <strong>{data.engine} · {data.integration}</strong>
+            <strong>
+              {data.engine}{" "}
+              {data.packages.find((item) => item.name === "newton")?.version ??
+                ""}{" "}
+              · {data.integration}
+            </strong>
             <span
               className={`badge ${data.status === "environment_detected" ? "info" : "warning"}`}
             >
               {statusLabels[data.status]}
             </span>
-            {data.config_name && <span className="muted">{data.config_name}</span>}
+            {data.config_name && (
+              <span className="muted">{data.config_name}</span>
+            )}
           </div>
-          <p className="small muted">{data.detail}</p>
+
           {mode && (
-            <div className="simulation-runtime-profile" aria-label="所选任务仿真路径">
+            <div
+              className="simulation-runtime-profile"
+              aria-label="所选任务仿真路径"
+            >
               {multiStage ? (
-                <p>
-                  多阶段流程：各阶段使用各自配置的执行后端，以下 RSS
-                  环境信息不代表整个流程采用同一个求解器。
-                </p>
+                <p>多阶段流程 · 各阶段按运行配置选择后端。</p>
               ) : profile ? (
                 <>
                   <strong>{profile.solver}</strong>
                   <span className="simulation-runtime-device">
-                    物理计算：{["cpu", "gpu"].includes(profile.physics_device)
-                      ? profile.physics_device.toUpperCase() : profile.physics_device}
+                    物理计算：
+                    {["cpu", "gpu"].includes(profile.physics_device)
+                      ? profile.physics_device.toUpperCase()
+                      : profile.physics_device}
                   </span>
                   <p className="small muted">{profile.detail}</p>
                 </>
@@ -91,21 +102,31 @@ export function SimulationRuntimePanel({
               )}
             </div>
           )}
-          <details className="simulation-runtime-details">
+          <details
+            className="simulation-runtime-details"
+            open={data.status !== "environment_detected" ? true : undefined}
+          >
             <summary>环境版本与检测时间</summary>
+            <p className="small muted">{data.detail}</p>
             <dl>
-              <dt>Python</dt><dd>{data.python ?? "未配置"}</dd>
-              <dt>检测时间</dt><dd>{formatTime(data.checked_at)}</dd>
+              <dt>Python</dt>
+              <dd>{data.python ?? "未配置"}</dd>
+              <dt>检测时间</dt>
+              <dd>{formatTime(data.checked_at)}</dd>
               {data.packages.map((item) => (
                 <div className="simulation-runtime-package" key={item.name}>
                   <dt>{item.name}</dt>
-                  <dd>{item.available ? (item.version ?? "已检测，版本未知") : "未检测到"}</dd>
+                  <dd>
+                    {item.available
+                      ? (item.version ?? "已检测，版本未知")
+                      : "未检测到"}
+                  </dd>
                 </div>
               ))}
             </dl>
           </details>
           <p className="small muted simulation-runtime-boundary">
-            环境检测不等于任务通过；物理执行结果以每次运行的验收报告为准。
+            环境检测不等于任务通过，结果以运行验收为准。
           </p>
         </>
       ) : null}

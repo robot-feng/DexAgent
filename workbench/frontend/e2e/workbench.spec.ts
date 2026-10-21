@@ -148,6 +148,7 @@ test("workspace overview links to real runs, scenes, editor sessions and capabil
       page.getByRole("link", { name: /继续场景编辑/ }),
     ).toHaveCount(0);
   }
+  await page.locator(".workspace-diagnostics > summary").click();
   const studio = capabilities.find((item: { id: string }) => item.id === "studio");
   await expect(page.locator(".overview-capabilities")).toContainText(
     studio.available ? "可用" : "尚未接入",
@@ -199,6 +200,7 @@ test("workspace overview shows live RSS state and links to its native viewer", a
   );
 
   await page.goto("/");
+  await page.locator(".workspace-diagnostics > summary").click();
   const panel = page.locator(".studio-live-panel");
   await expect(panel).toContainText("已连接");
   await expect(panel).toContainText("42");
@@ -217,6 +219,7 @@ test("workspace overview renders a connected RSS live session", async ({ page, r
   test.skip(!status.connected, "no configured live RSS session is available on the target server");
 
   await page.goto("/");
+  await page.locator(".workspace-diagnostics > summary").click();
   const panel = page.locator(".studio-live-panel");
   await expect(panel).toContainText("已连接");
   await expect(panel).toContainText(String(status.step));

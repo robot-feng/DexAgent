@@ -1,0 +1,23 @@
+
+Running 15 tests using 1 worker
+
+(node:141896) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 e2e/executions.spec.ts:5:1 › waiting for an Agent is visible and clears when a response arrives (3.7s)
+  ✓   2 e2e/simulation-runtime.spec.ts:52:1 › overview shows detected runtime and opens the rigid mode (1.2s)
+  ✓   3 e2e/simulation-runtime.spec.ts:66:1 › runtime follows the selected configuration and preserves CPU physics semantics (917ms)
+  ✓   4 e2e/simulation-runtime.spec.ts:87:1 › loading and fetch failure are visible, and retry can recover (850ms)
+  ✓   5 e2e/simulation-runtime.spec.ts:108:1 › invalid query mode safely falls back and runtime fits narrow screens (791ms)
+  ✓   6 e2e/workbench.spec.ts:114:1 › workspace overview links to real runs, scenes, editor sessions and capability status (1.9s)
+  ✓   7 e2e/workbench.spec.ts:178:1 › workspace overview shows live RSS state and links to its native viewer (1.0s)
+  -   8 e2e/workbench.spec.ts:215:1 › workspace overview renders a connected RSS live session
+  ✓   9 e2e/workbench.spec.ts:230:1 › workspace overview restores the scene and editor from an active session (1.1s)
+  ✓  10 e2e/workbench.spec.ts:265:1 › real reports, video playback, evidence and refresh preserve the run context (2.6s)
+  ✓  11 e2e/workbench.spec.ts:334:1 › a real failed backend keeps its failed goal visible (890ms)
+  ✓  12 e2e/workbench.spec.ts:367:1 › mobile workbench has usable navigation without horizontal page overflow (1.0s)
+  ✓  13 e2e/workbench.spec.ts:400:1 › workbench tabs support keyboard navigation and readable scope labels (1.1s)
+  ✓  14 e2e/workspace-layout.spec.ts:5:1 › preview retains selected run identity across missing media and request failures (2.3s)
+  ✓  15 e2e/workspace-layout.spec.ts:67:1 › inspection is available on desktop and narrow screens without crowding the default viewer (1.2s)
+
+  1 skipped
+  14 passed (22.4s)

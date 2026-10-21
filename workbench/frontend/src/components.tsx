@@ -84,7 +84,13 @@ export function Empty({ title, detail }: { title: string; detail?: string }) {
   );
 }
 
-export function Media({ artifact }: { artifact: Artifact }) {
+export function Media({
+  artifact,
+  poster,
+}: {
+  artifact: Artifact;
+  poster?: string;
+}) {
   const query = useQuery({
     queryKey: ["text", artifact.id],
     queryFn: () => api.text(artifact.id),
@@ -92,7 +98,9 @@ export function Media({ artifact }: { artifact: Artifact }) {
       artifact.kind === "text" || /\.(xml|urdf|usda)$/.test(artifact.name),
   });
   if (artifact.kind === "video")
-    return <VideoPlayer key={artifact.id} artifact={artifact} />;
+    return (
+      <VideoPlayer key={artifact.id} artifact={artifact} poster={poster} />
+    );
   if (artifact.kind === "image")
     return <img src={contentUrl(artifact)} alt={artifact.name} />;
   if (query.error) return <ErrorNotice error={query.error} />;
@@ -118,7 +126,13 @@ export function Media({ artifact }: { artifact: Artifact }) {
   );
 }
 
-function VideoPlayer({ artifact }: { artifact: Artifact }) {
+function VideoPlayer({
+  artifact,
+  poster,
+}: {
+  artifact: Artifact;
+  poster?: string;
+}) {
   const [failed, setFailed] = useState(false);
   if (failed)
     return (
@@ -132,6 +146,8 @@ function VideoPlayer({ artifact }: { artifact: Artifact }) {
     );
   return (
     <video
+      playsInline
+      poster={poster}
       controls
       preload="metadata"
       src={contentUrl(artifact)}

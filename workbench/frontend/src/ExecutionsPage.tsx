@@ -200,7 +200,6 @@ export function ExecutionsPage() {
                 ))}
               </select>
             </label>
-            <SimulationRuntimePanel configId={configId} mode={mode} />
             {mode === "pipeline" && (
               <>
                 <label>
@@ -487,6 +486,7 @@ export function ExecutionsPage() {
               {create.isPending ? "正在启动…" : "启动运行"}
             </button>
           </form>
+          <SimulationRuntimePanel configId={configId} mode={mode} />
         </section>
         <section className="panel cleanup-results-panel">
           <h2>执行记录</h2>

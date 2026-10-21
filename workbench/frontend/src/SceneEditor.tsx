@@ -292,10 +292,11 @@ export default function SceneEditor({
         </label>
       )}
       {scene && (
-        <div className="scene-identity">
+        <details className="scene-identity">
+          <summary>场景来源与版本</summary>
           <code>{scene.path}</code>
           <span>来源 SHA-256：{scene.sha256 || "不可读取"}</span>
-        </div>
+        </details>
       )}
       {scene?.issue && (
         <div className="notice danger" role="alert">

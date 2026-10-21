@@ -13,6 +13,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { api, contentUrl } from "./api";
+import { SimulationRuntimePanel } from "./SimulationRuntime";
 import SceneEditor from "./SceneEditor";
 import EpisodeDownload from "./EpisodeDownload";
 import type { Artifact, Tool } from "./api";
@@ -945,6 +946,7 @@ export function EnvironmentPage() {
           </p>
         </div>
       </div>
+      <SimulationRuntimePanel overview />
       <ErrorNotice error={capabilities.error} />
       {capabilities.isLoading ? (
         <Loading />
