@@ -21,6 +21,10 @@ STAGE_TITLES = {
 
 # Optional adapters emit the same native report contract; absent stages are not required.
 INDEXED_STAGE_DIRS = ("stage1", "stage2", "reference", "stage3", "execution", "stage4", "training", "evaluation")
+SENSITIVE_PROVENANCE_KEY_PARTS = (
+    'apikey', 'token', 'password', 'passwd', 'secret', 'authorization',
+    'cookie', 'credential', 'privatekey',
+)
 
 
 def load_object(path: Path) -> tuple[dict, bytes]:
@@ -75,12 +79,40 @@ def report_validation(data: dict) -> Validation:
     return 'warning' if 'warning' in values or status == 'passed_with_warnings' else 'passed' if status == 'passed' else 'incomplete'
 
 
+def _redact_provenance(value):
+    """Keep native report provenance useful without returning credential values."""
+    if isinstance(value, dict):
+        result = {}
+        for key, item in value.items():
+            normalized = ''.join(char for char in str(key).casefold() if char.isalnum())
+            sensitive = any(part in normalized for part in SENSITIVE_PROVENANCE_KEY_PARTS)
+            result[key] = '[REDACTED]' if sensitive else _redact_provenance(item)
+        return result
+    if isinstance(value, list):
+        return [_redact_provenance(item) for item in value]
+    return value
+
+
 def parse_report(path: Path, register: Callable[[Path], Artifact]) -> Report:
     data, payload = load_object(path)
     metrics = data.get('metrics')
     metrics = metrics if isinstance(metrics, dict) else {}
     scope = data.get('scope', metrics.get('scope'))
     task_evaluated = data.get('task_success_evaluated', metrics.get('task_success_evaluated'))
+    provenance_issues = []
+    metadata = {}
+    for key in ('inputs', 'model_identity'):
+        value = data.get(key)
+        metadata[key] = _redact_provenance(value) if isinstance(value, dict) else {}
+        if value is not None and not isinstance(value, dict):
+            provenance_issues.append(f'{key}: expected an object; inspect the original report')
+    declared = data.get('artifacts')
+    artifacts = [value for value in declared if isinstance(value, str)] if isinstance(declared, list) else []
+    if declared is not None and (not isinstance(declared, list) or len(artifacts) != len(declared)):
+        provenance_issues.append('artifacts: expected a list of strings; unsupported entries were not interpreted')
+    config_sha = data.get('config_sha256')
+    if config_sha is not None and not isinstance(config_sha, str):
+        provenance_issues.append('config_sha256: expected a string; inspect the original report')
     checks = []
     for item in data.get('checks', []) if isinstance(data.get('checks'), list) else []:
         if not isinstance(item, dict):
@@ -95,7 +127,9 @@ def parse_report(path: Path, register: Callable[[Path], Artifact]) -> Report:
                   task_success_evaluated=task_evaluated if isinstance(task_evaluated, bool) else None,
                   elapsed_s=data.get('elapsed_s'), failure=data.get('failure'),
                   next_action=data.get('next_action'), attempt_id=data.get('attempt_id'),
-                  sha256=hashlib.sha256(payload).hexdigest())
+                  sha256=hashlib.sha256(payload).hexdigest(), **metadata,
+                  config_sha256=config_sha if isinstance(config_sha, str) else None,
+                  declared_artifacts=artifacts, provenance_issues=provenance_issues)
 
 
 def merge_validation(states: list[Validation], *, has_errors: bool = False) -> Validation:

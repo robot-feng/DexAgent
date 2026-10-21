@@ -1534,6 +1534,20 @@ export interface components {
             attempt_id: string | null;
             /** Sha256 */
             sha256: string;
+            /** Inputs */
+            inputs: {
+                [key: string]: unknown;
+            };
+            /** Model Identity */
+            model_identity: {
+                [key: string]: unknown;
+            };
+            /** Config Sha256 */
+            config_sha256: string | null;
+            /** Declared Artifacts */
+            declared_artifacts: string[];
+            /** Provenance Issues */
+            provenance_issues: string[];
         };
         /** RunDetail */
         RunDetail: {

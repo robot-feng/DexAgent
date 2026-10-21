@@ -50,6 +50,11 @@ class Report(ReadModel):
     next_action: str | None = None
     attempt_id: str | None = None
     sha256: str
+    inputs: dict[str, Any] = Field(default_factory=dict)
+    model_identity: dict[str, Any] = Field(default_factory=dict)
+    config_sha256: str | None = None
+    declared_artifacts: list[str] = Field(default_factory=list)
+    provenance_issues: list[str] = Field(default_factory=list)
 
 
 class Stage(ReadModel):

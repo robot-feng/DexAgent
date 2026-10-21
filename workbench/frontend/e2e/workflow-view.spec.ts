@@ -6,12 +6,17 @@ const artifact = (id: string, path: string, kind = 'image') => ({
 });
 const report = (id: string, status: string) => ({
   artifact: artifact(id, `runs/fixture/${id}/stage_report.json`, 'text'),
-  validation: status, source_status: status, checks: [{ id: `${id}_quality`, status, required: true }],
+  validation: status, source_status: status, sha256: 'a'.repeat(64),
+  inputs: { source: { path: 'fixture-input.mp4' } }, model_identity: { model: 'fixture-model' },
+  config_sha256: 'b'.repeat(64), declared_artifacts: [`output: runs/fixture/${id}/result.json`], provenance_issues: [],
+  checks: id === 'stage3'
+    ? [{ id: 'stage3_gate_suite', status, required: true, observed: { report: { episode_physics_check: true, stage1_goal_gate: true } } }]
+    : [{ id: `${id}_quality`, status, required: true }],
   task_success_evaluated: false, evaluation_scope: 'component_check',
 });
 
 test('workflow isolates stage media and checks, preserves missing evidence and deep links', async ({ page }) => {
-  const stages = ['stage1', 'stage2', 'stage3', 'training'].map(id => ({
+  const stages = ['preflight', 'stage1', 'stage2', 'stage3', 'training'].map(id => ({
     id, title: id, report: report(id, id === 'stage2' ? 'failed' : 'passed'), steps: [], history: [],
   }));
   await page.route(`**${prefix}/runs/fixture`, route => route.fulfill({ json: {
@@ -41,6 +46,11 @@ test('workflow isolates stage media and checks, preserves missing evidence and d
   await expect(flow.getByRole('img', { name: 'frame0_compare.png' })).toBeVisible();
   await flow.getByRole('button', { name: '验收证据', exact: true }).click();
   await expect(flow).toContainText('stage2_quality');
+  await nav.getByRole('button', { name: /输入与校验/ }).click();
+  await flow.getByRole('button', { name: '来源与配置', exact: true }).click();
+  await expect(flow).toContainText('fixture-input.mp4');
+  await expect(flow).toContainText('fixture-model');
+  await expect(flow).toContainText('runs/fixture/preflight/result.json');
   await nav.getByRole('button', { name: /重定向与动作生成/ }).click();
   await expect(flow.getByRole('img', { name: 'current.png' })).toBeVisible();
   await expect(flow.getByLabel('当前环节预览').locator('option')).toHaveCount(1);
@@ -51,8 +61,9 @@ test('workflow isolates stage media and checks, preserves missing evidence and d
   await flow.getByRole('button', { name: '验收证据', exact: true }).click();
   await expect(flow.getByRole('heading', { name: '未记录独立验收' })).toBeVisible();
   await nav.getByRole('button', { name: /物理执行与验证/ }).click();
-  // A passed stage3 report is not independently verified execution evidence.
-  await expect(flow).toContainText('尚无独立验收证据');
+  await flow.getByRole('button', { name: '验收证据', exact: true }).click();
+  await expect(flow).toContainText('物理执行与任务目标检查记录在 Stage 3 原生报告中');
+  await expect(flow).toContainText('stage3_gate_suite');
   await nav.getByRole('button', { name: /策略训练/ }).click();
   await flow.getByRole('button', { name: '验收证据', exact: true }).click();
   await expect(flow).toContainText('training_quality');
@@ -71,6 +82,10 @@ test('real scene preview and backend replay remain reachable in the default work
   await expect(flow.getByRole('img', { name: 'frame0_compare.png' })).toBeVisible({ timeout: 30000 });
   await flow.getByRole('button', { name: '查看本环节验收' }).click();
   await expect(flow.getByRole('heading', { name: '检查与证据', exact: true })).toBeVisible();
+  await page.goto('/runs/20fa33af189e626f743f7afd?phase=execution');
+  await expect(flow).toContainText('Stage 3 物理执行门禁');
+  await flow.getByRole('button', { name: '验收证据', exact: true }).click();
+  await expect(flow).toContainText('stage3_gate_suite');
   await page.goto('/runs/9c8268e5ce354d38401e4ead');
   await expect(flow.locator('video')).toBeVisible({ timeout: 30000 });
   await expect(flow).toContainText('任务成功已评估：未确认');

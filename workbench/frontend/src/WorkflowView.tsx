@@ -23,8 +23,19 @@ const phases = [
 type Phase = typeof phases[number];
 
 function boundStage(run: RunDetail, phase: Phase): Stage | undefined {
-  return run.stages.find(s => s.id === phase.stage) ??
-    (phase.id === "execution" ? run.stages.find(s => s.id === "backend") : undefined);
+  const explicit = run.stages.find(s => s.id === phase.stage);
+  if (explicit) return explicit;
+  if (phase.id !== "execution") return undefined;
+  const backend = run.stages.find(s => s.id === "backend");
+  if (backend) return backend;
+  // DexAgent records trajectory generation and its physical execution in one
+  // native Stage 3 report. Surface the embedded execution gate here as well.
+  const motion = run.stages.find(s => s.id === "stage3");
+  const gate = motion?.report?.checks.find(check => check.id === "stage3_gate_suite");
+  const evidence = gate?.observed as Record<string, unknown> | undefined;
+  const checks = evidence?.report as Record<string, unknown> | undefined;
+  return typeof checks?.episode_physics_check === "boolean" &&
+    typeof checks?.stage1_goal_gate === "boolean" ? motion : undefined;
 }
 
 function selectedPhase(run: RunDetail, phaseId: string | null): Phase {
@@ -70,7 +81,8 @@ function PhaseResult({ run, phase, open, inspect }: {
   const [selected, setSelected] = useState<string | null>(null);
   const [panel, setPanel] = useState("result");
   // Query only the selected stage. Paging avoids scanning/downloading every image in a run.
-  const folder = phase.id === "execution" && stage?.id === "backend" ? "" : phase.folder;
+  const folder = phase.id === "execution" && stage?.id === "backend" ? "" :
+    phase.id === "execution" && stage?.id === "stage3" ? "stage3/" : phase.folder;
   const files = useQuery({
     queryKey: ["workflow-artifacts", run.id, phase.id, folder, stage?.report?.sha256, offset],
     queryFn: () => api.artifacts(run.id, new URLSearchParams({ folder, offset: String(offset), limit: "200" }).toString()),
@@ -86,10 +98,11 @@ function PhaseResult({ run, phase, open, inspect }: {
     enabled: phase.id !== "input",
     refetchInterval: run.execution === "running" || stage?.report?.source_status === "running" || !!stage?.progress ? 10_000 : false,
   });
-  const items = files.data?.items ?? [];
+  const items = (files.data?.items ?? []).filter(a => !(phase.id === "execution" && stage?.id === "stage3"
+    && /\/stage4_task\//.test(a.path)));
   // Never silently choose a historical attempt or a downstream replay as a current-stage preview.
   const current = (mediaFiles.data?.items ?? []).filter(a => !/(?:\/reports\/|\/previous-|\/\.candidates\/|\/\.recoveries\/|\/history\/|\/attempts\/)/.test(a.path)
-    && !(phase.id === "motion" && /\/stage4_task\//.test(a.path)));
+    && !(["motion", "execution"].includes(phase.id) && /\/stage4_task\//.test(a.path)));
   const visuals = current.filter(a => a.kind === "image" || a.kind === "video");
   const options = phase.id === "input" ? (run.input_video ? [run.input_video] : []) : visuals.filter(a => a.id !== run.input_video?.id);
   const media = options.find(a => a.id === selected) ?? options.find(a => ["frame0_compare.png", "sim_video.mp4", "replay_mechanism.mp4", "contact_sheet.jpg"].includes(a.name)) ?? options.find(a => a.kind === "video") ?? options[0];
@@ -105,6 +118,9 @@ function PhaseResult({ run, phase, open, inspect }: {
           {mediaFiles.data?.truncated && <p className="small muted">预览列表显示每种媒体的前 200 项，其他结果请在文件分页中查看。</p>}
           {phase.id === "data" && <EpisodeList runId={run.id} />}
         </>);
+  const displayedReport = phase.id === "execution" && stage?.id === "stage3" && stage.report
+    ? { ...stage.report, checks: stage.report.checks.filter(check => check.id === "stage3_gate_suite") }
+    : stage?.report;
   return <div className="workflow-detail">
     <header className="workflow-detail-head"><div><p className="eyebrow">当前环节</p><h2>{phase.title}</h2></div>
       {stage?.report ? <Badge value={stage.report.validation} /> : <span className="source-tag">尚无独立验收证据</span>}
@@ -115,15 +131,21 @@ function PhaseResult({ run, phase, open, inspect }: {
     <div className="workflow-body">
       <div className="workflow-result">
         <div className="workflow-switch" role="group" aria-label="环节内容">
-          {[['result', '结果预览'], ['checks', '验收证据'], ['files', '输入与产物文件']].map(([id, title]) =>
+          {[['result', '结果预览'], ['checks', '验收证据'], ['files', '输入与产物文件'], ['provenance', '来源与配置']].map(([id, title]) =>
             <button key={id} aria-pressed={panel === id} onClick={() => setPanel(id)}>{title}</button>)}
         </div>
         <ErrorNotice error={files.error ?? mediaFiles.error} />
         {panel === "result" && (phase.id === "scene"
           ? <SceneReconstructionResults run={run} open={open}>{result}</SceneReconstructionResults>
           : result)}
-        {panel === "checks" && (stage?.report ? <GateReport report={stage.report} open={open} /> :
+        {panel === "checks" && (displayedReport ? <>
+          {phase.id === "execution" && stage?.id === "stage3" &&
+            <p className="small muted">物理执行与任务目标检查记录在 Stage 3 原生报告中；以下展示其中的执行门禁，原报告可直接打开。</p>}
+          <GateReport report={displayedReport} open={open} />
+        </> :
           <Empty title="未记录独立验收" detail={phase.check} />)}
+        {panel === "provenance" && (displayedReport ? <ReportProvenance report={displayedReport} /> :
+          <Empty title="本环节没有来源报告" detail="暂无可读取的输入、模型或配置身份。" />)}
         {panel === "files" && <>
           {files.isLoading ? <Loading /> : <div className="workflow-files">
             {phase.id === "input" && run.input_video && <button onClick={() => open(run.input_video!)}><FolderOpen size={16} /><span>{run.input_video.path}</span></button>}
@@ -139,10 +161,10 @@ function PhaseResult({ run, phase, open, inspect }: {
       </div>
       <aside className="workflow-evidence">
         <FileCheck2 size={22} /><h3>验证什么</h3><p>{phase.check}</p>
-        {stage?.report && <><div className="workflow-check-count"><b>{stage.report.checks.filter(c => c.status === "failed").length}</b><span>失败检查 / {stage.report.checks.length} 项</span></div>
-          {stage.report.checks.some(check => check.required && !["passed", "warning"].includes(check.status)) &&
-            <p className="small state-bad">未通过的必需检查：{stage.report.checks.filter(check => check.required && !["passed", "warning"].includes(check.status)).length}</p>}
-          <p className="small">报告：{stage.title}（{stage.id}）<br />证据范围：{stage.report.evaluation_scope || "源报告未声明"}<br />任务成功已评估：{stage.report.task_success_evaluated === true ? "是" : "未确认"}</p>
+        {displayedReport && stage && <><div className="workflow-check-count"><b>{displayedReport.checks.filter(c => c.status === "failed").length}</b><span>失败检查 / {displayedReport.checks.length} 项</span></div>
+          {displayedReport.checks.some(check => check.required && !["passed", "warning"].includes(check.status)) &&
+            <p className="small state-bad">未通过的必需检查：{displayedReport.checks.filter(check => check.required && !["passed", "warning"].includes(check.status)).length}</p>}
+          <p className="small">报告：{phase.id === "execution" && stage?.id === "stage3" ? "Stage 3 物理执行门禁" : `${stage.title}（${stage.id}）`}<br />证据范围：{displayedReport.evaluation_scope || "源报告未声明"}<br />任务成功已评估：{displayedReport.task_success_evaluated === true ? "是" : "未确认"}</p>
           <button className="button full" onClick={() => setPanel("checks")}>查看本环节验收</button>
           <button className="link-button" onClick={() => inspect(stage.id)}>历史尝试与完整报告 <ArrowUpRight size={13} /></button></>}
         <hr /><h3>模块接口</h3><p>{phase.contract}</p>
@@ -151,4 +173,44 @@ function PhaseResult({ run, phase, open, inspect }: {
       </aside>
     </div>
   </div>;
+}
+
+function ReportProvenance({ report }: { report: NonNullable<Stage["report"]> }) {
+  const inputs = Object.keys(report.inputs).length ? report.inputs : null;
+  const models = Object.keys(report.model_identity).length ? report.model_identity : null;
+  return <div className="workflow-provenance">
+    <p className="small muted">以下内容来自本阶段原生报告，表示运行时记录的来源与产物声明。</p>
+    <section><h3>输入</h3>{inputs ? <MetadataValue value={inputs} /> : <p className="small muted">未记录输入来源</p>}</section>
+    <section><h3>模型与后端</h3>{models ? <MetadataValue value={models} /> : <p className="small muted">未记录模型身份</p>}</section>
+    <section><h3>配置身份</h3><code>{report.config_sha256 || "未记录有效配置摘要"}</code></section>
+    <section><h3>产物声明</h3>{report.declared_artifacts.length
+      ? <ul>{report.declared_artifacts.map((item, index) => <li key={`${index}:${item}`}><code>{item}</code></li>)}</ul>
+      : <p className="small muted">未记录产物声明；可在“输入与产物文件”查看本次运行收录的文件。</p>}</section>
+    {!!report.provenance_issues.length && <div className="notice">来源元数据问题：{report.provenance_issues.join("；")}</div>}
+  </div>;
+}
+
+function MetadataValue({ value, depth = 0 }: { value: unknown; depth?: number }) {
+  if (value === null || value === undefined) return <span className="muted">—</span>;
+  if (typeof value !== "object") return <code>{String(value)}</code>;
+  if (Array.isArray(value)) {
+    return <details className="workflow-metadata-details">
+      <summary>{value.length} 项</summary>
+      <ul>{value.slice(0, 12).map((item, index) => <li key={index}><MetadataValue value={item} depth={depth + 1} /></li>)}</ul>
+      {value.length > 12 && <span className="small muted">另有 {value.length - 12} 项，完整内容见原生报告。</span>}
+    </details>;
+  }
+  const entries = Object.entries(value as Record<string, unknown>);
+  const fields = <div className="workflow-metadata">
+    {entries.slice(0, 12).map(([key, item]) => <div className="workflow-metadata-row" key={key}>
+      <strong>{key}</strong><MetadataValue value={item} depth={depth + 1} />
+    </div>)}
+    {entries.length > 12 && <details className="workflow-metadata-details">
+      <summary>另有 {entries.length - 12} 个字段</summary>
+      <MetadataValue value={Object.fromEntries(entries.slice(12))} depth={depth + 1} />
+    </details>}
+  </div>;
+  return depth >= 2
+    ? <details className="workflow-metadata-details"><summary>{entries.length} 个字段</summary>{fields}</details>
+    : fields;
 }

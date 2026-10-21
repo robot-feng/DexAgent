@@ -42,6 +42,55 @@ def test_optional_stage_discovery_refresh_and_report_validation(tmp_path):
     assert path.read_text() == json.dumps(report)
 
 
+def test_report_provenance_is_projected_without_changing_acceptance(tmp_path):
+    root = tmp_path / 'runs/provenance-run/training'
+    root.mkdir(parents=True)
+    report = make_report(run='provenance-run', profile='training', stage='training', status='passed',
+                         checks=[{'id': 'checkpoint', 'status': 'passed', 'required': True}])
+    report['inputs'] = {
+        'dataset': {'path': 'episodes/', 'sha256': 'logical-dataset-identity'},
+        'agent': {
+            'api_key': 'should-not-leak',
+            'nested': [{'access_token': 'also-secret', 'secret_access_key': 'and-this'}],
+        },
+    }
+    report['model_identity'] = {'policy': {'backend': 'example-policy', 'revision': 'abc123'}}
+    report['config_sha256'] = 'effective-config-identity'
+    report['artifacts'] = ['checkpoint: runs/provenance-run/training/model.pt',
+                           'metrics: runs/provenance-run/training/metrics.json']
+    path = root / 'stage_report.json'
+    path.write_text(json.dumps(report))
+    index = Index(tmp_path, tmp_path / 'runs', tmp_path / 'state')
+    index.refresh()
+    projected = index.run(index.runs()[0].id).stages[0].report
+    assert projected.validation == 'passed'
+    assert projected.inputs == {
+        'dataset': {'path': 'episodes/', 'sha256': 'logical-dataset-identity'},
+        'agent': {
+            'api_key': '[REDACTED]',
+            'nested': [{'access_token': '[REDACTED]', 'secret_access_key': '[REDACTED]'}],
+        },
+    }
+    assert projected.model_identity == report['model_identity']
+    assert projected.config_sha256 == report['config_sha256']
+    assert projected.declared_artifacts == report['artifacts']
+    assert not projected.provenance_issues
+
+    report['inputs'] = ['malformed legacy value']
+    report['model_identity'] = None
+    report['config_sha256'] = 123
+    report['artifacts'] = ['kept as text', {'path': 'not interpreted'}]
+    path.write_text(json.dumps(report))
+    index.refresh()
+    projected = index.run(index.runs()[0].id).stages[0].report
+    assert projected.validation == 'passed'
+    assert projected.inputs == {}
+    assert projected.model_identity == {}
+    assert projected.config_sha256 is None
+    assert projected.declared_artifacts == ['kept as text']
+    assert len(projected.provenance_issues) == 3
+
+
 def test_artifact_folder_is_owned_by_run_not_a_substring(tmp_path):
     from fastapi.testclient import TestClient
     from workbench.api import PREFIX, create_app

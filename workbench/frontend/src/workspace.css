@@ -550,6 +550,19 @@ select,
 .workflow-files button { display: flex; width: 100%; gap: 10px; background: transparent; text-align: left; border-bottom: 1px solid var(--line); padding: 12px 0; font-size: 12px; }
 .workflow-files button span { overflow-wrap: anywhere; min-width: 0; }
 .workflow-files button svg { flex-shrink: 0; }
+.workflow-provenance { display: grid; gap: 16px; }
+.workflow-provenance section { border: 1px solid var(--line); border-radius: 8px; padding: 12px; min-width: 0; }
+.workflow-provenance h3 { margin: 0 0 8px; font-size: 13px; }
+.workflow-provenance code { overflow-wrap: anywhere; font-size: 11px; }
+.workflow-provenance ul { margin: 0; padding-left: 18px; display: grid; gap: 8px; }
+.workflow-metadata { display: grid; gap: 7px; min-width: 0; }
+.workflow-metadata-row { display: grid; grid-template-columns: minmax(110px, .8fr) minmax(0, 2fr); gap: 12px; align-items: start; border-top: 1px solid var(--line); padding-top: 7px; font-size: 11px; }
+.workflow-metadata-row > strong { color: var(--muted); font-weight: 500; overflow-wrap: anywhere; }
+.workflow-metadata-row > :last-child { min-width: 0; overflow-wrap: anywhere; }
+.workflow-metadata-details { min-width: 0; font-size: 11px; }
+.workflow-metadata-details summary { color: var(--blue); cursor: pointer; padding: 4px 0; }
+.workflow-metadata-details ul { margin-top: 6px; }
+.workflow-metadata-details li { overflow-wrap: anywhere; }
 .workflow-paging { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 16px; }
 .workflow-task { margin-bottom: 16px; line-height: 1.8; }
 @media (max-width: 1200px) { .workflow-track { grid-template-columns: repeat(3, minmax(0, 1fr)); } .workflow-track button { border-bottom: 1px solid var(--line); } .workflow-track strong { min-height: 0; } }
