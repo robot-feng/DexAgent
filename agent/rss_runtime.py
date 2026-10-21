@@ -4,32 +4,25 @@ from __future__ import annotations
 
 
 def build_cpu_mujoco_solver(model, *, integrator: str = "implicitfast", **kwargs):
-    """Build Newton's CPU solver with an explicitly selected native integrator.
+    """Lazy entry point; the same solver class is available to RSS backends."""
+    from agent.rss_mujoco_cpu import CpuMuJoCoSolver
 
-    Newton 1.6 constructs an inactive MuJoCo-Warp mirror even in CPU mode.
-    That mirror rejects MuJoCo 3.13's discrete integrator. Construct it using
-    the existing default, then select discrete on the native model that
-    actually steps. This does not enable discrete on GPU or upgrade MuJoCo.
+    return CpuMuJoCoSolver(model, integrator=integrator, **kwargs)
+
+
+def cpu_mujoco_backend(*, integrator: str = "implicitfast", **kwargs):
+    """Declare the CPU adapter through RSS, including native contact routing.
+
+    A bare dotted path has unknown contact capabilities in RSS. Register its
+    metadata in the existing registry; leave the standard MuJoCo alias alone.
     """
-    if integrator not in {"euler", "rk4", "implicit", "implicitfast", "discrete"}:
-        raise ValueError(f"unsupported CPU integrator: {integrator}")
-    if str(model.device) != "cpu":
-        raise ValueError("this solver adapter requires a CPU Newton model")
-    import mujoco
-    from newton.solvers import SolverMuJoCo
+    from robosimstudio.specs.physics import backend, get_backend, register_backend
 
-    discrete = getattr(mujoco.mjtIntegrator, "mjINT_DISCRETE", None)
-    if integrator == "discrete":
-        if discrete is None:
-            raise RuntimeError("discrete requires MuJoCo >= 3.13 in the selected runtime environment")
-        if kwargs.get("save_to_mjcf"):
-            raise ValueError("Newton's constructor export would record the mirror integrator; export separately")
-    solver = SolverMuJoCo(model, use_mujoco_cpu=True,
-                          integrator="implicitfast" if integrator == "discrete" else integrator,
-                          **kwargs)
-    if integrator == "discrete":
-        solver.mj_model.opt.integrator = discrete
-    return solver
+    path = "agent.rss_mujoco_cpu.CpuMuJoCoSolver"
+    native = get_backend("mujoco")
+    register_backend(path, cls=path, supports=native.supports, native_contacts=True,
+                     summary="EmbodiForge native CPU MuJoCo adapter")
+    return backend(path, integrator=integrator, **kwargs)
 
 
 def default_physics_device(task: str, cfg: dict) -> str:

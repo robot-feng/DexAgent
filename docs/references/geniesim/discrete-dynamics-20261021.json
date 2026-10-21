@@ -6,15 +6,613 @@
   "integrated_newton_pass": true,
   "exact_source_qualification": "failed",
   "evidence_root": ".workbench/previews/geniesim-gripper-dynamics-20261021",
-  "environment": {"native_analysis":"3.12.0","comparison":"3.13.0","isolated_environment":".workbench/mujoco-discrete-venv","original_3_12_environment_retained":true,"optional_USD_qualification_dependencies":{"usd-core":"26.8","newton-usd-schemas":"0.6.0","verification":"imports, in-memory PhysicsScene and qualifier --help only; no full source USD qualification rerun claimed","install_log_sha256":"3f157634db2cea617be0106f3a7b00f715dcf31ff0ca9c9b4e2c68c734bb57d1"}},
-  "offline_analysis": {"scope":"offline_reversal_root_cause_no_physics_steps","physics_steps":0,"series_summary":{"implicit_acc_max_error":3.637978807091713e-12,"force_acc_max_error":19932.192644497984,"qpos_semiimplicit_update_error":6.938893903907228e-18,"recomputed_actuation_error":0.0,"recomputed_constraint_force_error":5.9915961081458136e-12,"native_solver_iterations":2},"source_axis_summary":{"max_axis_vector_error":2.08829642059743e-10,"max_range_error_rad":2.1855695031547384e-08},"timing":{"steps_analysed":745,"timestep_s":0.001,"alignment":"row k native qpos/qvel are post-integration; stored forces are pre-integration at row k-1 state with row k command. Recomputed actuation and semiimplicit position update verify this alignment."}},
-  "identity": {"new_model_sha256":"fde6063caea506752497c27210927f73e51279f02f3fe4ba26c2111643985cae","original_mjb_sha256":"e11d2773805f19e6795234f50d04fbb58664f3f1074241da9fa43d33a8284f81","source_entry_sha256":"ce89c938628b574d330a051bdd81116d4b6a439905825cb2e5f0f55e28b0eff4","source_layers_unchanged":true,"original_ngeom":3140,"new_ngeom":3136,"old_mjb_geometry_equivalent":false,"export_tolerances":{"relative":2e-05,"absolute":1e-06},"export_array_comparisons":{"body_mass":{"shape":[43],"max_absolute_difference":3.805541992107919e-05,"within_export_precision":true},"body_inertia":{"shape":[43,3],"max_absolute_difference":2.5801658631863233e-07,"within_export_precision":true},"body_pos":{"shape":[43,3],"max_absolute_difference":2.5272369419404583e-08,"within_export_precision":true},"body_quat":{"shape":[43,4],"max_absolute_difference":4.4703484247676784e-08,"within_export_precision":true},"jnt_range":{"shape":[34,2],"max_absolute_difference":3.6294937133529714e-06,"within_export_precision":true},"jnt_solref":{"shape":[34,2],"max_absolute_difference":0.0,"within_export_precision":true},"jnt_solimp":{"shape":[34,5],"max_absolute_difference":0.0,"within_export_precision":true},"actuator_gainprm":{"shape":[20,10],"max_absolute_difference":0.1875,"within_export_precision":true},"actuator_biasprm":{"shape":[20,10],"max_absolute_difference":0.1875,"within_export_precision":true},"jnt_actfrcrange":{"shape":[34,2],"max_absolute_difference":0.0,"within_export_precision":true},"exclude_signature":{"shape":[861],"max_absolute_difference":0.0,"within_export_precision":true}}},
-  "minimal_mechanism": {"scope":"synthetic_two_hinge_mechanism_not_robot_qualification","version":"3.13.0","results":[{"integrator":"implicitfast","steps":1000,"max_mimic_rad":0.011069814040713999,"final_driver_rad":0.03440722533076746,"max_driver_rad":0.08717675128205066,"max_effort_Nm":3.5467751127797555,"finite":true},{"integrator":"discrete","steps":1000,"max_mimic_rad":2.771779528121243e-09,"final_driver_rad":0.03453120334618689,"max_driver_rad":0.08705994939632049,"max_effort_Nm":4.304578887419041,"finite":true}]},
-  "profiles": [{"scope":"isolated_mujoco_3_13_native_integrator_comparison_not_integrated_newton_or_task_pass","steps":745,"status":"stopped_on_frozen_criterion","mujoco_version":"3.13.0","integrator":"implicitfast","portable_model_sha256":"fde6063caea506752497c27210927f73e51279f02f3fe4ba26c2111643985cae","physical_arrays_unchanged":true,"all_equalities_active":true,"observed":{"max_source_loop_m":0.0005646550370531655,"max_compiled_loop_m":0.0005646550370531655,"max_mimic_rad":0.010084533983409444,"max_scalar_velocity":4.705761453471454,"max_total_effort_cap_excess":0.0,"all_finite":true,"max_ncon":0,"driver_final":[0.0871763542294653,0.08717635416513893],"follower_final":[-0.07709182024605586,-0.07709265046350013]},"id":"07_portable_implicitfast","motion_criteria":null,"stop":{"step":745,"time_s":0.7450000000000006,"reasons":["mimic_residual"]},"trajectory":"discrete-integrator/comparison/07_portable_implicitfast/trajectory.npz"},{"scope":"isolated_mujoco_3_13_native_integrator_comparison_not_integrated_newton_or_task_pass","steps":1000,"status":"completed","mujoco_version":"3.13.0","integrator":"discrete","portable_model_sha256":"fde6063caea506752497c27210927f73e51279f02f3fe4ba26c2111643985cae","physical_arrays_unchanged":true,"all_equalities_active":true,"observed":{"max_source_loop_m":0.0005646550370531655,"max_compiled_loop_m":0.0005646550370531655,"max_mimic_rad":8.621599395577992e-08,"max_scalar_velocity":2.9178527991338603,"max_total_effort_cap_excess":0.0,"all_finite":true,"max_ncon":0,"driver_final":[0.034359503962234146,0.034359503963941],"follower_final":[-0.03435950295973531,-0.03435950296145812]},"id":"08_portable_discrete","motion_criteria":{"peak_tracking_error_rad":[0.014966062070273192,0.014966062067294936],"return_tracking_error_rad":[0.034359503962234146,0.034359503963941],"signed_peak_excursion_rad":[0.08503393941984293,0.08503393942282118],"commanded_excursion_rad":[0.1,0.1],"passed":false},"stop":null,"trajectory":"discrete-integrator/comparison/08_portable_discrete/trajectory.npz"},{"scope":"isolated_mujoco_3_13_native_integrator_comparison_not_integrated_newton_or_task_pass","steps":1900,"status":"completed","mujoco_version":"3.13.0","integrator":"discrete","portable_model_sha256":"fde6063caea506752497c27210927f73e51279f02f3fe4ba26c2111643985cae","physical_arrays_unchanged":true,"all_equalities_active":true,"observed":{"max_source_loop_m":0.0005646550370531655,"max_compiled_loop_m":0.0005646550370531655,"max_mimic_rad":8.621599395577992e-08,"max_scalar_velocity":2.9178527991338603,"max_total_effort_cap_excess":0.0,"all_finite":true,"max_ncon":0,"driver_final":[0.0003859817801636551,0.0003859817761042156],"follower_final":[-0.0003859817586566013,-0.0003859817545901898]},"id":"09_discrete_source_settling","motion_criteria":{"peak_tracking_error_rad":[0.014966062070273192,0.014966062067294936],"return_tracking_error_rad":[0.0003859817801636551,0.0003859817761042156],"signed_peak_excursion_rad":[0.08503393941984293,0.08503393942282118],"commanded_excursion_rad":[0.1,0.1],"passed":true},"stop":null,"trajectory":"discrete-integrator/source-settling/09_discrete_source_settling/trajectory.npz"}],
-  "protocol": {"dt_s":0.001,"schedule":"0-.1 hold; .1-.5 smoothstep 0.10rad; .5-.7 hold; .7-.9 smoothstep return; .9-1.9 settle = 5*(source kd/ke) seconds","stop_thresholds":{"mimic_residual_rad":0.01,"loop_anchor_residual_m":0.001,"joint_limit_violation_rad":0.01,"scalar_speed_rad_s":10.0,"fixed_base_position_drift_m":1e-05,"fixed_base_rotation_drift_rad":1e-05,"effort_cap_relative_slack":1e-05,"effort_cap_absolute_slack":1e-06},"result_thresholds":{"driver_tracking_error_rad":0.03,"minimum_peak_driver_motion_rad":0.05},"stop_threshold_units":{"revolute_joint_limit_violation_rad":0.01,"prismatic_joint_limit_violation_m":0.01,"revolute_speed_rad_s":10.0,"prismatic_speed_m_s":10.0},"constraints":"Source gravity restored, both source loop anchors restored, six equalities solref(.002,1)/solimp(.9999,.9999,.001,.5,2) fixed; no force/gain/limit/geometry edits.","data_handling":"copy every recorded array; separate mj_forward-only measurement data to avoid changing stepping data"},
-  "settling_change": {"source_kd_over_ke_seconds":0.2,"old_final_dwell_seconds":0.1,"new_final_dwell_seconds":1.0,"total_duration_seconds":1.9,"original_ramp_and_gains_and_numeric_thresholds_preserved":true,"original_1_second_protocol_passed":false,"rationale":"Five source-derived approximate slow servo time constants; explicit new timing protocol, not a waived original deadline."},
-  "newton_integration": {"constructor_discrete":"rejected by mujoco_warp.put_model","cpu_adapter":"agent/rss_runtime.py::build_cpu_mujoco_solver builds inactive Warp mirror with implicitfast then sets discrete on native CPU model","default_integrator_unchanged":true,"gpu_discrete_enabled":false,"full_G1_integrated_status":"passed adapted mechanism diagnostic; not task or source-exact qualification","version_warning":"Newton1.6 declares mujoco~=3.12.0; isolated candidate is3.13.0; bounded tests do not establish general compatibility","regressions":[{"log":"rss-discrete-tests.log","sha256":"ac4544bad813e90a64e66a57974dce70e6b496356a4890080417a30f723dba22","result":"2 passed, 4 warnings in5.52s"},{"log":"rss-discrete-compat-tests.log","sha256":"06d06a8876b84bf7d12d7144a9bc822d6bbdef433cb7b6b2c79f271f306789b1","result":"32 passed, 1 skipped,25 warnings in4.49s","timing_note":"Regression preceded report-only integrator metadata addition; missing-source failure-report metadata manually checked separately by root."}],"source_sha256":{"agent/rss_runtime.py":"f97c8bb82a911bb2fafd1f5a7457f18668f721632f8fc4fa4f923e55a99ee6c6","tests/test_rss_cpu_solver.py":"6ddf8ec17367b9539d6f5782a8dc136cd05ce5025bd33d6265c149bb4e7b0366","agent/geniesim_import.py":"416025a83e374e65bd93032eb650986b96341f847aa2ce59a5ba94d977e59a6b"},"full_G1":{"scope":"source_based_full_G1_integrated_Newton_CPU_adapted_mechanism_diagnostic_not_task_pass","steps":1900,"status":"completed","integrated_newton_pass":true,"exact_source_qualification":"failed","task_success_evaluated":false,"actual_newton_solver_step":true,"solver_state_update_interval":1,"observed":{"max_source_loop_m":0.0005651009666665773,"max_compiled_loop_m":0.0005651009666665773,"max_mimic_rad":8.626922871336871e-08,"max_scalar_velocity":2.9201078508748575,"max_total_effort_cap_excess":0.0,"all_finite":true,"max_ncon":0,"max_newton_native_q_error":3.714497223694657e-09,"max_newton_native_qd_error":1.150403212690776e-07,"max_newton_native_body_position_error":8.992282161779386e-06,"max_newton_native_body_quaternion_error":8.716522201246413e-06,"driver_final":[0.00038598187797905657,0.00038598187803835863],"follower_final":[-0.0003859818504253172,-0.00038598185049128886]},"motion_criteria":{"peak_tracking_error_rad":[0.014966073234205221,0.014966073234268462],"return_tracking_error_rad":[0.00038598187797905657,0.00038598187803835863],"signed_peak_excursion_rad":[0.0850339282559109,0.08503392825584766],"commanded_excursion_rad":[0.1,0.1],"passed":true},"elapsed_s":64.57260959967971,"preflight":{"count":78,"passed":true,"raw_array_checks_passed":false,"raw_differences_retained":true,"raw_difference_fields":["body_ipos","body_iquat","equality_data_0","equality_data_1","equality_data_2","equality_data_3"],"semantic_checks":[{"field":"all_mesh_body_frame_vertex_sets","passed":true},{"field":"physical_body_frame_inertia_tensors","passed":true,"max_abs_error":5.292412874613461e-08},{"field":"first_body_mass_moments","passed":true,"max_abs_error":4.829740407608085e-08},{"field":"connect_parent_and_nonanchor_data_0","passed":true,"max_abs_error":1.0728836014051168e-09},{"field":"connect_parent_and_nonanchor_data_1","passed":true,"max_abs_error":1.0728836014051168e-09},{"field":"connect_parent_and_nonanchor_data_2","passed":true,"max_abs_error":1.0728836014051168e-09},{"field":"connect_parent_and_nonanchor_data_3","passed":true,"max_abs_error":1.0728836014051168e-09}]},"actual_Newton_body_loop_audit":{"scope":"offline_actual_recorded_Newton_state_measurement_no_physics","samples":1901,"max_source_loop_residual_m":0.0005669711965609851,"threshold_m":0.001,"passed":true,"native_world_anchor_max_abs_difference_m":8.484086958637782e-06},"source_layers_unchanged":true,"model_coordinates_note":"Native nq34/nv34 vs Newton50coordinates/46velocity coordinates; mappings verified by identity, not assumed equal."},"prior_attempts":[{"attempt":"01","steps":0,"status":"exception","reason":"geom name mapping"},{"attempt":"02","steps":0,"status":"exception","reason":"raw physical array preflight failed; semantic audit subsequently added, differences retained"}]},
-  "official_references": ["https://github.com/google-deepmind/mujoco/releases/tag/3.13.0","https://mujoco.readthedocs.io/en/latest/changelog.html#version-3-13-0-september-8-2026","https://mujoco.readthedocs.io/en/latest/computation/index.html#numerical-integration"],
-  "artifact_sha256": {"reversal-root-cause/report.json":"6fb75e30034906dcb8862c9ecade90430e413e9a350870d9c2da425a3e5ae2a8","reversal-root-cause/per-step-linear-analysis.json":"e925aa026a010725bee5d8f26001784b95bcb5e138ea1344fedd3324d26a90ab","reversal-root-cause/analysis.py":"180a1b37022326eccb3610b08ecd1ff4cd0c7046772b27cacc81ca17f5b86d69","reversal-root-cause/FINDINGS.md":"0286420a0ff7ab4fdcc42f16f5eb9e031c3f15c71a55a66c577345b55d512e7b","discrete-integrator/minimal.json":"38f97db76d59c665ac87ea5ed0cab917b996ff65e2bb12e1b4229b7b390cb227","discrete-integrator/minimal.py":"d6d9f424d63cb1bc1302ef60c32568f19643044424b7226b752ae3d6ce1f40a7","discrete-integrator/export.py":"701ad05acc0aeb99e81c3ad5d9898cd3bc4326f99540c01ad8615caaaf7f0afe","discrete-integrator/finish_export.py":"f484fcf3c0e272444eb3ee1df69a16346b8d68c65bf205ee2f01c6092695a073","discrete-integrator/export_report.json":"40e5f7327e4d5f767e5dd4bf1a4dbdefc8ad2a3a0e9a9ea71810d0d3943e0ad2","discrete-integrator/native_export.xml":"ab755d0c87305b71b9c832676a1118e4c3150fa66d1238a272f649bf79111e8b","discrete-integrator/comparison_model.xml":"fde6063caea506752497c27210927f73e51279f02f3fe4ba26c2111643985cae","discrete-integrator/comparison/report.json":"1a046432e9177e21f4c575b802801c0340a5b0a5da0700e98f652ed25efed16d","discrete-integrator/comparison/protocol.json":"4871f85356b082e6a3e507c1e23c904ed5160a9511c8dcb6dcf1016fc07803f9","discrete-integrator/comparison/comparison.py":"c78f015760cd739b89c81948c5b7bf37fdd35519266db386fc5b90220b334295","discrete-integrator/source-settling/report.json":"546e84b19841a51b765ac5f0f031b18ac5125b6270b91be81dc7e1174cde532a","discrete-integrator/source-settling/protocol.json":"b99128057591d98cc6f92d997532c2a56544b7d17bbfc1651508f2bdf6f175a3","discrete-integrator/source-settling/comparison.py":"752d5af282a0cf79430a07fcc0130dc861ab7fa5cf550a6f3b9ac1500cf10dec","discrete-integrator/newton_direct_discrete_rejection.log":"fc83e90efd27c0565e12698421ec5160bcffd0905b26d7b9fdfa94ea296f8ee6","discrete-integrator/newton_probe.py":"d461f8275c3b378226e931bb524ae69d0490ae707cf5291e0f6aab2b70139c0d","discrete-integrator/newton_cpu_probe.py":"82362c36b5b09fc0d4936bbd0ff47a73b5abc980f2247d8c0ec8b6c03799c8c8","discrete-integrator/newton_cpu_probe.log":"3c8bf31c04b5577dd369e685712525a8449792f4926730e7a7a7f9369e70e98a","discrete-integrator/comparison/07_portable_implicitfast/trajectory.npz":"b44db18c93a53f7dcb437463a16dbf469ec6e067dccb862aeeef200f6bd592b5","discrete-integrator/comparison/08_portable_discrete/trajectory.npz":"b3b9693729f92e4cfc48b2f5ea724d219254d6df7e476aa88629aa531d0090ae","discrete-integrator/source-settling/09_discrete_source_settling/trajectory.npz":"2889b3f0b6d09211fbd8c0e9e6b95dc794fe30bd81eef2abb36fd56533d8fa0b","discrete-integrator/studio-publication.json":"5971b5c1601393fbe2775f913d9f0c759501293f7503d571881f78a8374338fc","discrete-integrator/newton-full/09_discrete_source_settling/report.json":"dbe502fcd48784bd50aa31f5193edc45697bee51c1a5973bc4a55629c7b0878b","discrete-integrator/newton-full/attempt02/09_discrete_source_settling/report.json":"6e47d048ffc3876f4cbf08ca7cea37ad3e3a5d5c00b49fb06b70a0d0c35de353","discrete-integrator/newton-full/attempt03/09_discrete_source_settling/report.json":"ad96c33003d60f28be58d2d356d7c63cea8f4281c5cd7a312cc34974c9335edc","discrete-integrator/newton-full/attempt03/09_discrete_source_settling/trajectory.npz":"e3019076e65220046a5526ea96eba426a02edb1680c329d49bc6fb68708fc85f","discrete-integrator/newton-full/attempt03/protocol.json":"576136e33df0a5694506ae66c1143756a5c3992702408ae7baf8f178800d7b5f","discrete-integrator/newton-full/attempt03/run.log":"0877ad5662c60231e3bf64580165f1ba36342c88609368dd0e1f1d55f407c234","discrete-integrator/newton-full/attempt03/run.py":"ee12417b948839f60db432c50d4c5b73c94fbe5c7d4e5bc2ffcd2e8542b22aa5","discrete-integrator/newton-full/attempt03/audit_roundtrip.py":"15dc0a1c6d261115dc8fb5f951d8a364596a8b3eade54c934ecc7a06f97be63a","discrete-integrator/studio-newton-publication.json":"192b744b9c8c2fbfb15d147e2fb5f34abb35aeff2844b89e5f10b24533f7fb7f","discrete-integrator/studio-newton-browser.json":"95719ac23e6f173ea5ca22aeb4095ad04f7ada65669d7e9e5b3b33a32917c177","discrete-integrator/newton-full/FINDINGS.md":"075f368a8a5fe1cda2b26ae481f3e5228f7cbc496fec47b17caae28e8b031078","discrete-integrator/newton-full/manifest.json":"7c88eea4f84a5a5fed3fff2a584711dc3202676d649367b4fbe10d016dbadb09","discrete-integrator/newton-full/actual-newton-loop-measurement.json":"fa518069ed96c30cf6fe5959617830a2875cc92cb32ab52942890e171f523efc","discrete-integrator/newton-full/source-provenance-completion.json":"31abd3211ec3bdd383e4325a740ec0f3fb4d90a939ca77d79b55c4159c5af86e","discrete-integrator/newton-full/physical-equivalence.json":"a4c8d5c1b0fdcf802080697aec97d4ca780e01dd8bb1b1cc90229495549c5213","discrete-integrator/newton-full/attempt03/frozen-runner.py":"ee12417b948839f60db432c50d4c5b73c94fbe5c7d4e5bc2ffcd2e8542b22aa5"},
-  "studio": {"run_ids":{"07":"7fe34bb7111238dec6e723b2","08":"66049998c1b54bdfdef60f91","09":"4abd64655385b420c66d6647"},"statuses":["failed","failed","passed"],"passed_scope":"mechanism only; task_success_evaluated=false","figure":"docs/references/geniesim/g1-discrete-diagnostic.png","figure_sha256":"f991257d63369f84f911b8067bbde3734e00754f64794fb0e51184acfe40215b","browser_check":"Parent reviewed all three scope notices, API statuses and loaded preview; zero JS errors.","full_Newton":{"run_id":"7ca7eff55559ffc0489ef053","status":"passed","scope":"full G1 Newton CPU adapted gripper mechanism; no contact task","task_success_evaluated":false,"checks":13,"figure":"docs/references/geniesim/g1-newton-discrete.png","figure_sha256":"cf73d8fd2a5c13976ccd65761c7f7e00081bc7cd1215c42c81c428e1015a0df7","browser_checked":true,"js_errors":0}}
+  "environment": {
+    "native_analysis": "3.12.0",
+    "comparison": "3.13.0",
+    "isolated_environment": ".workbench/mujoco-discrete-venv",
+    "original_3_12_environment_retained": true,
+    "optional_USD_qualification_dependencies": {
+      "usd-core": "26.8",
+      "newton-usd-schemas": "0.6.0",
+      "verification": "imports, in-memory PhysicsScene and qualifier --help only; no full source USD qualification rerun claimed",
+      "install_log_sha256": "3f157634db2cea617be0106f3a7b00f715dcf31ff0ca9c9b4e2c68c734bb57d1"
+    }
+  },
+  "offline_analysis": {
+    "scope": "offline_reversal_root_cause_no_physics_steps",
+    "physics_steps": 0,
+    "series_summary": {
+      "implicit_acc_max_error": 3.637978807091713e-12,
+      "force_acc_max_error": 19932.192644497984,
+      "qpos_semiimplicit_update_error": 6.938893903907228e-18,
+      "recomputed_actuation_error": 0.0,
+      "recomputed_constraint_force_error": 5.9915961081458136e-12,
+      "native_solver_iterations": 2
+    },
+    "source_axis_summary": {
+      "max_axis_vector_error": 2.08829642059743e-10,
+      "max_range_error_rad": 2.1855695031547384e-08
+    },
+    "timing": {
+      "steps_analysed": 745,
+      "timestep_s": 0.001,
+      "alignment": "row k native qpos/qvel are post-integration; stored forces are pre-integration at row k-1 state with row k command. Recomputed actuation and semiimplicit position update verify this alignment."
+    }
+  },
+  "identity": {
+    "new_model_sha256": "fde6063caea506752497c27210927f73e51279f02f3fe4ba26c2111643985cae",
+    "original_mjb_sha256": "e11d2773805f19e6795234f50d04fbb58664f3f1074241da9fa43d33a8284f81",
+    "source_entry_sha256": "ce89c938628b574d330a051bdd81116d4b6a439905825cb2e5f0f55e28b0eff4",
+    "source_layers_unchanged": true,
+    "original_ngeom": 3140,
+    "new_ngeom": 3136,
+    "old_mjb_geometry_equivalent": false,
+    "export_tolerances": {
+      "relative": 2e-05,
+      "absolute": 1e-06
+    },
+    "export_array_comparisons": {
+      "body_mass": {
+        "shape": [
+          43
+        ],
+        "max_absolute_difference": 3.805541992107919e-05,
+        "within_export_precision": true
+      },
+      "body_inertia": {
+        "shape": [
+          43,
+          3
+        ],
+        "max_absolute_difference": 2.5801658631863233e-07,
+        "within_export_precision": true
+      },
+      "body_pos": {
+        "shape": [
+          43,
+          3
+        ],
+        "max_absolute_difference": 2.5272369419404583e-08,
+        "within_export_precision": true
+      },
+      "body_quat": {
+        "shape": [
+          43,
+          4
+        ],
+        "max_absolute_difference": 4.4703484247676784e-08,
+        "within_export_precision": true
+      },
+      "jnt_range": {
+        "shape": [
+          34,
+          2
+        ],
+        "max_absolute_difference": 3.6294937133529714e-06,
+        "within_export_precision": true
+      },
+      "jnt_solref": {
+        "shape": [
+          34,
+          2
+        ],
+        "max_absolute_difference": 0.0,
+        "within_export_precision": true
+      },
+      "jnt_solimp": {
+        "shape": [
+          34,
+          5
+        ],
+        "max_absolute_difference": 0.0,
+        "within_export_precision": true
+      },
+      "actuator_gainprm": {
+        "shape": [
+          20,
+          10
+        ],
+        "max_absolute_difference": 0.1875,
+        "within_export_precision": true
+      },
+      "actuator_biasprm": {
+        "shape": [
+          20,
+          10
+        ],
+        "max_absolute_difference": 0.1875,
+        "within_export_precision": true
+      },
+      "jnt_actfrcrange": {
+        "shape": [
+          34,
+          2
+        ],
+        "max_absolute_difference": 0.0,
+        "within_export_precision": true
+      },
+      "exclude_signature": {
+        "shape": [
+          861
+        ],
+        "max_absolute_difference": 0.0,
+        "within_export_precision": true
+      }
+    }
+  },
+  "minimal_mechanism": {
+    "scope": "synthetic_two_hinge_mechanism_not_robot_qualification",
+    "version": "3.13.0",
+    "results": [
+      {
+        "integrator": "implicitfast",
+        "steps": 1000,
+        "max_mimic_rad": 0.011069814040713999,
+        "final_driver_rad": 0.03440722533076746,
+        "max_driver_rad": 0.08717675128205066,
+        "max_effort_Nm": 3.5467751127797555,
+        "finite": true
+      },
+      {
+        "integrator": "discrete",
+        "steps": 1000,
+        "max_mimic_rad": 2.771779528121243e-09,
+        "final_driver_rad": 0.03453120334618689,
+        "max_driver_rad": 0.08705994939632049,
+        "max_effort_Nm": 4.304578887419041,
+        "finite": true
+      }
+    ]
+  },
+  "profiles": [
+    {
+      "scope": "isolated_mujoco_3_13_native_integrator_comparison_not_integrated_newton_or_task_pass",
+      "steps": 745,
+      "status": "stopped_on_frozen_criterion",
+      "mujoco_version": "3.13.0",
+      "integrator": "implicitfast",
+      "portable_model_sha256": "fde6063caea506752497c27210927f73e51279f02f3fe4ba26c2111643985cae",
+      "physical_arrays_unchanged": true,
+      "all_equalities_active": true,
+      "observed": {
+        "max_source_loop_m": 0.0005646550370531655,
+        "max_compiled_loop_m": 0.0005646550370531655,
+        "max_mimic_rad": 0.010084533983409444,
+        "max_scalar_velocity": 4.705761453471454,
+        "max_total_effort_cap_excess": 0.0,
+        "all_finite": true,
+        "max_ncon": 0,
+        "driver_final": [
+          0.0871763542294653,
+          0.08717635416513893
+        ],
+        "follower_final": [
+          -0.07709182024605586,
+          -0.07709265046350013
+        ]
+      },
+      "id": "07_portable_implicitfast",
+      "motion_criteria": null,
+      "stop": {
+        "step": 745,
+        "time_s": 0.7450000000000006,
+        "reasons": [
+          "mimic_residual"
+        ]
+      },
+      "trajectory": "discrete-integrator/comparison/07_portable_implicitfast/trajectory.npz"
+    },
+    {
+      "scope": "isolated_mujoco_3_13_native_integrator_comparison_not_integrated_newton_or_task_pass",
+      "steps": 1000,
+      "status": "completed",
+      "mujoco_version": "3.13.0",
+      "integrator": "discrete",
+      "portable_model_sha256": "fde6063caea506752497c27210927f73e51279f02f3fe4ba26c2111643985cae",
+      "physical_arrays_unchanged": true,
+      "all_equalities_active": true,
+      "observed": {
+        "max_source_loop_m": 0.0005646550370531655,
+        "max_compiled_loop_m": 0.0005646550370531655,
+        "max_mimic_rad": 8.621599395577992e-08,
+        "max_scalar_velocity": 2.9178527991338603,
+        "max_total_effort_cap_excess": 0.0,
+        "all_finite": true,
+        "max_ncon": 0,
+        "driver_final": [
+          0.034359503962234146,
+          0.034359503963941
+        ],
+        "follower_final": [
+          -0.03435950295973531,
+          -0.03435950296145812
+        ]
+      },
+      "id": "08_portable_discrete",
+      "motion_criteria": {
+        "peak_tracking_error_rad": [
+          0.014966062070273192,
+          0.014966062067294936
+        ],
+        "return_tracking_error_rad": [
+          0.034359503962234146,
+          0.034359503963941
+        ],
+        "signed_peak_excursion_rad": [
+          0.08503393941984293,
+          0.08503393942282118
+        ],
+        "commanded_excursion_rad": [
+          0.1,
+          0.1
+        ],
+        "passed": false
+      },
+      "stop": null,
+      "trajectory": "discrete-integrator/comparison/08_portable_discrete/trajectory.npz"
+    },
+    {
+      "scope": "isolated_mujoco_3_13_native_integrator_comparison_not_integrated_newton_or_task_pass",
+      "steps": 1900,
+      "status": "completed",
+      "mujoco_version": "3.13.0",
+      "integrator": "discrete",
+      "portable_model_sha256": "fde6063caea506752497c27210927f73e51279f02f3fe4ba26c2111643985cae",
+      "physical_arrays_unchanged": true,
+      "all_equalities_active": true,
+      "observed": {
+        "max_source_loop_m": 0.0005646550370531655,
+        "max_compiled_loop_m": 0.0005646550370531655,
+        "max_mimic_rad": 8.621599395577992e-08,
+        "max_scalar_velocity": 2.9178527991338603,
+        "max_total_effort_cap_excess": 0.0,
+        "all_finite": true,
+        "max_ncon": 0,
+        "driver_final": [
+          0.0003859817801636551,
+          0.0003859817761042156
+        ],
+        "follower_final": [
+          -0.0003859817586566013,
+          -0.0003859817545901898
+        ]
+      },
+      "id": "09_discrete_source_settling",
+      "motion_criteria": {
+        "peak_tracking_error_rad": [
+          0.014966062070273192,
+          0.014966062067294936
+        ],
+        "return_tracking_error_rad": [
+          0.0003859817801636551,
+          0.0003859817761042156
+        ],
+        "signed_peak_excursion_rad": [
+          0.08503393941984293,
+          0.08503393942282118
+        ],
+        "commanded_excursion_rad": [
+          0.1,
+          0.1
+        ],
+        "passed": true
+      },
+      "stop": null,
+      "trajectory": "discrete-integrator/source-settling/09_discrete_source_settling/trajectory.npz"
+    }
+  ],
+  "protocol": {
+    "dt_s": 0.001,
+    "schedule": "0-.1 hold; .1-.5 smoothstep 0.10rad; .5-.7 hold; .7-.9 smoothstep return; .9-1.9 settle = 5*(source kd/ke) seconds",
+    "stop_thresholds": {
+      "mimic_residual_rad": 0.01,
+      "loop_anchor_residual_m": 0.001,
+      "joint_limit_violation_rad": 0.01,
+      "scalar_speed_rad_s": 10.0,
+      "fixed_base_position_drift_m": 1e-05,
+      "fixed_base_rotation_drift_rad": 1e-05,
+      "effort_cap_relative_slack": 1e-05,
+      "effort_cap_absolute_slack": 1e-06
+    },
+    "result_thresholds": {
+      "driver_tracking_error_rad": 0.03,
+      "minimum_peak_driver_motion_rad": 0.05
+    },
+    "stop_threshold_units": {
+      "revolute_joint_limit_violation_rad": 0.01,
+      "prismatic_joint_limit_violation_m": 0.01,
+      "revolute_speed_rad_s": 10.0,
+      "prismatic_speed_m_s": 10.0
+    },
+    "constraints": "Source gravity restored, both source loop anchors restored, six equalities solref(.002,1)/solimp(.9999,.9999,.001,.5,2) fixed; no force/gain/limit/geometry edits.",
+    "data_handling": "copy every recorded array; separate mj_forward-only measurement data to avoid changing stepping data"
+  },
+  "settling_change": {
+    "source_kd_over_ke_seconds": 0.2,
+    "old_final_dwell_seconds": 0.1,
+    "new_final_dwell_seconds": 1.0,
+    "total_duration_seconds": 1.9,
+    "original_ramp_and_gains_and_numeric_thresholds_preserved": true,
+    "original_1_second_protocol_passed": false,
+    "rationale": "Five source-derived approximate slow servo time constants; explicit new timing protocol, not a waived original deadline."
+  },
+  "newton_integration": {
+    "constructor_discrete": "rejected by mujoco_warp.put_model",
+    "cpu_adapter": "agent/rss_runtime.py::build_cpu_mujoco_solver builds inactive Warp mirror with implicitfast then sets discrete on native CPU model",
+    "default_integrator_unchanged": true,
+    "gpu_discrete_enabled": false,
+    "full_G1_integrated_status": "passed adapted mechanism diagnostic; not task or source-exact qualification",
+    "version_warning": "Newton1.6 declares mujoco~=3.12.0; isolated candidate is3.13.0; bounded tests do not establish general compatibility",
+    "regressions": [
+      {
+        "log": "rss-discrete-tests.log",
+        "sha256": "ac4544bad813e90a64e66a57974dce70e6b496356a4890080417a30f723dba22",
+        "result": "2 passed, 4 warnings in5.52s"
+      },
+      {
+        "log": "rss-discrete-compat-tests.log",
+        "sha256": "06d06a8876b84bf7d12d7144a9bc822d6bbdef433cb7b6b2c79f271f306789b1",
+        "result": "32 passed, 1 skipped,25 warnings in4.49s",
+        "timing_note": "Regression preceded report-only integrator metadata addition; missing-source failure-report metadata manually checked separately by root."
+      }
+    ],
+    "source_commit": "ecc3ce5f1583d1ae5a1769e60812d2c75aca1bbd",
+    "source_sha256": {
+      "agent/rss_runtime.py": "f97c8bb82a911bb2fafd1f5a7457f18668f721632f8fc4fa4f923e55a99ee6c6",
+      "tests/test_rss_cpu_solver.py": "6ddf8ec17367b9539d6f5782a8dc136cd05ce5025bd33d6265c149bb4e7b0366",
+      "agent/geniesim_import.py": "416025a83e374e65bd93032eb650986b96341f847aa2ce59a5ba94d977e59a6b"
+    },
+    "full_G1": {
+      "scope": "source_based_full_G1_integrated_Newton_CPU_adapted_mechanism_diagnostic_not_task_pass",
+      "steps": 1900,
+      "status": "completed",
+      "integrated_newton_pass": true,
+      "exact_source_qualification": "failed",
+      "task_success_evaluated": false,
+      "actual_newton_solver_step": true,
+      "solver_state_update_interval": 1,
+      "observed": {
+        "max_source_loop_m": 0.0005651009666665773,
+        "max_compiled_loop_m": 0.0005651009666665773,
+        "max_mimic_rad": 8.626922871336871e-08,
+        "max_scalar_velocity": 2.9201078508748575,
+        "max_total_effort_cap_excess": 0.0,
+        "all_finite": true,
+        "max_ncon": 0,
+        "max_newton_native_q_error": 3.714497223694657e-09,
+        "max_newton_native_qd_error": 1.150403212690776e-07,
+        "max_newton_native_body_position_error": 8.992282161779386e-06,
+        "max_newton_native_body_quaternion_error": 8.716522201246413e-06,
+        "driver_final": [
+          0.00038598187797905657,
+          0.00038598187803835863
+        ],
+        "follower_final": [
+          -0.0003859818504253172,
+          -0.00038598185049128886
+        ]
+      },
+      "motion_criteria": {
+        "peak_tracking_error_rad": [
+          0.014966073234205221,
+          0.014966073234268462
+        ],
+        "return_tracking_error_rad": [
+          0.00038598187797905657,
+          0.00038598187803835863
+        ],
+        "signed_peak_excursion_rad": [
+          0.0850339282559109,
+          0.08503392825584766
+        ],
+        "commanded_excursion_rad": [
+          0.1,
+          0.1
+        ],
+        "passed": true
+      },
+      "elapsed_s": 64.57260959967971,
+      "preflight": {
+        "count": 78,
+        "passed": true,
+        "raw_array_checks_passed": false,
+        "raw_differences_retained": true,
+        "raw_difference_fields": [
+          "body_ipos",
+          "body_iquat",
+          "equality_data_0",
+          "equality_data_1",
+          "equality_data_2",
+          "equality_data_3"
+        ],
+        "semantic_checks": [
+          {
+            "field": "all_mesh_body_frame_vertex_sets",
+            "passed": true
+          },
+          {
+            "field": "physical_body_frame_inertia_tensors",
+            "passed": true,
+            "max_abs_error": 5.292412874613461e-08
+          },
+          {
+            "field": "first_body_mass_moments",
+            "passed": true,
+            "max_abs_error": 4.829740407608085e-08
+          },
+          {
+            "field": "connect_parent_and_nonanchor_data_0",
+            "passed": true,
+            "max_abs_error": 1.0728836014051168e-09
+          },
+          {
+            "field": "connect_parent_and_nonanchor_data_1",
+            "passed": true,
+            "max_abs_error": 1.0728836014051168e-09
+          },
+          {
+            "field": "connect_parent_and_nonanchor_data_2",
+            "passed": true,
+            "max_abs_error": 1.0728836014051168e-09
+          },
+          {
+            "field": "connect_parent_and_nonanchor_data_3",
+            "passed": true,
+            "max_abs_error": 1.0728836014051168e-09
+          }
+        ]
+      },
+      "actual_Newton_body_loop_audit": {
+        "scope": "offline_actual_recorded_Newton_state_measurement_no_physics",
+        "samples": 1901,
+        "max_source_loop_residual_m": 0.0005669711965609851,
+        "threshold_m": 0.001,
+        "passed": true,
+        "native_world_anchor_max_abs_difference_m": 8.484086958637782e-06
+      },
+      "source_layers_unchanged": true,
+      "model_coordinates_note": "Native nq34/nv34 vs Newton50coordinates/46velocity coordinates; mappings verified by identity, not assumed equal."
+    },
+    "prior_attempts": [
+      {
+        "attempt": "01",
+        "steps": 0,
+        "status": "exception",
+        "reason": "geom name mapping"
+      },
+      {
+        "attempt": "02",
+        "steps": 0,
+        "status": "exception",
+        "reason": "raw physical array preflight failed; semantic audit subsequently added, differences retained"
+      }
+    ]
+  },
+  "official_references": [
+    "https://github.com/google-deepmind/mujoco/releases/tag/3.13.0",
+    "https://mujoco.readthedocs.io/en/latest/changelog.html#version-3-13-0-september-8-2026",
+    "https://mujoco.readthedocs.io/en/latest/computation/index.html#numerical-integration"
+  ],
+  "artifact_sha256": {
+    "reversal-root-cause/report.json": "6fb75e30034906dcb8862c9ecade90430e413e9a350870d9c2da425a3e5ae2a8",
+    "reversal-root-cause/per-step-linear-analysis.json": "e925aa026a010725bee5d8f26001784b95bcb5e138ea1344fedd3324d26a90ab",
+    "reversal-root-cause/analysis.py": "180a1b37022326eccb3610b08ecd1ff4cd0c7046772b27cacc81ca17f5b86d69",
+    "reversal-root-cause/FINDINGS.md": "0286420a0ff7ab4fdcc42f16f5eb9e031c3f15c71a55a66c577345b55d512e7b",
+    "discrete-integrator/minimal.json": "38f97db76d59c665ac87ea5ed0cab917b996ff65e2bb12e1b4229b7b390cb227",
+    "discrete-integrator/minimal.py": "d6d9f424d63cb1bc1302ef60c32568f19643044424b7226b752ae3d6ce1f40a7",
+    "discrete-integrator/export.py": "701ad05acc0aeb99e81c3ad5d9898cd3bc4326f99540c01ad8615caaaf7f0afe",
+    "discrete-integrator/finish_export.py": "f484fcf3c0e272444eb3ee1df69a16346b8d68c65bf205ee2f01c6092695a073",
+    "discrete-integrator/export_report.json": "40e5f7327e4d5f767e5dd4bf1a4dbdefc8ad2a3a0e9a9ea71810d0d3943e0ad2",
+    "discrete-integrator/native_export.xml": "ab755d0c87305b71b9c832676a1118e4c3150fa66d1238a272f649bf79111e8b",
+    "discrete-integrator/comparison_model.xml": "fde6063caea506752497c27210927f73e51279f02f3fe4ba26c2111643985cae",
+    "discrete-integrator/comparison/report.json": "1a046432e9177e21f4c575b802801c0340a5b0a5da0700e98f652ed25efed16d",
+    "discrete-integrator/comparison/protocol.json": "4871f85356b082e6a3e507c1e23c904ed5160a9511c8dcb6dcf1016fc07803f9",
+    "discrete-integrator/comparison/comparison.py": "c78f015760cd739b89c81948c5b7bf37fdd35519266db386fc5b90220b334295",
+    "discrete-integrator/source-settling/report.json": "546e84b19841a51b765ac5f0f031b18ac5125b6270b91be81dc7e1174cde532a",
+    "discrete-integrator/source-settling/protocol.json": "b99128057591d98cc6f92d997532c2a56544b7d17bbfc1651508f2bdf6f175a3",
+    "discrete-integrator/source-settling/comparison.py": "752d5af282a0cf79430a07fcc0130dc861ab7fa5cf550a6f3b9ac1500cf10dec",
+    "discrete-integrator/newton_direct_discrete_rejection.log": "fc83e90efd27c0565e12698421ec5160bcffd0905b26d7b9fdfa94ea296f8ee6",
+    "discrete-integrator/newton_probe.py": "d461f8275c3b378226e931bb524ae69d0490ae707cf5291e0f6aab2b70139c0d",
+    "discrete-integrator/newton_cpu_probe.py": "82362c36b5b09fc0d4936bbd0ff47a73b5abc980f2247d8c0ec8b6c03799c8c8",
+    "discrete-integrator/newton_cpu_probe.log": "3c8bf31c04b5577dd369e685712525a8449792f4926730e7a7a7f9369e70e98a",
+    "discrete-integrator/comparison/07_portable_implicitfast/trajectory.npz": "b44db18c93a53f7dcb437463a16dbf469ec6e067dccb862aeeef200f6bd592b5",
+    "discrete-integrator/comparison/08_portable_discrete/trajectory.npz": "b3b9693729f92e4cfc48b2f5ea724d219254d6df7e476aa88629aa531d0090ae",
+    "discrete-integrator/source-settling/09_discrete_source_settling/trajectory.npz": "2889b3f0b6d09211fbd8c0e9e6b95dc794fe30bd81eef2abb36fd56533d8fa0b",
+    "discrete-integrator/studio-publication.json": "5971b5c1601393fbe2775f913d9f0c759501293f7503d571881f78a8374338fc",
+    "discrete-integrator/newton-full/09_discrete_source_settling/report.json": "dbe502fcd48784bd50aa31f5193edc45697bee51c1a5973bc4a55629c7b0878b",
+    "discrete-integrator/newton-full/attempt02/09_discrete_source_settling/report.json": "6e47d048ffc3876f4cbf08ca7cea37ad3e3a5d5c00b49fb06b70a0d0c35de353",
+    "discrete-integrator/newton-full/attempt03/09_discrete_source_settling/report.json": "ad96c33003d60f28be58d2d356d7c63cea8f4281c5cd7a312cc34974c9335edc",
+    "discrete-integrator/newton-full/attempt03/09_discrete_source_settling/trajectory.npz": "e3019076e65220046a5526ea96eba426a02edb1680c329d49bc6fb68708fc85f",
+    "discrete-integrator/newton-full/attempt03/protocol.json": "576136e33df0a5694506ae66c1143756a5c3992702408ae7baf8f178800d7b5f",
+    "discrete-integrator/newton-full/attempt03/run.log": "0877ad5662c60231e3bf64580165f1ba36342c88609368dd0e1f1d55f407c234",
+    "discrete-integrator/newton-full/attempt03/run.py": "ee12417b948839f60db432c50d4c5b73c94fbe5c7d4e5bc2ffcd2e8542b22aa5",
+    "discrete-integrator/newton-full/attempt03/audit_roundtrip.py": "15dc0a1c6d261115dc8fb5f951d8a364596a8b3eade54c934ecc7a06f97be63a",
+    "discrete-integrator/studio-newton-publication.json": "192b744b9c8c2fbfb15d147e2fb5f34abb35aeff2844b89e5f10b24533f7fb7f",
+    "discrete-integrator/studio-newton-browser.json": "95719ac23e6f173ea5ca22aeb4095ad04f7ada65669d7e9e5b3b33a32917c177",
+    "discrete-integrator/newton-full/FINDINGS.md": "075f368a8a5fe1cda2b26ae481f3e5228f7cbc496fec47b17caae28e8b031078",
+    "discrete-integrator/newton-full/manifest.json": "7c88eea4f84a5a5fed3fff2a584711dc3202676d649367b4fbe10d016dbadb09",
+    "discrete-integrator/newton-full/actual-newton-loop-measurement.json": "fa518069ed96c30cf6fe5959617830a2875cc92cb32ab52942890e171f523efc",
+    "discrete-integrator/newton-full/source-provenance-completion.json": "31abd3211ec3bdd383e4325a740ec0f3fb4d90a939ca77d79b55c4159c5af86e",
+    "discrete-integrator/newton-full/physical-equivalence.json": "a4c8d5c1b0fdcf802080697aec97d4ca780e01dd8bb1b1cc90229495549c5213",
+    "discrete-integrator/newton-full/attempt03/frozen-runner.py": "ee12417b948839f60db432c50d4c5b73c94fbe5c7d4e5bc2ffcd2e8542b22aa5"
+  },
+  "studio": {
+    "run_ids": {
+      "07": "7fe34bb7111238dec6e723b2",
+      "08": "66049998c1b54bdfdef60f91",
+      "09": "4abd64655385b420c66d6647"
+    },
+    "statuses": [
+      "failed",
+      "failed",
+      "passed"
+    ],
+    "passed_scope": "mechanism only; task_success_evaluated=false",
+    "figure": "docs/references/geniesim/g1-discrete-diagnostic.png",
+    "figure_sha256": "f991257d63369f84f911b8067bbde3734e00754f64794fb0e51184acfe40215b",
+    "browser_check": "Parent reviewed all three scope notices, API statuses and loaded preview; zero JS errors.",
+    "full_Newton": {
+      "run_id": "7ca7eff55559ffc0489ef053",
+      "status": "passed",
+      "scope": "full G1 Newton CPU adapted gripper mechanism; no contact task",
+      "task_success_evaluated": false,
+      "checks": 13,
+      "figure": "docs/references/geniesim/g1-newton-discrete.png",
+      "figure_sha256": "cf73d8fd2a5c13976ccd65761c7f7e00081bc7cd1215c42c81c428e1015a0df7",
+      "browser_checked": true,
+      "js_errors": 0
+    }
+  },
+  "rss_scene_backend": {
+    "scope": "small_scene_backend_composition_gravity_and_native_contact_feedback_not_G1_or_task_acceptance",
+    "adapter": "agent.rss_mujoco_cpu.CpuMuJoCoSolver",
+    "declaration": "agent.rss_runtime.cpu_mujoco_backend",
+    "native_contact_probe": "agent.rss_scene.CPUContactProbe explicitly bound after Scene.build",
+    "physics_steps_per_integrator": 500,
+    "contact_force_expected_N": 0.981,
+    "relative_tolerance": 0.03,
+    "discrete_environment": "4 passed, 4 warnings in 6.34s",
+    "default_environment_contact": "1 passed, 1 skipped in 3.74s",
+    "default_environment_regression": "32 passed, 2 skipped, 25 warnings in 5.19s; before parameterizing new contact test",
+    "original_contact_test_failure": "refresh method absent; physics assertions reached; corrected to existing update method",
+    "source_and_log_sha256": {
+      "agent/rss_mujoco_cpu.py": "49399fe2ec9bbbd6ba4615d616288a4bc13c94c707dbba217507ffd83a633016",
+      "agent/rss_runtime.py": "56e9d77e2f75a53650cb8f036cdb42316270bff071c6b42845122f72b14d2067",
+      "tests/test_rss_cpu_backend.py": "9de4a80bf71ad3389de5810e206a533e9b05b959f2f4f92ffa0d68bd23f41bd7",
+      "/tmp/rss-cpu-backend-tests.log": "0fb1f6be059ccfc788e45307a36984b7127901c4515cbd42f1051983627b1fe7",
+      "/tmp/rss-cpu-backend-fixed-tests.log": "33458d9ebf767e4e747043d4a63ad8179391411ab567c270c1938d79d1683f8d",
+      "/tmp/rss-cpu-backend-final-tests.log": "785106bf4f9f4412053b1768a9cb66d022fba205aa827ce852616ac0f219c2f9",
+      "/tmp/rss-cpu-backend-compat-tests.log": "45b65b427743bd581f65f4f5d5b87f60c9997b3adcc8d732bba11d351d5cbbbf",
+      "/tmp/rss-cpu-backend-default-final-tests.log": "a118f7cc845c6bd9122a15675a21b8fa0dea425952c94e0a10d3a5ef7aaf796f"
+    }
+  },
+  "grasp_interface_audit": {
+    "scope": "offline_source_geometry_and_RSS_interface_diagnosis",
+    "physics_steps": 0,
+    "task_success_evaluated": false,
+    "production_width_or_control_fix_implemented": false,
+    "tcp_in_gripper_base_m": [
+      0,
+      0,
+      0.14308
+    ],
+    "observed_step": 700,
+    "driver_rad": 0.08503393,
+    "rss_reported_width_m": 0.17006786,
+    "actual_gap_range_m": [
+      0.014855,
+      0.0158
+    ],
+    "rss_width_quantity_actually_returned": "angular coordinate difference in radians",
+    "native_actuators": 20,
+    "native_control_source": "CTRL_DIRECT=1",
+    "full_range_calibrated": false,
+    "source_artifact_sha256": {
+      ".workbench/previews/geniesim-g1-grasp-interface-20261021/interface.json": "ba3a0469e7181b15271c080850f53d00d30c799570f650596dea9f132964f90b",
+      ".workbench/previews/geniesim-g1-grasp-interface-20261021/FINDINGS.md": "9a87c0e6682c379e614e775e31341d3e9ee9b23c0a2d7ad3fb26df1043b340aa",
+      ".workbench/previews/geniesim-g1-grasp-interface-20261021/geometry-measurements.json": "ad0c731de1f6a0f673a570723e8fc0618b7f78fe49af6b670db504541573c02d",
+      ".workbench/previews/geniesim-g1-grasp-interface-20261021/rss-width-reproducer.py": "abb43f7f7b4a65b4ae99b43fe93e6d0db7e5e9848672337659235f3ec20ae197",
+      ".workbench/previews/geniesim-g1-grasp-interface-20261021/rss-interface-reproducer.json": "7ca6448f3c71305933a68a74e4d41bcb58d5379f9f230894f62df7fce36e9ae4"
+    }
+  }
 }

@@ -87,12 +87,70 @@ Newton 1.6 仍声明 MuJoCo `~=3.12.0`，实验 3.13 会产生明确依赖不匹
 
 ## 复查与显式选择
 
+### RSS 场景构建与接触反馈
+
+完整 G1 的上述记录对应提交 `ecc3ce5` 的 helper 实现。后续将同一实现提取为
+`agent.rss_mujoco_cpu.CpuMuJoCoSolver`，继承 Newton 的原生类与 custom attribute
+注册接口；原 helper 保留为延迟导入入口。`cpu_mujoco_backend()` 在 RSS 现有注册表
+声明此后端的 native contact 能力，保留原 `mujoco` 后端和默认积分器。
+仅给 RSS 一个裸类路径会丢失 contact routing 元信息，不能据此推定接触路径正确。
+
+```python
+from agent.rss_runtime import cpu_mujoco_backend
+from agent.rss_scene import CPUContactProbe
+from robosimstudio.specs import ArrangementSpec
+import robosimstudio as rss
+
+physics = ArrangementSpec(control_hz=100, substeps=10, backends=(
+    ("*", cpu_mujoco_backend(integrator="discrete")),
+))
+scene = rss.Scene(cell="void", physics=physics)
+# 在这里通过 scene.add(...) 加入已有场景/机器人实体，再构建：
+sim = scene.build(device="cpu", warmup=False, use_cuda_graph=False)
+sim.contacts = CPUContactProbe(sim.pipeline.solver, sim.model, sim.pipeline.sim_dt)
+```
+
+这里显式绑定已有 CPUContactProbe，与 Sharpa 执行桥一致。RSS 通用探针按标准
+`mujoco` 别名寻找 solver，不会自动识别这个 opt-in 后端；调用者不可省略此步后
+宣称接触验收已接入。该示例仅说明 backend/probe 接法，不是完整任务入口。
+
+新增真实 RSS Scene 测试对 `implicitfast` 和 `discrete` 分别执行 500 个物理步：
+普通 0.1 kg 球落到地面，逐体重力补偿球维持 0.2 m 高度，原生接触探针测得支撑力
+在 `0.981 N ±3%` 内，默认后端声明未变。新环境合并测试 **4 passed**；
+默认 3.12 环境同一场景 **1 passed / 1 skipped**，跳过 discrete；相关导入/碰撞/
+solver 回归另为 **32 passed / 2 skipped**（早于接触测试扩展为两个积分器）。
+首次接触测试误用了 `refresh` 方法名，物理检查已完成但探针调用失败；更正为真实
+`update` 接口后通过，原失败日志保留。此小场景验证 RSS 组合与反馈边界，未重新
+运行 G1，也不增加 G2 或任务通过证据。
+
+### G1 抓取接口预检
+
+后续离线检查使用同一份完整 G1 的 1901 帧记录、源 USD 和真实凸网格，没有增加
+物理步进。两侧真实抓取接触体是 `gripper_{l/r}_{inner/outer}_link4`；夹爪基座
+`+Z` 为接近方向、`Y` 为开合方向，源 TCP 在基座 `(0, 0, 0.14308)` m。
+step 700 实际驱动角为 0.085034 rad，网格射线测得约 14.855–15.800 mm 开口。
+
+复现了 RSS 接口的两个缺口，当前尚未修复：
+
+- 一驱动、一 follower 时，现有通用分支将两关节坐标差当作米；该状态返回
+  `0.17006786 m`，实际返回的是弧度差。正确列出全部七个被动关节能避开此分支，
+  但其后备线性估计仍不能代替真实开口标定。回程被动关节状态不同，不能据一次
+  开口测量外推全行程或拟合单一线性关系。
+- 成功的 MJCF 导入中 20 个驱动均为 `CTRL_DIRECT`，通用夹爪的
+  `joint_target_q` 写入并不驱动这些 actuator；需要复用既有控制接口，按实际
+  actuator 身份映射到 `control.mujoco.ctrl`，保留源增益、力限和单位。
+
+8 mm 校准块是下一步接触试验的几何候选，需要真实重力和支撑、两侧指尖接触及
+后续离台验收；尚无接触或抬升通过记录。源自碰撞过滤和本体保持原样。完整本机
+证据在 `.workbench/previews/geniesim-g1-grasp-interface-20261021/`，本报告 JSON
+保存测量、最小复现脚本及源记录的哈希。该诊断不构成 G1/G2 任务通过。
+
 在仓库根目录，已有 `.workbench/mujoco-discrete-venv` 可直接运行下面测试。只有重建隔离环境时才执行前两行；该环境复用本机已安装的 Newton/依赖，并在自身目录安装 3.13，不对默认环境运行 pip 升级。
 
 ```bash
 .workbench/geniesim-venv/bin/python -m venv --system-site-packages .workbench/mujoco-discrete-venv
 .workbench/mujoco-discrete-venv/bin/python -m pip install "mujoco==3.13.0"
-.workbench/mujoco-discrete-venv/bin/python -m pytest -q tests/test_rss_cpu_solver.py
+.workbench/mujoco-discrete-venv/bin/python -m pytest -q tests/test_rss_cpu_solver.py tests/test_rss_cpu_backend.py
 .workbench/geniesim-venv/bin/python -m pytest -q tests/test_rss_cpu_solver.py tests/test_geniesim_import.py tests/test_geniesim_collision_semantics.py
 ```
 
