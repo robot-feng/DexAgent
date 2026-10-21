@@ -1,0 +1,35 @@
+diff --git a/pyproject.toml b/pyproject.toml
+index d4de84c..0f374f5 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -27,7 +27,7 @@ dependencies = [
+     # [sim] carries mujoco and mujoco-warp, which the default rigid solver needs
+     # at runtime; newton imports them lazily, so a bare "newton" resolves and
+     # then cannot step an arm.
+-    "newton[sim]>=1.6,<1.7",
++    "newton[sim]>=1.7,<1.8",
+     "numpy",
+     # ModelBuilder.approximate_meshes(method="convex_hull") imports scipy.spatial
+     # at call time, and every scene with a hand in it calls it.
+@@ -192,7 +192,7 @@ override-dependencies = [
+     "robosuite; sys_platform == 'never'",
+     "gym; sys_platform == 'never'",
+     "bddl; sys_platform == 'never'",
+-    "mujoco~=3.12.0",
++    "mujoco~=3.15.0",
+ ]
+
+ # Skill registries a graph's subgraphs may name, in gap's own convention: a
+diff --git a/robosimstudio/scene/compiler.py b/robosimstudio/scene/compiler.py
+index 5f51345..29696de 100644
+--- a/robosimstudio/scene/compiler.py
++++ b/robosimstudio/scene/compiler.py
+@@ -462,7 +462,7 @@ def _build_base(
+     collision = arrangement.collision
+     builder = newton.ModelBuilder()
+     if arrangement.gravity != -9.81:
+-        builder.gravity = float(arrangement.gravity)
++        builder.gravity = tuple(float(arrangement.gravity) * axis for axis in builder.up_vector)
+     if collision.rigid_gap is not None:
+         # Before anything imports: this is the default gap for every shape that
+         # states none, and a tight-clearance task needs it at the scale of its

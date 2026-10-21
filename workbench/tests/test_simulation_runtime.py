@@ -98,3 +98,15 @@ def test_configured_cpu_and_gpu_physics_remain_distinct(tmp_path):
     assert "pipeline" not in profiles
     assert "replan" not in profiles
     assert profiles["towel"].solver == "SolverMuJoCo + SolverVBD"
+
+
+def test_rss_interpreter_override_is_probed_without_touching_pipeline(tmp_path):
+    executable = tmp_path / "rss-python"
+    executable.write_text(f"#!{sys.executable}\nprint({json.dumps(metadata())!r})\n")
+    executable.chmod(0o755)
+    configs = config(tmp_path, python="/unused/pipeline/python")
+    path = next(iter(configs.values()))
+    path.write_text(path.read_text() + f"  robosimstudio: {json.dumps(str(executable))}\n")
+    result = inspect_runtime(tmp_path, configs)
+    assert result.status == "environment_detected"
+    assert result.python == str(executable)

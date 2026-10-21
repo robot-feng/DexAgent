@@ -16,6 +16,7 @@ import time
 import uuid
 
 from agent.run_reports import atomic_json, sha256_file
+from agent.rss_runtime import rss_python
 
 from .index import Index, identity
 from .models import (
@@ -196,7 +197,7 @@ class Executions:
         if config is None:
             raise ValueError("配置已移除，请刷新后重新选择")
         cfg = load_config(config)
-        python = Path(cfg.get("environments", {}).get("pipeline") or sys.executable)
+        python = Path(rss_python(cfg))
         try:
             result = subprocess.run(
                 [
@@ -308,7 +309,8 @@ class Executions:
             ):
                 agent_transport = output / "external"
                 cfg["agent"]["transport_dir"] = str(agent_transport)
-            python = Path(cfg.get("environments", {}).get("pipeline") or sys.executable)
+            python = Path((cfg.get("environments", {}).get("pipeline") or sys.executable)
+                          if request.mode in {"pipeline", "replan"} else rss_python(cfg))
             if not python.is_file():
                 raise ValueError(f"配置中的运行解释器不存在：{python}")
             directory = self.root / key

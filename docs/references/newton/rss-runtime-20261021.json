@@ -1,0 +1,526 @@
+{
+  "scope": "RSS Newton 1.7 runtime migration; robot manipulation acceptance remains incomplete",
+  "task_success_evaluated": false,
+  "aggregate_demo_complete": false,
+  "reports": {
+    "rigid": {
+      "path": "runs/newton_1_7_rss_rigid_20261021/stage_report.json",
+      "sha256": "54dc425213698d95612ba1fd6f407129c86ff08e592e3527f74d28f52a6f0be2",
+      "status": "warning",
+      "metrics": {
+        "versions": {
+          "numpy": "2.5.4",
+          "mujoco": "3.15.0",
+          "newton": "1.7.0",
+          "warp-lang": "1.18.0",
+          "jax": "0.12.0"
+        },
+        "python": "/data/tzq/DexAgent/.workbench/venvs/newton-1.7-gpu/bin/python",
+        "gpu": "NVIDIA A100-SXM4-80GB",
+        "scope": "backend_acceptance_example",
+        "embodiment": "panda",
+        "recorded_frames": 150,
+        "particle_count": 0,
+        "simulation_duration_s": 2.9800000190734863
+      },
+      "checks": [
+        {
+          "id": "cube_support",
+          "status": "passed",
+          "required": true,
+          "observed": 0.7749953269958496,
+          "threshold": "z=0.775 +/-0.003 m",
+          "evidence": null
+        },
+        {
+          "id": "simulation_finite",
+          "status": "passed",
+          "required": true,
+          "observed": null,
+          "threshold": null,
+          "evidence": null
+        },
+        {
+          "id": "recorder",
+          "status": "passed",
+          "required": true,
+          "observed": [],
+          "threshold": null,
+          "evidence": null
+        },
+        {
+          "id": "recorded_time",
+          "status": "passed",
+          "required": true,
+          "observed": 150,
+          "threshold": null,
+          "evidence": null
+        },
+        {
+          "id": "recorded_finite",
+          "status": "passed",
+          "required": true,
+          "observed": null,
+          "threshold": null,
+          "evidence": null
+        },
+        {
+          "id": "recorded_frame_counts",
+          "status": "passed",
+          "required": true,
+          "observed": {
+            "body_q": 150
+          },
+          "threshold": null,
+          "evidence": null
+        },
+        {
+          "id": "action_and_joint_frames",
+          "status": "passed",
+          "required": true,
+          "observed": null,
+          "threshold": null,
+          "evidence": null
+        },
+        {
+          "id": "complete_control_capture",
+          "status": "passed",
+          "required": true,
+          "observed": {
+            "capture": 151,
+            "control": 150
+          },
+          "threshold": null,
+          "evidence": null
+        },
+        {
+          "id": "rendered_video",
+          "required": false,
+          "status": "skipped",
+          "evidence": "--no-render"
+        }
+      ]
+    },
+    "sharpa": {
+      "path": "runs/newton_1_7_rss_sharpa_20261021/stage_report.json",
+      "sha256": "baf997aee2bffb3a68af3e6ba6c115c227beaca81740275c67e6faf03a5e3e39",
+      "status": "warning",
+      "metrics": {
+        "versions": {
+          "numpy": "2.5.4",
+          "mujoco": "3.15.0",
+          "newton": "1.7.0",
+          "warp-lang": "1.18.0",
+          "jax": "0.12.0"
+        },
+        "python": "/data/tzq/DexAgent/.workbench/venvs/newton-1.7-gpu/bin/python",
+        "gpu": "NVIDIA A100-SXM4-80GB",
+        "scope": "backend_acceptance_example",
+        "embodiment": "yam_bimanual_sharpa_44_finger_joints",
+        "physics_device": "gpu",
+        "state_and_render_device": "cuda:0",
+        "max_arm_tracking_error_rad": 0.013043362935692249,
+        "max_finger_tracking_error_rad": 0.009854728465093304,
+        "max_final_error_rad": 0.00028036458015442967,
+        "max_cpu_replay_error_rad": 5.1354787438118166e-06,
+        "max_source_contacts": 0,
+        "max_local_dynamics_error_rad": 4.3490969692250303e-07,
+        "max_open_loop_torque_replay_error_rad": 0.20990413181643364,
+        "min_commanded_joint_motion_rad": 0.03979469758987428,
+        "recorded_frames": 625,
+        "particle_count": 0,
+        "simulation_duration_s": 2.496000051498413,
+        "renderer": "tiled; diagnostic collision-geometry rendering"
+      },
+      "checks": [
+        {
+          "id": "physical_joint_identity",
+          "status": "passed",
+          "required": true,
+          "observed": {
+            "robot": 56,
+            "state_q": 56,
+            "state_v": 56
+          },
+          "threshold": null,
+          "evidence": null
+        },
+        {
+          "id": "direct_actuator_control",
+          "status": "passed",
+          "required": true,
+          "observed": null,
+          "threshold": null,
+          "evidence": null
+        },
+        {
+          "id": "joint_armature",
+          "status": "passed",
+          "required": true,
+          "observed": 1.5199184411063271e-09,
+          "threshold": "rtol=2e-6, atol=1e-8",
+          "evidence": null
+        },
+        {
+          "id": "joint_damping",
+          "status": "passed",
+          "required": true,
+          "observed": 1.4901161138336505e-09,
+          "threshold": "rtol=2e-6, atol=1e-8",
+          "evidence": null
+        },
+        {
+          "id": "joint_limit_lower",
+          "status": "passed",
+          "required": true,
+          "observed": 7.095336895801552e-08,
+          "threshold": "rtol=2e-6, atol=1e-8",
+          "evidence": null
+        },
+        {
+          "id": "joint_limit_upper",
+          "status": "passed",
+          "required": true,
+          "observed": 1.1840820324238166e-07,
+          "threshold": "rtol=2e-6, atol=1e-8",
+          "evidence": null
+        },
+        {
+          "id": "body_mass_and_inertia",
+          "status": "passed",
+          "required": true,
+          "observed": null,
+          "threshold": null,
+          "evidence": null
+        },
+        {
+          "id": "actuator_gainprm",
+          "status": "passed",
+          "required": true,
+          "observed": null,
+          "threshold": null,
+          "evidence": null
+        },
+        {
+          "id": "actuator_biasprm",
+          "status": "passed",
+          "required": true,
+          "observed": null,
+          "threshold": null,
+          "evidence": null
+        },
+        {
+          "id": "actuator_gear",
+          "status": "passed",
+          "required": true,
+          "observed": null,
+          "threshold": null,
+          "evidence": null
+        },
+        {
+          "id": "actuator_ctrlrange",
+          "status": "passed",
+          "required": true,
+          "observed": null,
+          "threshold": null,
+          "evidence": null
+        },
+        {
+          "id": "actuator_forcerange",
+          "status": "passed",
+          "required": true,
+          "observed": null,
+          "threshold": null,
+          "evidence": null
+        },
+        {
+          "id": "actuator_ctrllimited",
+          "status": "passed",
+          "required": true,
+          "observed": null,
+          "threshold": null,
+          "evidence": null
+        },
+        {
+          "id": "actuator_forcelimited",
+          "status": "passed",
+          "required": true,
+          "observed": null,
+          "threshold": null,
+          "evidence": null
+        },
+        {
+          "id": "explicit_contact_pairs",
+          "status": "passed",
+          "required": true,
+          "observed": {
+            "source": 1559,
+            "solver": 1559
+          },
+          "threshold": null,
+          "evidence": null
+        },
+        {
+          "id": "contact_solref_preserved",
+          "status": "passed",
+          "required": true,
+          "observed": {
+            "source": [
+              [
+                0.005,
+                1.0
+              ],
+              [
+                0.02,
+                1.0
+              ]
+            ],
+            "solver": [
+              [
+                0.004999999888241291,
+                1.0
+              ],
+              [
+                0.019999999552965164,
+                1.0
+              ]
+            ]
+          },
+          "threshold": "same compiled reference values; no mixed/zero-damping pairs",
+          "evidence": null
+        },
+        {
+          "id": "solver_options",
+          "status": "passed",
+          "required": true,
+          "observed": null,
+          "threshold": null,
+          "evidence": null
+        },
+        {
+          "id": "source_gravity",
+          "status": "passed",
+          "required": true,
+          "observed": {
+            "source": [
+              0.0,
+              0.0,
+              -9.81
+            ],
+            "runtime": [
+              -0.0,
+              -0.0,
+              -9.8100004196167
+            ]
+          },
+          "threshold": null,
+          "evidence": null
+        },
+        {
+          "id": "source_solver_adaptations",
+          "status": "warning",
+          "required": false,
+          "observed": {
+            "noslip_iterations": {
+              "source": 5,
+              "runtime": 0,
+              "reason": "MuJoCo-Warp does not implement noslip"
+            },
+            "jacobian": {
+              "source": "auto",
+              "runtime": "sparse",
+              "reason": "explicit sparse layout for mixed articulated/free scenes"
+            },
+            "solref_shorthand": {
+              "expanded_attributes": 1674,
+              "reason": "preserve MuJoCo's implicit damping ratio (second value 1) in RSS/Newton import"
+            }
+          },
+          "evidence": "original_source_scene.xml retained; runtime solver options are explicitly adapted for backend support"
+        },
+        {
+          "id": "fk_five_poses",
+          "status": "passed",
+          "required": true,
+          "observed": {
+            "max_position_m": 4.078378186102751e-07,
+            "max_rotation_rad": 5.99056722682387e-07,
+            "poses": 5
+          },
+          "threshold": {
+            "position_m": 2e-06,
+            "rotation_rad": 2e-05
+          },
+          "evidence": null
+        },
+        {
+          "id": "calibrated_start_state",
+          "status": "passed",
+          "required": true,
+          "observed": null,
+          "threshold": null,
+          "evidence": null
+        },
+        {
+          "id": "arm_tracking",
+          "status": "passed",
+          "required": true,
+          "observed": 0.013043362935692249,
+          "threshold": 0.05,
+          "evidence": null
+        },
+        {
+          "id": "finger_tracking",
+          "status": "passed",
+          "required": true,
+          "observed": 0.009854728465093304,
+          "threshold": 0.08,
+          "evidence": null
+        },
+        {
+          "id": "commanded_joints_moved",
+          "status": "passed",
+          "required": true,
+          "observed": 0.03979469758987428,
+          "threshold": 0.02,
+          "evidence": null
+        },
+        {
+          "id": "returned_to_home",
+          "status": "passed",
+          "required": true,
+          "observed": 0.00028036458015442967,
+          "threshold": 0.025,
+          "evidence": null
+        },
+        {
+          "id": "independent_cpu_replay",
+          "status": "passed",
+          "required": true,
+          "observed": 5.1354787438118166e-06,
+          "threshold": 0.025,
+          "evidence": null
+        },
+        {
+          "id": "local_raw_control_dynamics",
+          "status": "passed",
+          "required": true,
+          "observed": 4.3490969692250303e-07,
+          "threshold": 5e-05,
+          "evidence": null
+        },
+        {
+          "id": "open_loop_torque_replay",
+          "required": false,
+          "status": "warning",
+          "observed": 0.20990413181643364,
+          "threshold": 0.025,
+          "evidence": "raw torque replay without feedback; recorded policy actions are joint references replayed with the controller"
+        },
+        {
+          "id": "sharpa_contact_task",
+          "required": false,
+          "status": "skipped",
+          "evidence": "this checks import and free-space actuation; grasping cloth and task scenes are not evaluated"
+        },
+        {
+          "id": "simulation_finite",
+          "status": "passed",
+          "required": true,
+          "observed": null,
+          "threshold": null,
+          "evidence": null
+        },
+        {
+          "id": "recorder",
+          "status": "passed",
+          "required": true,
+          "observed": [],
+          "threshold": null,
+          "evidence": null
+        },
+        {
+          "id": "recorded_time",
+          "status": "passed",
+          "required": true,
+          "observed": 625,
+          "threshold": null,
+          "evidence": null
+        },
+        {
+          "id": "recorded_finite",
+          "status": "passed",
+          "required": true,
+          "observed": null,
+          "threshold": null,
+          "evidence": null
+        },
+        {
+          "id": "recorded_frame_counts",
+          "status": "passed",
+          "required": true,
+          "observed": {
+            "body_q": 625
+          },
+          "threshold": null,
+          "evidence": null
+        },
+        {
+          "id": "action_and_joint_frames",
+          "status": "passed",
+          "required": true,
+          "observed": null,
+          "threshold": null,
+          "evidence": null
+        },
+        {
+          "id": "complete_control_capture",
+          "status": "passed",
+          "required": true,
+          "observed": {
+            "capture": 626,
+            "control": 625
+          },
+          "threshold": null,
+          "evidence": null
+        },
+        {
+          "id": "rendered_video",
+          "status": "passed",
+          "required": true,
+          "observed": {
+            "decoded_frames": 38,
+            "expected_frames": 38,
+            "fps": 15.0,
+            "min_visible_hand_pixels": {
+              "left": 1653,
+              "right": 3686
+            }
+          },
+          "threshold": {
+            "min_hand_pixels": 100
+          },
+          "evidence": null
+        }
+      ]
+    }
+  },
+  "rss_base_commit": "73739abe212f963e8a9f5862b27bca370df091a7",
+  "rss_patch": "patches/robosimstudio-newton-1.7.patch",
+  "rss_patch_sha256": "b3c57e3b395901cf11d6ce631681e0b2e7e2361dab1ce9490656c73835a524a2",
+  "tests": {
+    "new_runtime_outlet_and_export": "23 passed, including 2 real GPU integrators",
+    "legacy_outlet_and_export": "20 passed, 3 skipped (GPU opt-in off and legacy discrete unsupported)",
+    "rss_composition_scene_fleet_recorder": "50 passed, 10 subtests passed",
+    "runtime_routing_config_workers_api": "34 passed; original agent/tests/test_config.py ALL PASS"
+  },
+  "default_rss_interpreter": "/data/tzq/DexAgent/.workbench/venvs/newton-1.7-gpu/bin/python",
+  "pipeline_interpreter_unchanged": "/data/miniconda3/envs/dexagent/bin/python",
+  "all_task_profiles_switched_to_gpu": false,
+  "test_logs_sha256": {
+    "/tmp/rss-gpu-installed-regression-20261021.log": "b3396c1ade425e507181c7b2ac9777591f931fea6061492175685c26847d6ffc",
+    "/tmp/rss-outlet-legacy-regression-20261021.log": "2331abf63d825f49ebdd7190a9773221c99e0f2521d50cccb2f2fc824784f5de",
+    "/tmp/rss-newton17-core-regression-20261021.log": "b4f3ccca4e8ef69301937d6637135a3a9834c504bacc5a68b3cda950903e12da",
+    "/tmp/rss-runtime-config-compat-regression-20261021.log": "6515d31d77ecb7d87cb5713bdc4c40678ec9a46e5607ef0a5eb5482c49b09bcd"
+  }
+}

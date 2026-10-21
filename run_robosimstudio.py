@@ -457,8 +457,11 @@ def main(argv=None):
         parser.error("fps must be positive")
     from agent.config import load_config
     cfg = load_config(args.config)
-    configured = (cfg.get("environments") or {}).get("pipeline")
-    if configured and Path(configured).resolve() != Path(sys.executable).resolve():
+    from agent.rss_runtime import rss_python
+    configured = rss_python(cfg)
+    # Two virtualenv executables may symlink to the same base Python binary.
+    # Resolving those symlinks would incorrectly treat distinct envs as equal.
+    if os.path.abspath(configured) != os.path.abspath(sys.executable):
         os.execv(configured, [configured, str(Path(__file__).resolve()), *(sys.argv[1:] if argv is None else argv)])
     args.thresholds = {"max_fold_extent": 0.6, "min_fold_score": 0.85, "max_settle_speed_mps": 0.02,
                        **(cfg.get("evaluation", {}).get("robosimstudio") or {})}

@@ -410,7 +410,10 @@ def test_replanning_process_retry_uses_sealed_inputs_not_live_source(
     workspace, monkeypatch
 ):
     """Substitute only the CLI process; no fixture claims physical acceptance."""
-    manager, _ = workspace
+    manager, config = workspace
+    cfg = yaml.safe_load(config.read_text())
+    cfg["environments"]["robosimstudio"] = "/missing/rss-python-not-for-replanning"
+    config.write_text(yaml.safe_dump(cfg))
     source = manager.index.runs_root / "task-source"
     atomic_json(
         source / "stage_report.json",
@@ -432,6 +435,7 @@ def test_replanning_process_retry_uses_sealed_inputs_not_live_source(
     spawn = subprocess.Popen
 
     def fixture_process(command, **options):
+        assert command[0] == sys.executable
         assert command[1:3] == ["-m", "agent.task_variants"]
         return spawn(
             [sys.executable, str(manager.repo / "run_dexagent.py"), command[3]],
@@ -583,3 +587,34 @@ def test_replanning_resolves_candidate_lineage_and_rejects_changed_origin(worksp
     (source / "stage3/stage4_task/scene.xml").write_text("replaced source")
     with pytest.raises(ValueError, match="来源场景已变化"):
         manager.task_inputs(last_id)
+
+
+def test_rss_worker_override_preserves_pipeline_and_retry_snapshot(workspace):
+    manager, config = workspace
+    python = manager.repo / "rss-python"
+    marker = manager.repo / "rss-launches.txt"
+    python.write_text(
+        f"#!{sys.executable}\nimport os,sys\n"
+        f"with open({str(marker)!r}, 'a') as f: f.write('rss\\n')\n"
+        f"os.execv({sys.executable!r}, [{sys.executable!r}, *sys.argv[1:]])\n"
+    )
+    python.chmod(0o755)
+    cfg = yaml.safe_load(config.read_text())
+    cfg["environments"]["robosimstudio"] = str(python)
+    config.write_text(yaml.safe_dump(cfg))
+    rss_request = ExecutionCreate(config_id=manager.catalog().configs[0].id, mode="rigid")
+    rss_job = manager.start(rss_request)
+    assert finished(manager, rss_job.id).returncode == 0
+    assert manager._read(rss_job.id)["command"][0] == str(python)
+    assert marker.read_text() == "rss\n"
+    pipeline_job = manager.start(request(manager))
+    assert finished(manager, pipeline_job.id).returncode == 0
+    assert manager._read(pipeline_job.id)["command"][0] == sys.executable
+    assert marker.read_text() == "rss\n"
+    # Retrying an RSS run uses its frozen environment, not a newly edited YAML.
+    cfg["environments"]["robosimstudio"] = "/missing/new/rss-python"
+    config.write_text(yaml.safe_dump(cfg))
+    retry = manager.retry(rss_job.id)
+    assert finished(manager, retry.id).returncode == 0
+    assert manager._read(retry.id)["command"][0] == str(python)
+    assert marker.read_text() == "rss\nrss\n"

@@ -154,6 +154,7 @@ models:                                # checkouts and weights; a tool call that
 
 environments:                          # Python interpreters for tools whose packages live in another environment; null = this interpreter
   pipeline: /data/miniconda3/envs/dexagent/bin/python  # run_dexagent.py re-execs into this environment for consistent MuJoCo/tool versions
+  robosimstudio: /data/tzq/DexAgent/.workbench/venvs/newton-1.7-gpu/bin/python # Newton 1.7 / MuJoCo Warp 3.15; physics device remains explicit per task
   sam3: /data/miniconda3/envs/dexagent/bin/python  # transformers/accelerate/torch and local SAM3-LiteText weights
   sam3_litetext_video: /data/miniconda3/envs/sam3/bin/python # native SAM3 LiteText video tracker runtime
   sam2: null                           # track_objects

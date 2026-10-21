@@ -1,5 +1,8 @@
 # Newton 1.7 GPU 运行环境验证
 
+后续执行入口迁移见 [RSS 运行环境接入](NEWTON_RSS_RUNTIME_MIGRATION_20261021.md)。
+下文保留最初 64 world 运行时验证时的环境与边界。
+
 按用户要求优先升级 Newton 并验证 GPU 并行。2026-10-21 实际查询 PyPI：Newton
 最新稳定版为 1.7.0；其官方 `sim` extra 约束 MuJoCo / MuJoCo Warp `~=3.15.0`。
 本次按该兼容组合安装，不将独立包的 3.16 版本强行混入。

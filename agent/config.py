@@ -66,6 +66,13 @@ def load_config(path: str | os.PathLike | None = None) -> dict:
     cfg = yaml.safe_load(path.read_text()) or {}
     defaults = yaml.safe_load(DEFAULT_YAML.read_text()) or {}
     merged = _merge(defaults, cfg)
+    environments = cfg.get("environments") or {}
+    if (environments.get("pipeline") not in (None, "")
+            and "robosimstudio" not in environments):
+        # Legacy configs selected one interpreter for both workers. A new global
+        # RSS default must not override that explicit choice; ordinary parameter
+        # overrides still inherit it, as do explicit null/empty RSS values.
+        merged["environments"].pop("robosimstudio", None)
     base = path.parent
     for keys in PATH_KEYS:
         v = _get(merged, keys)

@@ -6,7 +6,7 @@ import newton
 import numpy as np
 
 
-class CpuPositionTargetOutlet:
+class PositionTargetOutlet:
     """A narrow control outlet for unit-gear scalar position servos.
 
     Imported MJCF servos use CTRL_DIRECT. RSS IK/gripper controllers instead
@@ -14,12 +14,13 @@ class CpuPositionTargetOutlet:
     pre_solve; do not replace their source gains, force caps or constraints.
     Labels are exact model.mujoco.actuator_label values, not suffix guesses.
     Motor, velocity, tendon, coupled and nonzero-reference servos are rejected.
-    This outlet is single-world CPU only and must be rebuilt with the model.
+    Supports one native CPU or MuJoCo Warp GPU world. Rebuild after changing
+    the model; GPU servo parameters must match the native construction model.
+    Command validation synchronizes with the host, so this is not a batched or
+    CUDA-graph control path.
     """
 
     def __init__(self, model, solver, actuator_labels):
-        if str(model.device) != "cpu" or not solver.use_mujoco_cpu:
-            raise ValueError("position outlet requires the native CPU solver")
         if solver.model is not model:
             raise ValueError("position outlet model must belong to the selected solver")
         self.model, self.solver = model, solver
@@ -28,6 +29,29 @@ class CpuPositionTargetOutlet:
         dofs = solver.mjc_jnt_to_newton_dof.numpy()
         if joints.shape != (1, m.njnt):
             raise ValueError("position outlet requires exactly one native world")
+        self.gpu_model = None
+        if not solver.use_mujoco_cpu:
+            if not model.device.is_cuda or solver.mjw_data.nworld != 1:
+                raise ValueError("position outlet requires one MuJoCo Warp CUDA world")
+            self.gpu_model = solver.mjw_model
+            # mj_model is a construction snapshot, not the live GPU model.
+            # Refuse a stale/mutated mirror instead of auditing the wrong gains
+            # or bounds. Warp may store model fields with a world dimension.
+            for field in (
+                "actuator_trntype", "actuator_trnid", "actuator_dyntype",
+                "actuator_gaintype", "actuator_biastype", "actuator_gear",
+                "actuator_gainprm", "actuator_biasprm", "actuator_ctrlrange",
+                "actuator_ctrllimited", "actuator_forcerange", "actuator_forcelimited",
+                "jnt_type", "qpos0",
+            ):
+                actual = getattr(self.gpu_model, field).numpy()
+                expected = np.asarray(getattr(m, field))
+                if actual.shape == (1, *expected.shape):
+                    actual = actual[0]
+                if actual.shape != expected.shape or not np.array_equal(
+                    actual, expected.astype(actual.dtype)
+                ):
+                    raise ValueError(f"GPU servo model differs from native snapshot: {field}")
         labels = list(model.mujoco.actuator_label)
         requested = list(actuator_labels)
         if not requested or len(set(requested)) != len(requested):
@@ -85,6 +109,8 @@ class CpuPositionTargetOutlet:
         """Copy validated commands; other actuator channels remain untouched."""
         if self.solver.mj_model is not self.native_model:
             raise RuntimeError("native model was replaced; rebuild the position outlet")
+        if self.gpu_model is not None and self.solver.mjw_model is not self.gpu_model:
+            raise RuntimeError("GPU model was replaced; rebuild the position outlet")
         targets = control.joint_target_q.numpy()[self.target_slots]
         if not np.isfinite(targets).all():
             raise ValueError("position targets must be finite")
@@ -96,3 +122,12 @@ class CpuPositionTargetOutlet:
         commands = control.mujoco.ctrl.numpy().copy()
         commands[self.ctrl_slots] = targets
         control.mujoco.ctrl.assign(commands)
+
+
+class CpuPositionTargetOutlet(PositionTargetOutlet):
+    """Compatibility entry point for callers requiring native CPU execution."""
+
+    def __init__(self, model, solver, actuator_labels):
+        if str(model.device) != "cpu" or not solver.use_mujoco_cpu:
+            raise ValueError("position outlet requires the native CPU solver")
+        super().__init__(model, solver, actuator_labels)

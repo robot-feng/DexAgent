@@ -6,14 +6,13 @@ from datetime import datetime, timezone
 import json
 from pathlib import Path
 import subprocess
-import sys
 import yaml
 
 from packaging.requirements import Requirement
 from packaging.version import InvalidVersion
 
 from agent.config import load_config
-from agent.rss_runtime import default_physics_device
+from agent.rss_runtime import default_physics_device, rss_python
 from .models import RuntimePackage, SimulationProfile, SimulationRuntime
 
 
@@ -91,9 +90,7 @@ def inspect_runtime(repo: Path, configs: dict[str, Path], config_id: str | None 
     base = dict(config_id=config_id, config_name=path.name, checked_at=checked_at)
     try:
         cfg = load_config(path)
-        python = cfg.get("environments", {}).get("pipeline") or sys.executable
-        if not isinstance(python, str):
-            raise ValueError("运行解释器必须是路径")
+        python = rss_python(cfg)
         base.update(python=python, profiles=profiles(cfg))
     except (OSError, ValueError, TypeError, AttributeError, yaml.YAMLError):
         return SimulationRuntime(**base, status="error", detail="无法读取有效的运行配置。")

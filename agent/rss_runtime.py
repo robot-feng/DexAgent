@@ -2,6 +2,17 @@
 
 from __future__ import annotations
 
+import sys
+
+
+def rss_python(cfg: dict) -> str:
+    """Select only the RSS worker interpreter; keep legacy pipeline fallback."""
+    environments = cfg.get("environments") or {}
+    python = environments.get("robosimstudio") or environments.get("pipeline") or sys.executable
+    if not isinstance(python, str):
+        raise ValueError("RSS runtime interpreter must be a path string")
+    return python
+
 
 def build_cpu_mujoco_solver(model, *, integrator: str = "implicitfast", **kwargs):
     """Lazy entry point; the same solver class is available to RSS backends."""
