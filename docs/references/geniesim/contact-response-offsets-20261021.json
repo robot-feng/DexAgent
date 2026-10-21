@@ -1,0 +1,295 @@
+{
+  "scope": "contact_response_failed_and_contact_offset_import_fix_not_task_acceptance",
+  "task_success_evaluated": false,
+  "training_eligible": false,
+  "aggregate_demo_complete": false,
+  "full_G1_regenerated_after_offset_fix": false,
+  "studio_run_id": "48ca593b8209aeb4c373c696",
+  "contact_response": {
+    "schema_version": 1,
+    "scope": "Full G1 single-variable contact-response diagnostic; external calibration fixture, no task acceptance",
+    "status": "failed",
+    "executed_physics_steps": 348,
+    "planned_physics_steps": 1300,
+    "recorded_samples": 349,
+    "physical_trials": 1,
+    "no_rerun_after_failure": true,
+    "stop": {
+      "step": 348,
+      "time_s": 0.34800000000000025,
+      "reasons": [
+        "joint_limit_violation"
+      ]
+    },
+    "task_success_evaluated": false,
+    "training_eligible": false,
+    "contact_diagnostic_pass": false,
+    "exact_source_qualification": "failed_retained",
+    "aggregate_three_robot_demo_completion": false,
+    "controlled_change": {
+      "fields": [
+        "geom_solref",
+        "geom_solimp"
+      ],
+      "solref": [
+        0.002,
+        1.0
+      ],
+      "solimp": [
+        0.9999,
+        0.9999,
+        0.001,
+        0.5,
+        2.0
+      ],
+      "bodies": [
+        "left_inner_link4",
+        "left_outer_link4",
+        "calibration_cube",
+        "calibration_support"
+      ],
+      "selection": "All real left distal finger convex geoms and the two added calibration primitive geoms; no source mesh/inertia/gain/force/limit/filter or right-hand contact edit. This selects contact response, not a PhysX-fidelity claim."
+    },
+    "source_preservation": {
+      "baseline_all_physical_fields_identical": true,
+      "physical_field_count": 62,
+      "only_changed_fields": [
+        "geom_solref",
+        "geom_solimp"
+      ],
+      "untargeted_contact_parameters_unchanged": true,
+      "physical_arrays_unchanged_during_run": true,
+      "all_equalities_active": true,
+      "all_thresholds_unchanged": true,
+      "old_source_robot_actuator_control_mapping_reused": true
+    },
+    "outlet_qualification": "blocked_by_duplicate_unnamed_actuators",
+    "outlet_used_for_physics": false,
+    "contact_criteria": {
+      "max_force_by_finger_N": [
+        274.13857267431985,
+        268.3434692158646
+      ],
+      "max_simultaneous_consecutive_steps": 5,
+      "both_sides_contact_observed": true,
+      "passed": false,
+      "max_cube_penetration_m": 0.0008477277499029379,
+      "max_cube_translation_m": 0.0013576322294540026,
+      "max_robot_fixture_contact": false,
+      "max_cube_other_robot_contact_count": 0
+    },
+    "joint_limit_failure": {
+      "joint_name": "MuJoCo Model_worldbody__G01_base_link__G01_body_link1__G01_body_link2__G01_arm_base_link__G01_arm_l_base_link__G01_arm_l_link1__G01_arm_l_link2__G01_arm_l_link3__G01_arm_l_link4__G01_arm_l_link5__G01_arm_l_link6__G01_arm_l_end_link__G01_gripper_l_base_link__G01_gripper_l_outer_link1__G01_gripper_l_outer_link3__G01_gripper_l_outer_link4__G01_joints_idx43_gripper_l_outer_joint4",
+      "source_limits_rad": [
+        -0.034906599670648575,
+        0.034906599670648575
+      ],
+      "allowance_rad": 0.01,
+      "first_crossing_step": 348,
+      "previous_q_rad": -0.04337782324614214,
+      "stop_q_rad": -0.04558394207689355,
+      "previous_violation_rad": 0.008471223575493562,
+      "stop_violation_rad": 0.010677342406244975,
+      "native_joint_solref": [
+        0.02,
+        1.0
+      ],
+      "native_joint_solimp": [
+        0.8999999761581421,
+        0.949999988079071,
+        0.0010000000474974513,
+        0.5,
+        2.0
+      ]
+    },
+    "speed_scope": {
+      "maximum_robot_scalar_speed_SI": 3.2362780645818585,
+      "cube_linear_speed_max_norm_m_s": 0.37981706418614947,
+      "cube_angular_speed_max_norm_rad_s": 140.6193552262223,
+      "cube_angular_component_max_abs_rad_s": 101.12619410682407,
+      "basis": "Native MuJoCo free-joint qvel linear/rotational components; norms invariant under rotation. The inherited observed.max_scalar_velocity includes this free body and is not a robot-joint maximum."
+    },
+    "contact_and_state_verification": {
+      "physics_steps": 348,
+      "recorded_samples": 349,
+      "all_fields_finite": true,
+      "time_monotonic": true,
+      "force_sum_max_error_N": 1.7763568394002505e-15,
+      "all_post_step_depth_rows_match_probe_log": true,
+      "actual_newton_loop_max_m": 3.380943279346682e-05,
+      "actual_Newton_vs_native_loop_max_difference_m": 7.607824831210152e-07,
+      "max_solved_finger_force_N": [
+        274.13857267431985,
+        268.3434692158646
+      ],
+      "last_solved_finger_force_N": [
+        0.18116974152080964,
+        0.17789630854825975
+      ],
+      "max_support_force_N": 71.7927629567706,
+      "first_bilateral_force_step": 333,
+      "final_loaded_minus_empty_driver_rad": 0.0009863955963082885,
+      "max_post_step_penetration_m": 0.0008477277499029379,
+      "max_cached_solve_penetration_m": 0.0008477280992688768,
+      "status": "stopped_on_frozen_criterion",
+      "stop": {
+        "step": 348,
+        "time_s": 0.34800000000000025,
+        "reasons": [
+          "joint_limit_violation"
+        ]
+      },
+      "task_success_evaluated": false,
+      "contact_diagnostic_pass": false,
+      "source_exact_qualification": "failed_retained",
+      "outlet_qualification": "blocked_by_duplicate_unnamed_actuators",
+      "peak_finger_force_steps": [
+        335,
+        335
+      ]
+    },
+    "actual_mixed_pairs_verified_post_run": 4,
+    "post_step_geometry_gate": "Current CPUContactProbe.penetrations(): isolated post-step position/collision query; solver cached geometry and solve forces retained separately. Same2mm threshold, corrected sample phase as independently audited.",
+    "freeze": {
+      "protocol_sha256": "a30b42e657a9ec0aef3ae61655bf7db615d43420fdd8597d7129e11ed60b2029",
+      "runner_sha256": "5e88971bec49d957d9d1722c1150806d601f9d8df8e5b01d38cb74efe621d1cc",
+      "protocol_matches_run_manifest": true,
+      "runner_matches_run_manifest": true,
+      "review_sha256": "30ab8b3ea85882106bc73aa489e248e5619b3b4e830ca10a3ae2dc45a28df7af"
+    },
+    "source_numerical_stop_thresholds": {
+      "mimic_residual_rad": 0.01,
+      "loop_anchor_residual_m": 0.001,
+      "joint_limit_violation_rad": 0.01,
+      "scalar_speed_rad_s": 10.0,
+      "fixed_base_position_drift_m": 1e-05,
+      "fixed_base_rotation_drift_rad": 1e-05,
+      "effort_cap_relative_slack": 1e-05,
+      "effort_cap_absolute_slack": 1e-06
+    },
+    "contact_stop_thresholds": {
+      "robot_fixture_contact": true,
+      "object_penetration_m": 0.002,
+      "object_translation_m": 0.02
+    },
+    "interpretation": "Strict contact reduces penetration but creates274N impact, fast free-cube rotation and passive joint4 limit violation. Not a qualified fix; preserve failure, no parameter search or default rollout.",
+    "artifacts": {
+      "approved-run/strict_contact/trajectory.npz": "b86bf12319a3c183f2232b3ef99469d971e68f0a8eb49673fc139b821e15d592",
+      "approved-run/strict_contact/contacts.jsonl": "978863476b6f4a9f9b3306d23a4923ce0a2dd7e21ae3510049a15c260bbc3657",
+      "approved-run/strict_contact/post-step-geometry.jsonl": "c76cb95f546017b81a76f044d9e4c570e1780ac8d4083aa448536cf48728e8a0",
+      "approved-run/strict_contact/adapted-native.mjb": "07a52e34c012c732287afa6e532a5c9a15211622b03775bc54187af4957996a8",
+      "approved-run/strict_contact/ready-preflight.json": "972c6e98753d89aaf2ae6af363b1bb9b7293ca03ce47f23eb41f004423ab1584",
+      "verification.json": "298e82b96d7cb600ef29e5a460dbb392999f2e9851589fb207b8c81be0bed0db",
+      "contact-response.png": "131653994390372e4b255c7c0f54f6f86698d1e64d388b7be3973b998784b094"
+    }
+  },
+  "independent_review": {
+    "scope": "independent_all_saved_state_geometry_and_acceptance_audit_no_step_or_reset",
+    "additional_physics_steps": 0,
+    "states_checked": 349,
+    "first_joint_limit_crossing": 348,
+    "max_joint_limit_excess_rad": 0.010677342406244975,
+    "post_step_depth_max_error_m": 0.0,
+    "peak_depth_m": 0.0008477277499029379,
+    "initial_state_exactly_matches_previous_trial": true,
+    "all_commands_exactly_match_previous_trial": true,
+    "bilateral_contact_max_consecutive_steps": 5,
+    "peak_finger_force_N": [
+      274.13857267431985,
+      268.3434692158646
+    ],
+    "input_sha256": {
+      "adapted-native.mjb": "07a52e34c012c732287afa6e532a5c9a15211622b03775bc54187af4957996a8",
+      "trajectory.npz": "b86bf12319a3c183f2232b3ef99469d971e68f0a8eb49673fc139b821e15d592",
+      "report.json": "292bfbccf0940fb3ec8c4259bfed40c2d0ea89dc0fc81e0ff50e3c9dd9a20dd5"
+    }
+  },
+  "offset_fix": {
+    "scope": "rigid_contact_offset_import_fix_verification",
+    "changed_production_files": [
+      "agent/geniesim_import.py",
+      "tests/test_geniesim_collision_semantics.py"
+    ],
+    "committed": false,
+    "full_robot_model_regenerated": false,
+    "old_portable_and_contact_evidence_modified": false,
+    "tests": {
+      "mujoco_3_13": {
+        "result": "57 passed, 43 warnings in 6.08s",
+        "log": "production-tests-3.13-final.log",
+        "sha256": "3d3f6c54a16567ccf41a0081226c6b2b1594f523dd2aa8a50598ae4d9af034ec"
+      },
+      "mujoco_3_12": {
+        "result": "57 passed, 42 warnings in 6.18s",
+        "log": "production-tests-3.12-final.log",
+        "sha256": "a65a771bf7267296a8df487d11e4fddef03c4e588adccade21a3bf5e3c167292"
+      }
+    },
+    "source_session_check": {
+      "artifact": "production-G1-session-verification.json",
+      "sha256": "55739145b052fe16bdeaef663da8b9de7f3af8ca5d72cdbb04d24c598e495f55",
+      "mapped": 4,
+      "other_colliders_unchanged": 36
+    },
+    "qualification_cases": "Real tiny USD qualification retains source snapshots, passes builder/native gap .001 after resolving rigid rest0; finite .0002 rest passes builder but intentionally fails native margin preservation because native CCD zeroes margin. Tests expect this required failure, not a waived check.",
+    "unit_evidence": "Actual USD import of centimetre stage with PhysX .1/rest0 or Newton gap .1 leaves builder gap .1, not .001; native importer warns non-unit linear units unsupported (import_usd.py705–708). Adapter rejects non-metre offset-bearing stages before editing session.",
+    "scope_limits": [
+      "Unknown rigid owners and instance proxies needing defaults reject without edits",
+      "Disabled bodies/colliders and unspecified engine contact offsets remain unchanged",
+      "Explicit Newton per-field priority retained, including irrelevant invalid PhysX opinions",
+      "No new dynamic/contact/task pass claimed; old full G1 trial remains failed"
+    ]
+  },
+  "evidence_sha256": {
+    "agent/geniesim_import.py": "de3113a18b3cc5c017765f6fe2564d49e7f55237e123d5149e9c58404ccc9652",
+    "tests/test_geniesim_collision_semantics.py": "fe1c793e948940a1ef2c6abc1d6b54cd9e174415eccdad981789f37badad3b1c",
+    "docs/references/geniesim/g1-contact-response.png": "131653994390372e4b255c7c0f54f6f86698d1e64d388b7be3973b998784b094",
+    ".workbench/previews/geniesim-g1-contact-response-20261021/preflight-report.json": "8ddd31dbe27b5fb0af078a9ff44aed2e710af01eb0e7bc6b1feddbeffc70e775",
+    ".workbench/previews/geniesim-g1-contact-response-20261021/studio-browser-verification.json": "a9ec3de4991174d4dc88641303004588e43ff708ea0a3e99dd76f494980879cc",
+    ".workbench/previews/geniesim-g1-contact-response-20261021/manifest.json": "a6dc2175c91ced58de24daf9b862df8823b7cf6c5617ab1053e8c94d03fedcb6",
+    ".workbench/previews/geniesim-g1-contact-response-20261021/studio-publication.json": "1c698d2164c35267c978aa3475db6302e9dd0fea75f84bcc352b76f4aaca0292",
+    ".workbench/previews/geniesim-g1-contact-response-20261021/summary.json": "79c425cceb5cea7cda5e006edb044b042ffc8dfa3ef830da7fe19c8fd18636db",
+    ".workbench/previews/geniesim-g1-contact-response-20261021/independent-review.json": "3a4adad7efc18739780d77c80eb5046c98531fa084afc2c5134f4bf1330f65df",
+    ".workbench/previews/geniesim-g1-contact-response-20261021/verification.json": "298e82b96d7cb600ef29e5a460dbb392999f2e9851589fb207b8c81be0bed0db",
+    ".workbench/previews/geniesim-g1-contact-response-20261021/protocol.json": "57317f341d50ef8b0fd8804c2183a381fd5cfb9675822d998de373b824fb7833",
+    ".workbench/previews/geniesim-g1-contact-response-20261021/placement.json": "9e60ae636de7ef80a3a8bccac8a6136cec1fedf0e33c737b29c977c0ba8bcb31",
+    ".workbench/previews/geniesim-g1-contact-response-20261021/analyze.py": "e739866b4781657123e5d490de8c6bf1d2d536bcb18a00cfc8dab0dbe18ea0cb",
+    ".workbench/previews/geniesim-g1-contact-response-20261021/frozen-runner.py": "a06b65e44ac57405a5c9870240e8f94e2f2a61851cdbba57aee4fd13c26a27ce",
+    ".workbench/previews/geniesim-g1-contact-response-20261021/response_preflight.py": "0c46c809e974957efb7fb8c7fe9b4ecd025f694ae1a377b4fa17ec7e37b66e63",
+    ".workbench/previews/geniesim-g1-contact-response-20261021/run.py": "a06b65e44ac57405a5c9870240e8f94e2f2a61851cdbba57aee4fd13c26a27ce",
+    ".workbench/previews/geniesim-g1-contact-response-20261021/prepare.py": "d4c902a5e235e6c386c7ac3a1fa884b86c3d5804e78c9bb87949d7f92faa7712",
+    ".workbench/previews/geniesim-g1-contact-response-20261021/audit_roundtrip.py": "c9737462b639eef71ef99be7015b60fb7fd885e0c2e69671a296654956d23e28",
+    ".workbench/previews/geniesim-g1-gap-audit-20261021/physx-default-evidence.json": "2c6340f01347d00f3dc885d12bbbc7c21c6d7186f1421e381af4e3b893e1e45d",
+    ".workbench/previews/geniesim-g1-gap-audit-20261021/production-G1-session-verification.json": "55739145b052fe16bdeaef663da8b9de7f3af8ca5d72cdbb04d24c598e495f55",
+    ".workbench/previews/geniesim-g1-gap-audit-20261021/audit.json": "23dc554a570d63e0546bd41b06f75dfe2c32bbb158339166e9eb934707a173e6",
+    ".workbench/previews/geniesim-g1-gap-audit-20261021/source-collision-offsets.json": "03e7fdf944b7214f91bc693b1ad0af897a422eb38b8b7618939ce8a395eb623b",
+    ".workbench/previews/geniesim-g1-gap-audit-20261021/manifest.json": "2f76d7e106e984f61d0c6cb8f0127b0feea2587a9e99c4e02a4a542907507cb4",
+    ".workbench/previews/geniesim-g1-gap-audit-20261021/production-verification.json": "1d81e945f6716b7748ceb6c21fabcdb9cac7a95d0f8170164fd12efb659cd5cb",
+    ".workbench/previews/geniesim-g1-gap-audit-20261021/production-source-verification.json": "0b867c6117e54c271c4c99bd90f42b969c58ba649a2379ff8eb90b705a4aa17f",
+    ".workbench/previews/geniesim-g1-gap-audit-20261021/original-native-3.12.json": "8d8c4cae3b40187fb5201f4cc2ae14b923bf424abfd4cf19717bfcb8dd2e71e4",
+    ".workbench/previews/geniesim-g1-gap-audit-20261021/audit.py": "7b182792efe62902c5302764961a7797b2db39034b9036b4961585ee5a83c424",
+    ".workbench/previews/geniesim-g1-gap-audit-20261021/production-tests-3.12-final.log": "a65a771bf7267296a8df487d11e4fddef03c4e588adccade21a3bf5e3c167292",
+    ".workbench/previews/geniesim-g1-gap-audit-20261021/production-tests-3.13-final.log": "3d3f6c54a16567ccf41a0081226c6b2b1594f523dd2aa8a50598ae4d9af034ec",
+    ".workbench/previews/geniesim-g1-contact-response-20261021/approved-run/frozen-runner.py": "5e88971bec49d957d9d1722c1150806d601f9d8df8e5b01d38cb74efe621d1cc",
+    ".workbench/previews/geniesim-g1-contact-response-20261021/approved-run/response_preflight.py": "e23acb87673d3354c15778ee211a9f87443ec8784ec25386e1506dd89c0ffbcb",
+    ".workbench/previews/geniesim-g1-contact-response-20261021/approved-run/run.py": "5e88971bec49d957d9d1722c1150806d601f9d8df8e5b01d38cb74efe621d1cc",
+    ".workbench/previews/geniesim-g1-contact-response-20261021/approved-run/audit_roundtrip.py": "c9737462b639eef71ef99be7015b60fb7fd885e0c2e69671a296654956d23e28",
+    ".workbench/previews/geniesim-g1-contact-response-20261021/approved-run/report.json": "ce77ad50d3ae876f308a67a1d02f8c76e0ac29f04840dc09230d20ec3935c9f6",
+    ".workbench/previews/geniesim-g1-contact-response-20261021/approved-run/review.json": "30ab8b3ea85882106bc73aa489e248e5619b3b4e830ca10a3ae2dc45a28df7af",
+    ".workbench/previews/geniesim-g1-contact-response-20261021/approved-run/protocol.json": "a30b42e657a9ec0aef3ae61655bf7db615d43420fdd8597d7129e11ed60b2029",
+    ".workbench/previews/geniesim-g1-contact-response-20261021/approved-run/placement.json": "9e60ae636de7ef80a3a8bccac8a6136cec1fedf0e33c737b29c977c0ba8bcb31"
+  },
+  "studio_browser": {
+    "http": 200,
+    "failure_scope": true,
+    "joint_limit": true,
+    "task_not_evaluated": true,
+    "preview_images": [
+      {
+        "loaded": true,
+        "src": "http://127.0.0.1:8765/api/workbench/v1/artifacts/13d96f2ca0af48e59ef4f65b/content"
+      }
+    ],
+    "errors": []
+  }
+}

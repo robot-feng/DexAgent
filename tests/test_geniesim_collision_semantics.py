@@ -324,3 +324,241 @@ def test_conflicting_body_gravity_opinions_reject_without_session_edits(tmp_path
     with pytest.raises(ValueError, match="Conflicting authored gravity"):
         geniesim_import.map_physx_body_gravity(stage)
     assert stage.GetSessionLayer().ExportToString() == before
+
+
+def set_offsets(stage, native, path="/Robot/link0/collision", **values):
+    Sdf = native[5]
+    names = {"contact": "physxCollision:contactOffset", "rest": "physxCollision:restOffset",
+             "gap": "newton:contactGap", "margin": "newton:contactMargin"}
+    prim = stage.GetPrimAtPath(path)
+    for key, value in values.items():
+        prim.CreateAttribute(names[key], Sdf.ValueTypeNames.Float).Set(value)
+    return prim
+
+
+@pytest.mark.parametrize("rest", [None, float("-inf"), 0.0])
+def test_rigid_contact_offset_qualifies_without_changing_source(tmp_path, native, rest):
+    path, stage = make_stage(tmp_path, native)
+    set_offsets(stage, native, contact=.001, **({} if rest is None else {"rest": rest}))
+    stage.GetRootLayer().Save()
+    before = path.read_bytes()
+    report = geniesim_import.qualify(path, tmp_path / "offsets.json")
+    checks = {c["id"]: c for c in report["checks"]}
+    for name in ["native_cpu_solver_build", "imported_collision_offsets_preserved",
+                 "native_collision_offsets_preserved", "source_layers_unchanged"]:
+        assert checks[name]["status"] == "passed", checks[name]
+    row, = checks["native_collision_offsets_preserved"]["evidence"]
+    assert row["expected"] == pytest.approx({"gap_m": .001, "margin_m": 0})
+    assert row["hull_count"] == row["native_geom_count"] == 1
+    adaptations = [a for a in report["adaptations"]
+                   if a["operation"] == "resolve_physx_rigid_collision_rest_default"]
+    assert bool(adaptations) is (rest != 0.0)
+    if adaptations:
+        entry, = adaptations[0]["colliders"]
+        assert entry["rigid_body"] == "/Robot/link0"
+        assert entry["resolved_rest_offset_m"] == 0
+        assert "not source-authored" in entry["rest_resolution"]
+        assert adaptations[0]["source_layers_modified"] is False
+    assert path.read_bytes() == before
+    source = next(c for c in report["source_inventory"]["collisions"]
+                  if c["path"] == "/Robot/link0/collision")
+    assert source["offsets"]["source_values"]["rest"] == (
+        None if rest is None else "-inf" if rest == float("-inf") else 0)
+    assert report["sweep"]["simulation_steps"] == 0
+    assert report["task_success_evaluated"] is False
+
+
+def test_offset_mapping_is_anonymous_and_retains_newton_priority(tmp_path, native):
+    path, stage = make_stage(tmp_path, native)
+    set_offsets(stage, native, contact=.001)
+    set_offsets(stage, native, "/Robot/link1/collision", contact=.001, gap=.003)
+    set_offsets(stage, native, "/Robot/link2/collision", contact=.001, rest=.0002)
+    stage.GetRootLayer().Save()
+    before, root = path.read_bytes(), stage.GetRootLayer().ExportToString()
+    source = geniesim_import.source_inventory(stage)
+    mapped = geniesim_import.map_physx_collision_offsets(stage)
+    assert [entry["path"] for entry in mapped] == ["/Robot/link0/collision"]
+    assert stage.GetRootLayer().ExportToString() == root and path.read_bytes() == before
+    assert "physxCollision:restOffset" in stage.GetSessionLayer().ExportToString()
+    assert not geniesim_import.map_physx_collision_offsets(stage)  # Idempotent.
+    builder = import_stage(stage, native)
+    imported = geniesim_import.builder_inventory(builder)
+    assert geniesim_import.compare_collision_offsets(source, imported)["status"] == "passed"
+    shapes = {s["path"]: s for s in imported["collisions"]}
+    assert shapes["/Robot/link0/collision"]["gap_m"] == pytest.approx(.001)
+    assert shapes["/Robot/link1/collision"]["gap_m"] == pytest.approx(.003)
+    assert shapes["/Robot/link2/collision"]["gap_m"] == pytest.approx(.0008)
+    assert shapes["/Robot/link2/collision"]["margin_m"] == pytest.approx(.0002)
+
+
+@pytest.mark.parametrize("contact", [None, float("-inf")])
+def test_unspecified_contact_offsets_keep_existing_defaults(tmp_path, native, contact):
+    _, stage = make_stage(tmp_path, native)
+    if contact is not None:
+        set_offsets(stage, native, contact=contact)
+    before = stage.GetSessionLayer().ExportToString()
+    assert geniesim_import.map_physx_collision_offsets(stage) == []
+    assert stage.GetSessionLayer().ExportToString() == before
+    builder = import_stage(stage, native)
+    assert builder.shape_gap[shape_ids(builder)["/Robot/link0/collision"]] == .1
+
+
+@pytest.mark.parametrize("values", [
+    {"contact": -.001}, {"contact": float("inf")}, {"contact": float("nan")},
+    {"contact": .001, "rest": -.0001}, {"contact": .001, "rest": .002},
+    {"contact": .001, "rest": float("inf")}, {"gap": -.1}, {"margin": float("-inf")},
+])
+def test_invalid_offsets_reject_before_any_session_opinion(tmp_path, native, values):
+    _, stage = make_stage(tmp_path, native)
+    set_offsets(stage, native, contact=.001)  # Valid candidate comes first.
+    set_offsets(stage, native, "/Robot/link1/collision", **values)
+    before = stage.GetSessionLayer().ExportToString()
+    with pytest.raises(ValueError, match="offset|Offset|contactMargin"):
+        geniesim_import.map_physx_collision_offsets(stage)
+    assert stage.GetSessionLayer().ExportToString() == before
+
+
+def test_offset_mapping_rejects_unknown_units_and_rigid_owner(tmp_path, native):
+    _, _, _, _, _, _, _, UsdGeom, UsdPhysics = native
+    _, stage = make_stage(tmp_path, native)
+    set_offsets(stage, native, contact=.001)
+    UsdGeom.SetStageMetersPerUnit(stage, .01)
+    before = stage.GetSessionLayer().ExportToString()
+    with pytest.raises(ValueError, match="metersPerUnit"):
+        geniesim_import.map_physx_collision_offsets(stage)
+    assert stage.GetSessionLayer().ExportToString() == before
+    UsdGeom.SetStageMetersPerUnit(stage, 1.)
+    stage.GetPrimAtPath("/Robot/link0").RemoveAPI(UsdPhysics.RigidBodyAPI)
+    with pytest.raises(ValueError, match="rigid-body owner"):
+        geniesim_import.map_physx_collision_offsets(stage)
+    assert stage.GetSessionLayer().ExportToString() == before
+
+
+@pytest.mark.parametrize("disabled", ["collision", "body"])
+def test_disabled_collision_or_body_is_not_adapted(tmp_path, native, disabled):
+    _, stage = make_stage(tmp_path, native)
+    prim = set_offsets(stage, native, contact=.001)
+    UsdPhysics = native[-1]
+    if disabled == "collision":
+        UsdPhysics.CollisionAPI(prim).CreateCollisionEnabledAttr(False)
+    else:
+        UsdPhysics.RigidBodyAPI(stage.GetPrimAtPath("/Robot/link0")).CreateRigidBodyEnabledAttr(False)
+    before = stage.GetSessionLayer().ExportToString()
+    assert geniesim_import.map_physx_collision_offsets(stage) == []
+    assert stage.GetSessionLayer().ExportToString() == before
+
+
+def test_instance_proxy_is_not_silently_edited(tmp_path, native):
+    _, stage = make_stage(tmp_path, native)
+    set_offsets(stage, native, contact=.001)
+    instance = stage.DefinePrim("/Instance")
+    instance.GetReferences().AddInternalReference("/Robot/link0")
+    instance.SetInstanceable(True)
+    assert stage.GetPrimAtPath("/Instance/collision").IsInstanceProxy()
+    before = stage.GetSessionLayer().ExportToString()
+    with pytest.raises(ValueError, match="instance proxy"):
+        geniesim_import.map_physx_collision_offsets(stage)
+    assert stage.GetSessionLayer().ExportToString() == before
+
+
+def test_each_decomposition_hull_offset_is_checked(tmp_path, native):
+    """Use actual Newton convex parts; no CoACD job or dynamics is needed."""
+    _, stage = make_stage(tmp_path, native)
+    set_offsets(stage, native, contact=.001)
+    source = geniesim_import.source_inventory(stage)
+    geniesim_import.map_physx_collision_offsets(stage)
+    builder = import_stage(stage, native)
+    newton, SolverMuJoCo, *_ = native
+    path = "/Robot/link0/collision"
+    first = shape_ids(builder)[path]
+    mesh = newton.Mesh(vertices=[[0, 0, 0], [.02, 0, 0], [0, .02, 0], [0, 0, .02]],
+                       indices=[0, 2, 1, 0, 1, 3, 1, 2, 3, 0, 3, 2])
+    # This is Newton approximate_meshes' exact additional-hull label convention.
+    for i in [1, 2]:
+        builder.add_shape_convex_hull(body=builder.shape_body[first], mesh=mesh,
+                                     cfg=newton.ModelBuilder.ShapeConfig(gap=.001, density=0),
+                                     label=f"{path}_convex_{i}")
+    imported = geniesim_import.builder_inventory(builder)
+    solver = SolverMuJoCo(builder.finalize(device="cpu"), use_mujoco_cpu=True)
+    result = geniesim_import.compare_collision_offsets(source, imported, solver)
+    assert result["status"] == "passed", result
+    assert result["evidence"][0]["hull_count"] == 3
+    assert result["evidence"][0]["native_geom_count"] == 3
+    extra = shape_ids(builder)[path + "_convex_2"]
+    # A lost offset on just one extra part must fail both inventory and native audits.
+    imported["collisions"] = [dict(s, gap_m=.1) if s["index"] == extra else s
+                              for s in imported["collisions"]]
+    assert geniesim_import.compare_collision_offsets(source, imported)["status"] == "failed"
+    mapping = solver.mjc_geom_to_newton_shape.numpy()[0]
+    solver.mj_model.geom_gap[mapping == extra] = .1
+    result = geniesim_import.compare_collision_offsets(source, imported, solver)
+    assert result["status"] == "failed"
+    assert result["evidence"][0]["mismatched_hulls"] == 1
+
+
+@pytest.mark.parametrize("values", [
+    {"contact": -.001, "gap": .003},
+    {"contact": float("nan"), "rest": -.002, "gap": .003, "margin": 0.},
+])
+def test_newton_offset_priority_ignores_overridden_physx_values(tmp_path, native, values):
+    _, stage = make_stage(tmp_path, native)
+    set_offsets(stage, native, **values)
+    before = stage.GetSessionLayer().ExportToString()
+    source = geniesim_import.source_inventory(stage)
+    assert geniesim_import.map_physx_collision_offsets(stage) == []
+    assert stage.GetSessionLayer().ExportToString() == before
+    builder = import_stage(stage, native)
+    result = geniesim_import.compare_collision_offsets(source, geniesim_import.builder_inventory(builder))
+    assert result["status"] == "passed", result
+    assert builder.shape_gap[shape_ids(builder)["/Robot/link0/collision"]] == pytest.approx(.003)
+
+
+@pytest.mark.parametrize("values", [{"contact": .1, "rest": 0.}, {"gap": .1}])
+def test_native_importer_does_not_scale_custom_offsets_in_centimetre_stage(tmp_path, native, values):
+    _, stage = make_stage(tmp_path, native)
+    set_offsets(stage, native, **values)
+    native[-2].SetStageMetersPerUnit(stage, .01)
+    # Read the actual importer result without our adapter: .1 stage units
+    # should be .001 m, but custom gap remains .1. Do not silently accept that.
+    builder = import_stage(stage, native)
+    gap = builder.shape_gap[shape_ids(builder)["/Robot/link0/collision"]]
+    assert gap == pytest.approx(.1) and gap != pytest.approx(.001)
+    before = stage.GetSessionLayer().ExportToString()
+    with pytest.raises(ValueError, match="metersPerUnit=1"):
+        geniesim_import.map_physx_collision_offsets(stage)
+    assert stage.GetSessionLayer().ExportToString() == before
+
+
+def test_native_nonzero_rest_margin_loss_remains_failed_qualification(tmp_path, native):
+    path, stage = make_stage(tmp_path, native)
+    set_offsets(stage, native, contact=.001, rest=.0002)
+    stage.GetRootLayer().Save()
+    report = geniesim_import.qualify(path, tmp_path / "nonzero-rest.json")
+    checks = {c["id"]: c for c in report["checks"]}
+    assert checks["imported_collision_offsets_preserved"]["status"] == "passed"
+    audit = checks["native_collision_offsets_preserved"]
+    assert audit["status"] == "failed" and audit["required"] is True
+    row, = audit["evidence"]
+    assert row["expected"]["margin_m"] == pytest.approx(.0002)
+    assert row["examples"][0]["actual"][0]["margin_m"] == 0
+    assert row["examples"][0]["actual"][0]["gap_m"] == pytest.approx(.0008)
+    assert report["status"] == "failed"
+    assert report["sweep"]["simulation_steps"] == 0
+
+
+def test_offset_inventory_legacy_rows_remain_readable():
+    source = {"collisions": [{"path": "/old/collider", "kind": "Mesh"}]}
+    result = geniesim_import.compare_collision_offsets(source, {"collisions": []})
+    assert result["status"] == "passed" and result["evidence"] == []
+
+
+def test_offset_overlay_rejects_persistent_session(tmp_path, native):
+    _, stage = make_stage(tmp_path, native)
+    set_offsets(stage, native, contact=.001)
+    Sdf, Usd = native[5:7]
+    session = Sdf.Layer.CreateNew(str(tmp_path / "persistent-session.usda"))
+    other = Usd.Stage.Open(stage.GetRootLayer(), session)
+    before = session.ExportToString()
+    with pytest.raises(ValueError, match="anonymous session"):
+        geniesim_import.map_physx_collision_offsets(other)
+    assert session.ExportToString() == before

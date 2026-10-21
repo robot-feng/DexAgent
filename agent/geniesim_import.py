@@ -85,6 +85,109 @@ def compare_joints(source, imported, mimics):
     return checks
 
 
+def _collision_offsets(prim):
+    """Resolve only explicit offsets and the documented PhysX rigid rest default.
+
+    PhysxCollisionAPI documents restOffset=-inf as engine-selected, zero for
+    rigid bodies. Newton currently requires an authored finite restOffset even
+    when contactOffset is authored. Do not invent an engine-selected contact
+    offset, or extend that rigid-body default to an unknown/deformable owner.
+    """
+    from pxr import UsdGeom, UsdPhysics
+
+    def authored(name):
+        attr = prim.GetAttribute(name)
+        return attr.Get() if attr and attr.HasAuthoredValueOpinion() else None
+
+    values = {key: authored(name) for key, name in (
+        ("contact", "physxCollision:contactOffset"), ("rest", "physxCollision:restOffset"),
+        ("newton_gap", "newton:contactGap"), ("newton_margin", "newton:contactMargin"))}
+    result = {"source_values": {k: str(v) if v is not None and not math.isfinite(v) else v
+                                 for k, v in values.items()}, "expected": {}, "map_rest_zero": False}
+    enabled = prim.GetAttribute("physics:collisionEnabled")
+    if enabled and enabled.Get() is False:
+        return {**result, "skip": "collision_disabled"}
+    contact, rest, gap, margin = (values[k] for k in ("contact", "rest", "newton_gap", "newton_margin"))
+    # Match resolver priority per field. An overridden PhysX contact value
+    # cannot invalidate an explicit Newton gap; rest still matters if it supplies
+    # the effective margin or the PhysX gap calculation.
+    relevant = {"newton_gap", "newton_margin"}
+    if gap is None:
+        relevant.add("contact")
+    if margin is None or (gap is None and contact is not None and contact != -math.inf):
+        relevant.add("rest")
+    specified = any(v is not None and (v != -math.inf or k == "newton_margin")
+                    for k, v in values.items() if k in relevant)
+    if not specified:
+        return {**result, "skip": "no_finite_offset_specified"}
+    # This importer does not scale custom distance attributes with stage units.
+    # A metre-only boundary is safer than silently applying a 100x offset.
+    unit = float(UsdGeom.GetStageMetersPerUnit(prim.GetStage()))
+    result["meters_per_unit"] = unit
+    if not math.isfinite(unit) or not math.isclose(unit, 1.0, rel_tol=0, abs_tol=1e-12):
+        return {**result, "error": "Collision offset import currently requires metersPerUnit=1"}
+    for key, value in values.items():
+        if (key in relevant and value is not None and value != -math.inf
+                and (not math.isfinite(value) or value < 0)):
+            return {**result, "error": f"Invalid {key} collision offset: {value}"}
+    if margin == -math.inf:
+        return {**result, "error": "Newton contactMargin must be finite and nonnegative"}
+    finite_rest = rest is not None and math.isfinite(rest)
+    finite_contact = contact is not None and math.isfinite(contact)
+    if gap is None and finite_contact and finite_rest and contact < rest:
+        return {**result, "error": "PhysX contactOffset is smaller than restOffset"}
+    result["expected"]["margin_m"] = margin if margin is not None else (rest if finite_rest else 0.0)
+    if gap is not None:
+        if math.isfinite(gap):
+            result["expected"]["gap_m"] = gap
+        # Authored Newton -inf also takes precedence: leave its default alone.
+        return result
+    if not finite_contact:
+        return result
+    if not finite_rest:
+        owner = prim
+        while owner and not owner.IsPseudoRoot() and not owner.HasAPI(UsdPhysics.RigidBodyAPI):
+            owner = owner.GetParent()
+        if not owner or owner.IsPseudoRoot():
+            return {**result, "error": "Cannot establish a rigid-body owner for PhysX rest default"}
+        enabled = owner.GetAttribute("physics:rigidBodyEnabled")
+        if enabled and enabled.Get() is False:
+            return {**result, "expected": {}, "skip": "rigid_body_disabled"}
+        if prim.IsInstanceProxy() or prim.IsInPrototype():
+            return {**result, "error": "Cannot author rigid rest default on an instance proxy/prototype"}
+        result.update(map_rest_zero=True, rigid_body=str(owner.GetPath()),
+                      rest_resolution="PhysX documented rigid-body engine default, not source-authored")
+        rest = 0.0
+    result["expected"]["gap_m"] = contact - rest
+    return result
+
+
+def map_physx_collision_offsets(stage):
+    """Materialize verified rigid rest defaults in the anonymous session only."""
+    from pxr import Sdf, Usd, UsdPhysics
+
+    mappings = []
+    for prim in Usd.PrimRange.Stage(stage, Usd.TraverseInstanceProxies()):
+        if not prim.HasAPI(UsdPhysics.CollisionAPI):
+            continue
+        entry = _collision_offsets(prim)
+        if entry.get("error"):
+            raise ValueError(f"{prim.GetPath()}: {entry['error']}")
+        if entry["map_rest_zero"]:
+            mappings.append({"path": str(prim.GetPath()), **entry, "resolved_rest_offset_m": 0.0})
+    session = stage.GetSessionLayer()
+    if mappings and (session is None or not session.anonymous or session == stage.GetRootLayer()):
+        raise ValueError("Collision offset adaptation requires an anonymous session layer")
+    if not mappings:
+        return []
+    # Validate all candidates before applying any opinions.
+    with Usd.EditContext(stage, session):
+        for entry in mappings:
+            stage.GetPrimAtPath(entry["path"]).CreateAttribute(
+                "physxCollision:restOffset", Sdf.ValueTypeNames.Float).Set(0.0)
+    return mappings
+
+
 def source_inventory(stage):
     from pxr import Usd, UsdGeom, UsdPhysics
 
@@ -149,7 +252,8 @@ def source_inventory(stage):
                            "geometry_paths": [str(p.GetPath()) for p in Usd.PrimRange(
                                prim, Usd.TraverseInstanceProxies()) if p.IsA(UsdGeom.Gprim)]})
         if prim.HasAPI(UsdPhysics.CollisionAPI) and value(prim, "physics:collisionEnabled", True):
-            collisions.append({"path": path, "kind": prim.GetTypeName()})
+            collisions.append({"path": path, "kind": prim.GetTypeName(),
+                               "offsets": _collision_offsets(prim)})
     # Articulations can be rooted at a joint or one body; other members need
     # not be descendants of that prim. Reuse the same native descriptors as
     # Newton's importer instead of inferring membership from path prefixes.
@@ -197,11 +301,57 @@ def builder_inventory(builder):
                "inertia": np.asarray(builder.body_inertia[i]).reshape(3, 3).tolist()}
               for i, path in enumerate(builder.body_label)]
     collisions = [{"index": i, "path": path, "body": builder.body_label[builder.shape_body[i]]
-                   if builder.shape_body[i] >= 0 else None}
+                   if builder.shape_body[i] >= 0 else None,
+                   "gap_m": float(builder.shape_gap[i]), "margin_m": float(builder.shape_margin[i])}
                   for i, path in enumerate(builder.shape_label)
                   if int(builder.shape_flags[i]) & int(newton.ShapeFlags.COLLIDE_SHAPES)]
     return {"joints": joints, "mimics": mimics, "bodies": bodies, "collisions": collisions,
             "shape_count": builder.shape_count, "joint_coordinate_count": len(builder.joint_q)}
+
+
+def compare_collision_offsets(source, imported, solver=None):
+    """Check every retained decomposition hull, and native geoms by solver IDs."""
+    import numpy as np
+
+    source_paths = {entry["path"] for entry in source["collisions"]}
+    native_mapping = solver.mjc_geom_to_newton_shape.numpy()[0] if solver is not None else None
+    evidence = []
+    for entry in source["collisions"]:
+        spec = entry.get("offsets", {})
+        if not spec.get("expected") and not spec.get("error"):
+            continue
+        path = entry["path"]
+        prefix = path + "_convex_"  # Newton approximate_meshes preserves the original label.
+        shapes = [s for s in imported["collisions"] if s["path"] == path or (
+            s["path"] not in source_paths and s["path"].startswith(prefix)
+            and s["path"][len(prefix):].isdigit())]
+        errors = []
+        if spec.get("error"):
+            errors.append({"error": spec["error"]})
+        if not shapes:
+            errors.append({"error": "No matching imported collision shapes"})
+        mismatches = 0
+        native_count = 0
+        for shape in shapes:
+            if solver is None:
+                actuals = [{key: shape.get(key) for key in spec["expected"]}]
+            else:
+                ids = np.flatnonzero(native_mapping == shape["index"])
+                native_count += len(ids)
+                actuals = [{"gap_m": float(solver.mj_model.geom_gap[i]),
+                            "margin_m": float(solver.mj_model.geom_margin[i])} for i in ids]
+            if not actuals or any(any(
+                    actual.get(key) is None or not math.isclose(actual[key], value, rel_tol=1e-5, abs_tol=1e-9)
+                    for key, value in spec["expected"].items()) for actual in actuals):
+                mismatches += 1
+                if len(errors) < 5:
+                    errors.append({"shape": shape["path"], "actual": actuals})
+        evidence.append({"path": path, "expected": spec.get("expected", {}),
+                         "hull_count": len(shapes), "native_geom_count": native_count if solver else None,
+                         "mismatched_hulls": mismatches, "examples": errors,
+                         "preserved": bool(shapes) and not errors and not mismatches})
+    return check("native_collision_offsets_preserved" if solver else "imported_collision_offsets_preserved",
+                 all(e["preserved"] for e in evidence), evidence)
 
 
 def compare_collision_filters(source, imported, filter_pairs):
@@ -448,6 +598,10 @@ def qualify(source: Path, output: Path, *, omit_missing_camera=False, integrator
             report["adaptations"].append({"operation": "map_authored_physx_body_gravity_to_mujoco",
                                           "bodies": gravity_mapping,
                                           "source_layers_modified": False})
+        offset_mapping = map_physx_collision_offsets(stage)
+        if offset_mapping:
+            report["adaptations"].append({"operation": "resolve_physx_rigid_collision_rest_default",
+                                          "colliders": offset_mapping, "source_layers_modified": False})
         builder = newton.ModelBuilder()
         builder.validate_inertia_detailed = True
         SolverMuJoCo.register_custom_attributes(builder)
@@ -461,6 +615,7 @@ def qualify(source: Path, output: Path, *, omit_missing_camera=False, integrator
             imported = report["imported_inventory"]
             checks.extend(compare_joints(inventory["joints"], imported["joints"], imported["mimics"]))
             checks.extend(compare_physics(inventory, imported))
+            checks.append(compare_collision_offsets(inventory, imported))
             # Iterate Newton's compact storage without materializing its public
             # list property (millions of pairs on the fully decomposed robots).
             checks.append(compare_collision_filters(inventory, imported, builder._shape_collision_filter_pairs))
@@ -499,6 +654,7 @@ def qualify(source: Path, output: Path, *, omit_missing_camera=False, integrator
             except Exception as exc:
                 checks.append(check("native_cpu_solver_build", False, f"{type(exc).__name__}: {exc}"))
             else:
+                checks.append(compare_collision_offsets(inventory, imported, solver))
                 checks.append(compare_body_gravity(inventory, model, solver))
                 checks.append(compare_ball_loop_anchors(model, solver))
             report["warnings"] = [str(w.message) for w in caught]
