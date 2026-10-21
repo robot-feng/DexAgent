@@ -1,0 +1,140 @@
+{
+ "scope": "Newton 1.7 GPU \u5e76\u884c\u8fd0\u884c\u65f6\u901a\u8fc7\uff1b\u672a\u9a8c\u8bc1\u673a\u5668\u4eba\u64cd\u4f5c\u4efb\u52a1",
+ "reports": {
+  "batch_implicitfast": {
+   "scope": "GPU multi-world control/contact runtime qualification, not robot task acceptance",
+   "task_success_evaluated": false,
+   "training_eligible": false,
+   "world_count": 64,
+   "planned_steps_per_world": 250,
+   "dt_s": 0.002,
+   "versions": {
+    "newton": "1.7.0",
+    "warp-lang": "1.18.0",
+    "mujoco": "3.15.0",
+    "mujoco-warp": "3.15.0"
+   },
+   "status": "passed",
+   "device": "cuda:0",
+   "gpu": "NVIDIA A100-SXM4-80GB",
+   "elapsed_including_first_compile_s": 54.62293303385377,
+   "checks": {
+    "cuda_model": true,
+    "gpu_backend": true,
+    "all_worlds_advanced": true,
+    "all_states_finite": true,
+    "distinct_targets_tracked": true,
+    "all_boxes_rest_on_floor": true,
+    "positions_changed_by_physics": true
+   },
+   "steps_per_world": 250,
+   "total_environment_steps": 16000,
+   "max_tracking_error_rad": 0.004117131233215332,
+   "box_height_min_m": 0.029889792203903198,
+   "box_height_max_m": 0.029889792203903198,
+   "native_time_range_s": [
+    0.5000006556510925,
+    0.5000006556510925
+   ]
+  },
+  "batch_discrete": {
+   "scope": "GPU multi-world control/contact runtime qualification, not robot task acceptance",
+   "task_success_evaluated": false,
+   "training_eligible": false,
+   "integrator": "discrete",
+   "script_sha256": "1cc3b6b53f719e2730f0fb43d733e88f93191a3a51058b3fc0b03e13664ad601",
+   "world_count": 64,
+   "planned_steps_per_world": 250,
+   "dt_s": 0.002,
+   "versions": {
+    "newton": "1.7.0",
+    "warp-lang": "1.18.0",
+    "mujoco": "3.15.0",
+    "mujoco-warp": "3.15.0"
+   },
+   "status": "passed",
+   "device": "cuda:0",
+   "gpu": "NVIDIA A100-SXM4-80GB",
+   "elapsed_including_first_compile_s": 12.832273083738983,
+   "checks": {
+    "cuda_model": true,
+    "gpu_backend": true,
+    "requested_integrator": true,
+    "all_worlds_advanced": true,
+    "all_states_finite": true,
+    "distinct_targets_tracked": true,
+    "all_boxes_rest_on_floor": true,
+    "positions_changed_by_physics": true
+   },
+   "steps_per_world": 250,
+   "total_environment_steps": 16000,
+   "max_tracking_error_rad": 0.004434674978256226,
+   "box_height_min_m": 0.029890533536672592,
+   "box_height_max_m": 0.029890533536672592,
+   "native_time_range_s": [
+    0.5000006556510925,
+    0.5000006556510925
+   ]
+  },
+  "rss_implicitfast": {
+   "scope": "existing RSS Scene GPU contact integration, not robot task acceptance",
+   "task_success_evaluated": false,
+   "training_eligible": false,
+   "physics_steps": 200,
+   "status": "passed",
+   "versions": {
+    "newton": "1.7.0",
+    "mujoco": "3.15.0",
+    "mujoco-warp": "3.15.0",
+    "warp-lang": "1.18.0"
+   },
+   "final_cube_position": [
+    0.0,
+    0.0,
+    0.029892239719629288
+   ],
+   "control_frames": 100,
+   "sim_time": 1.0000000000000007,
+   "device": "cuda:0",
+   "use_mujoco_cpu": false,
+   "all_states_finite": true
+  },
+  "rss_discrete": {
+   "integrator": "discrete",
+   "scope": "existing RSS Scene GPU contact integration, not robot task acceptance",
+   "task_success_evaluated": false,
+   "training_eligible": false,
+   "physics_steps": 200,
+   "status": "passed",
+   "versions": {
+    "newton": "1.7.0",
+    "mujoco": "3.15.0",
+    "mujoco-warp": "3.15.0",
+    "warp-lang": "1.18.0"
+   },
+   "final_cube_position": [
+    0.0,
+    0.0,
+    0.029892239719629288
+   ],
+   "control_frames": 100,
+   "sim_time": 1.0000000000000007,
+   "device": "cuda:0",
+   "use_mujoco_cpu": false,
+   "all_states_finite": true
+  }
+ },
+ "tests_newton_1_7": "16 passed (zero physical steps)",
+ "rss_declared_newton_constraint": ">=1.6,<1.7; source import exercised only",
+ "default_execution_environment_changed": false,
+ "environment": "/data/tzq/DexAgent/.workbench/venvs/newton-1.7-gpu",
+ "artifact_sha256": {
+  ".workbench/previews/newton-gpu-upgrade-20261021/gpu_batch_report.json": "2e7371cf374c09a44ad27734e0ebe5c75da269303524033764b5f0a2b0cc7c3a",
+  ".workbench/previews/newton-gpu-upgrade-20261021/discrete-enum/gpu_batch_report.json": "2bd26ff16e7fcda7289be85bff36c6d0e72c94dc07d40ad8a4689344f8e5771f",
+  ".workbench/previews/newton-gpu-upgrade-20261021/rss_gpu_report.json": "5ebcf1d48f90972a4399e3ff2c28bf0b188070093e1e55fc0e05342a6a1d2687",
+  ".workbench/previews/newton-gpu-upgrade-20261021/rss-discrete/rss_gpu_report.json": "3727352c13063158d27ed63c5e20b041c2ecb693e4d5ed5fca013cf4469471db",
+  ".workbench/previews/newton-gpu-upgrade-20261021/requirements.lock.txt": "7430216f096984a0c049ceb04974a3505329b62fed40c1f4beaed77ba953f8c2",
+  ".workbench/previews/newton-gpu-upgrade-20261021/gpu_batch_probe.py": "1cc3b6b53f719e2730f0fb43d733e88f93191a3a51058b3fc0b03e13664ad601",
+  ".workbench/previews/newton-gpu-upgrade-20261021/rss_gpu_probe.py": "895686f17d2fcbfc0927853c0abfc93515cc20ae50e6eede3088b6e0f9e8353b"
+ }
+}

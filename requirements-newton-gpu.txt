@@ -1,0 +1,6 @@
+# Isolated Newton GPU runtime; keep perception/legacy replay environments separate.
+# Newton 1.7.0's official [sim] extra requires the 3.15 release line, not 3.16.
+newton[examples]==1.7.0
+mujoco==3.15.0
+mujoco-warp==3.15.0
+warp-lang==1.18.0
