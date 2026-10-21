@@ -1,0 +1,847 @@
+{
+  "scope": "full_G1_export_pass_RSS_zero_step_preflight_failed_not_task",
+  "source_layers_unchanged": true,
+  "source_layer_count": 6,
+  "export_sha_verified": true,
+  "constructor_sha_verified": true,
+  "unique_named_actuators": 20,
+  "counts": {
+    "nq": 34,
+    "nv": 34,
+    "nu": 20,
+    "na": 0,
+    "nbody": 43,
+    "njnt": 34,
+    "ngeom": 3128,
+    "nmesh": 3128,
+    "nsite": 0,
+    "neq": 6,
+    "nexclude": 861,
+    "npair": 0,
+    "ntendon": 0,
+    "nflex": 0,
+    "nplugin": 0,
+    "nsensor": 0
+  },
+  "source_exact_qualification": "failed_retained",
+  "source_checks": [
+    {
+      "id": "imported_collision_offsets_preserved",
+      "status": "passed"
+    },
+    {
+      "id": "native_collision_offsets_preserved",
+      "status": "passed"
+    },
+    {
+      "id": "authored_body_gravity_preserved",
+      "status": "passed"
+    },
+    {
+      "id": "native_ball_loop_anchors_preserved",
+      "status": "failed"
+    },
+    {
+      "id": "authored_self_collision_filters_preserved",
+      "status": "passed"
+    },
+    {
+      "id": "named_joints_preserved",
+      "status": "passed"
+    },
+    {
+      "id": "joint_types_limits_loops_preserved",
+      "status": "passed"
+    },
+    {
+      "id": "driver_follower_constraints_preserved",
+      "status": "passed"
+    },
+    {
+      "id": "rigid_bodies_preserved",
+      "status": "passed"
+    },
+    {
+      "id": "authored_mass_principal_inertia_preserved",
+      "status": "passed"
+    },
+    {
+      "id": "declared_colliders_preserved",
+      "status": "passed"
+    },
+    {
+      "id": "finalized_authored_mass_principal_inertia_preserved",
+      "status": "failed"
+    },
+    {
+      "id": "authored_drive_targets_within_limits",
+      "status": "failed"
+    }
+  ],
+  "export_report_sha256": "2d1bb86419381b45efa889e2357d70cbd6b9c75cdea1d9c79ed86ab8677178d8",
+  "actuator_mapping": [
+    {
+      "native_actuator": 0,
+      "native_name": "",
+      "exported_name": "/G01/joints/idx01_body_joint1/__position_servo",
+      "native_joint": 0,
+      "native_joint_name": "_G01_joints_idx01_body_joint1",
+      "newton_joint": 1,
+      "newton_joint_label": "/G01/joints/idx01_body_joint1",
+      "newton_dof": 0,
+      "q_slot": 0,
+      "qd_slot": 0,
+      "target_slot": 0,
+      "control_source": 0,
+      "control_index": 0,
+      "role": "position"
+    },
+    {
+      "native_actuator": 1,
+      "native_name": "",
+      "exported_name": "/G01/joints/idx02_body_joint2/__position_servo",
+      "native_joint": 1,
+      "native_joint_name": "_G01_joints_idx02_body_joint2",
+      "newton_joint": 2,
+      "newton_joint_label": "/G01/joints/idx02_body_joint2",
+      "newton_dof": 1,
+      "q_slot": 1,
+      "qd_slot": 1,
+      "target_slot": 1,
+      "control_source": 0,
+      "control_index": 1,
+      "role": "position"
+    },
+    {
+      "native_actuator": 2,
+      "native_name": "",
+      "exported_name": "/G01/joints/idx11_head_joint1/__position_servo",
+      "native_joint": 2,
+      "native_joint_name": "_G01_joints_idx11_head_joint1",
+      "newton_joint": 3,
+      "newton_joint_label": "/G01/joints/idx11_head_joint1",
+      "newton_dof": 2,
+      "q_slot": 2,
+      "qd_slot": 2,
+      "target_slot": 2,
+      "control_source": 0,
+      "control_index": 2,
+      "role": "position"
+    },
+    {
+      "native_actuator": 3,
+      "native_name": "",
+      "exported_name": "/G01/joints/idx12_head_joint2/__position_servo",
+      "native_joint": 3,
+      "native_joint_name": "_G01_joints_idx12_head_joint2",
+      "newton_joint": 4,
+      "newton_joint_label": "/G01/joints/idx12_head_joint2",
+      "newton_dof": 3,
+      "q_slot": 3,
+      "qd_slot": 3,
+      "target_slot": 3,
+      "control_source": 0,
+      "control_index": 3,
+      "role": "position"
+    },
+    {
+      "native_actuator": 4,
+      "native_name": "",
+      "exported_name": "/G01/joints/idx21_arm_l_joint1/__position_servo",
+      "native_joint": 4,
+      "native_joint_name": "_G01_joints_idx21_arm_l_joint1",
+      "newton_joint": 7,
+      "newton_joint_label": "/G01/joints/idx21_arm_l_joint1",
+      "newton_dof": 4,
+      "q_slot": 4,
+      "qd_slot": 4,
+      "target_slot": 4,
+      "control_source": 0,
+      "control_index": 4,
+      "role": "position"
+    },
+    {
+      "native_actuator": 5,
+      "native_name": "",
+      "exported_name": "/G01/joints/idx22_arm_l_joint2/__position_servo",
+      "native_joint": 5,
+      "native_joint_name": "_G01_joints_idx22_arm_l_joint2",
+      "newton_joint": 8,
+      "newton_joint_label": "/G01/joints/idx22_arm_l_joint2",
+      "newton_dof": 5,
+      "q_slot": 5,
+      "qd_slot": 5,
+      "target_slot": 5,
+      "control_source": 0,
+      "control_index": 5,
+      "role": "position"
+    },
+    {
+      "native_actuator": 6,
+      "native_name": "",
+      "exported_name": "/G01/joints/idx23_arm_l_joint3/__position_servo",
+      "native_joint": 6,
+      "native_joint_name": "_G01_joints_idx23_arm_l_joint3",
+      "newton_joint": 9,
+      "newton_joint_label": "/G01/joints/idx23_arm_l_joint3",
+      "newton_dof": 6,
+      "q_slot": 6,
+      "qd_slot": 6,
+      "target_slot": 6,
+      "control_source": 0,
+      "control_index": 6,
+      "role": "position"
+    },
+    {
+      "native_actuator": 7,
+      "native_name": "",
+      "exported_name": "/G01/joints/idx24_arm_l_joint4/__position_servo",
+      "native_joint": 7,
+      "native_joint_name": "_G01_joints_idx24_arm_l_joint4",
+      "newton_joint": 10,
+      "newton_joint_label": "/G01/joints/idx24_arm_l_joint4",
+      "newton_dof": 7,
+      "q_slot": 7,
+      "qd_slot": 7,
+      "target_slot": 7,
+      "control_source": 0,
+      "control_index": 7,
+      "role": "position"
+    },
+    {
+      "native_actuator": 8,
+      "native_name": "",
+      "exported_name": "/G01/joints/idx25_arm_l_joint5/__position_servo",
+      "native_joint": 8,
+      "native_joint_name": "_G01_joints_idx25_arm_l_joint5",
+      "newton_joint": 11,
+      "newton_joint_label": "/G01/joints/idx25_arm_l_joint5",
+      "newton_dof": 8,
+      "q_slot": 8,
+      "qd_slot": 8,
+      "target_slot": 8,
+      "control_source": 0,
+      "control_index": 8,
+      "role": "position"
+    },
+    {
+      "native_actuator": 9,
+      "native_name": "",
+      "exported_name": "/G01/joints/idx26_arm_l_joint6/__position_servo",
+      "native_joint": 9,
+      "native_joint_name": "_G01_joints_idx26_arm_l_joint6",
+      "newton_joint": 12,
+      "newton_joint_label": "/G01/joints/idx26_arm_l_joint6",
+      "newton_dof": 9,
+      "q_slot": 9,
+      "qd_slot": 9,
+      "target_slot": 9,
+      "control_source": 0,
+      "control_index": 9,
+      "role": "position"
+    },
+    {
+      "native_actuator": 10,
+      "native_name": "",
+      "exported_name": "/G01/joints/idx27_arm_l_joint7/__position_servo",
+      "native_joint": 10,
+      "native_joint_name": "_G01_joints_idx27_arm_l_joint7",
+      "newton_joint": 13,
+      "newton_joint_label": "/G01/joints/idx27_arm_l_joint7",
+      "newton_dof": 10,
+      "q_slot": 10,
+      "qd_slot": 10,
+      "target_slot": 10,
+      "control_source": 0,
+      "control_index": 10,
+      "role": "position"
+    },
+    {
+      "native_actuator": 11,
+      "native_name": "",
+      "exported_name": "/G01/joints/idx41_gripper_l_outer_joint1/__position_servo",
+      "native_joint": 15,
+      "native_joint_name": "_G01_joints_idx41_gripper_l_outer_joint1",
+      "newton_joint": 19,
+      "newton_joint_label": "/G01/joints/idx41_gripper_l_outer_joint1",
+      "newton_dof": 15,
+      "q_slot": 15,
+      "qd_slot": 15,
+      "target_slot": 15,
+      "control_source": 0,
+      "control_index": 15,
+      "role": "position"
+    },
+    {
+      "native_actuator": 12,
+      "native_name": "",
+      "exported_name": "/G01/joints/idx61_arm_r_joint1/__position_servo",
+      "native_joint": 19,
+      "native_joint_name": "_G01_joints_idx61_arm_r_joint1",
+      "newton_joint": 25,
+      "newton_joint_label": "/G01/joints/idx61_arm_r_joint1",
+      "newton_dof": 19,
+      "q_slot": 19,
+      "qd_slot": 19,
+      "target_slot": 19,
+      "control_source": 0,
+      "control_index": 19,
+      "role": "position"
+    },
+    {
+      "native_actuator": 13,
+      "native_name": "",
+      "exported_name": "/G01/joints/idx62_arm_r_joint2/__position_servo",
+      "native_joint": 20,
+      "native_joint_name": "_G01_joints_idx62_arm_r_joint2",
+      "newton_joint": 26,
+      "newton_joint_label": "/G01/joints/idx62_arm_r_joint2",
+      "newton_dof": 20,
+      "q_slot": 20,
+      "qd_slot": 20,
+      "target_slot": 20,
+      "control_source": 0,
+      "control_index": 20,
+      "role": "position"
+    },
+    {
+      "native_actuator": 14,
+      "native_name": "",
+      "exported_name": "/G01/joints/idx63_arm_r_joint3/__position_servo",
+      "native_joint": 21,
+      "native_joint_name": "_G01_joints_idx63_arm_r_joint3",
+      "newton_joint": 27,
+      "newton_joint_label": "/G01/joints/idx63_arm_r_joint3",
+      "newton_dof": 21,
+      "q_slot": 21,
+      "qd_slot": 21,
+      "target_slot": 21,
+      "control_source": 0,
+      "control_index": 21,
+      "role": "position"
+    },
+    {
+      "native_actuator": 15,
+      "native_name": "",
+      "exported_name": "/G01/joints/idx64_arm_r_joint4/__position_servo",
+      "native_joint": 22,
+      "native_joint_name": "_G01_joints_idx64_arm_r_joint4",
+      "newton_joint": 28,
+      "newton_joint_label": "/G01/joints/idx64_arm_r_joint4",
+      "newton_dof": 22,
+      "q_slot": 22,
+      "qd_slot": 22,
+      "target_slot": 22,
+      "control_source": 0,
+      "control_index": 22,
+      "role": "position"
+    },
+    {
+      "native_actuator": 16,
+      "native_name": "",
+      "exported_name": "/G01/joints/idx65_arm_r_joint5/__position_servo",
+      "native_joint": 23,
+      "native_joint_name": "_G01_joints_idx65_arm_r_joint5",
+      "newton_joint": 29,
+      "newton_joint_label": "/G01/joints/idx65_arm_r_joint5",
+      "newton_dof": 23,
+      "q_slot": 23,
+      "qd_slot": 23,
+      "target_slot": 23,
+      "control_source": 0,
+      "control_index": 23,
+      "role": "position"
+    },
+    {
+      "native_actuator": 17,
+      "native_name": "",
+      "exported_name": "/G01/joints/idx66_arm_r_joint6/__position_servo",
+      "native_joint": 24,
+      "native_joint_name": "_G01_joints_idx66_arm_r_joint6",
+      "newton_joint": 30,
+      "newton_joint_label": "/G01/joints/idx66_arm_r_joint6",
+      "newton_dof": 24,
+      "q_slot": 24,
+      "qd_slot": 24,
+      "target_slot": 24,
+      "control_source": 0,
+      "control_index": 24,
+      "role": "position"
+    },
+    {
+      "native_actuator": 18,
+      "native_name": "",
+      "exported_name": "/G01/joints/idx67_arm_r_joint7/__position_servo",
+      "native_joint": 25,
+      "native_joint_name": "_G01_joints_idx67_arm_r_joint7",
+      "newton_joint": 31,
+      "newton_joint_label": "/G01/joints/idx67_arm_r_joint7",
+      "newton_dof": 25,
+      "q_slot": 25,
+      "qd_slot": 25,
+      "target_slot": 25,
+      "control_source": 0,
+      "control_index": 25,
+      "role": "position"
+    },
+    {
+      "native_actuator": 19,
+      "native_name": "",
+      "exported_name": "/G01/joints/idx81_gripper_r_outer_joint1/__position_servo",
+      "native_joint": 30,
+      "native_joint_name": "_G01_joints_idx81_gripper_r_outer_joint1",
+      "newton_joint": 37,
+      "newton_joint_label": "/G01/joints/idx81_gripper_r_outer_joint1",
+      "newton_dof": 30,
+      "q_slot": 30,
+      "qd_slot": 30,
+      "target_slot": 30,
+      "control_source": 0,
+      "control_index": 30,
+      "role": "position"
+    }
+  ],
+  "source_qualified": false,
+  "task_success_evaluated": false,
+  "aggregate_demo_complete": false,
+  "training_eligible": false,
+  "rss_preflight": {
+    "status": "exception",
+    "steps": 0,
+    "failed_checks": [
+      {
+        "field": "counts",
+        "passed": false,
+        "reference_shape": [
+          8
+        ],
+        "roundtrip_shape": [
+          8
+        ],
+        "max_abs_error": 1.0
+      },
+      {
+        "field": "geom_solref",
+        "passed": false,
+        "reference_shape": [
+          3128,
+          2
+        ],
+        "roundtrip_shape": [
+          3128,
+          2
+        ],
+        "max_abs_error": 1.0
+      },
+      {
+        "field": "world_gravity",
+        "passed": false,
+        "reference_shape": [
+          3
+        ],
+        "roundtrip_shape": [
+          3
+        ],
+        "max_abs_error": 19.6200004196167
+      }
+    ]
+  },
+  "tests": {
+    "mujoco_3_12": "16 passed",
+    "mujoco_3_13": "16 passed, expected Newton dependency warning"
+  },
+  "later_g1_reimport_with_shorthand_fix": false,
+  "g1-prior-export-hardened-qualification": {
+    "scope": "prior_fixed_native_snapshot_zero_step_export_requalification",
+    "physics_steps": 0,
+    "source_usd_reimport": false,
+    "artifacts_unchanged": true,
+    "inputs": {
+      "source-native.mjb": "384b0cbb59b5886aa81240cee0a5265d6edc0b9ad06fe1b1ea1c99803ef05b9b",
+      "raw-native.xml": "9f0f5893b734dbce93b7a0f173960ce6e71f4e0ac556a5824b089ba6df803142",
+      "portable.xml": "ebdcbf40531fab730cd8ded6b5418561bb80ad889ef12de465b61dc8355a9d36",
+      "export-report.json": "2d1bb86419381b45efa889e2357d70cbd6b9c75cdea1d9c79ed86ab8677178d8"
+    },
+    "compared_fields": 126,
+    "comparisons": {
+      "qpos0": 0.0,
+      "qpos_spring": 0.0,
+      "body_parentid": 0.0,
+      "body_rootid": 0.0,
+      "body_weldid": 0.0,
+      "body_mocapid": 0.0,
+      "body_jntnum": 0.0,
+      "body_jntadr": 0.0,
+      "body_dofnum": 0.0,
+      "body_dofadr": 0.0,
+      "body_geomnum": 0.0,
+      "body_geomadr": 0.0,
+      "body_pos": 2.5272369419404583e-08,
+      "body_quat": 8.940696449855076e-08,
+      "body_ipos": 4.419412612810536e-07,
+      "body_mass": 3.805541992107919e-05,
+      "body_subtreemass": 4.430637939378812e-05,
+      "body_gravcomp": 0.0,
+      "jnt_type": 0.0,
+      "jnt_qposadr": 0.0,
+      "jnt_dofadr": 0.0,
+      "jnt_bodyid": 0.0,
+      "jnt_limited": 0.0,
+      "jnt_actfrclimited": 0.0,
+      "jnt_actgravcomp": 0.0,
+      "jnt_group": 0.0,
+      "jnt_stiffnesspoly": 0.0,
+      "jnt_solref": 3.9782714843283884e-05,
+      "jnt_solimp": 2.384185793236071e-08,
+      "jnt_pos": 0.0,
+      "jnt_axis": 0.0,
+      "jnt_stiffness": 0.0,
+      "jnt_range": 3.6294937133529714e-06,
+      "jnt_actfrcrange": 0.0,
+      "jnt_margin": 0.0,
+      "dof_bodyid": 0.0,
+      "dof_jntid": 0.0,
+      "dof_parentid": 0.0,
+      "dof_solref": 4.470348362317633e-10,
+      "dof_solimp": 2.384185793236071e-08,
+      "dof_frictionloss": 0.0,
+      "dof_armature": 4.749745128457272e-11,
+      "dof_damping": 0.0,
+      "dof_dampingpoly": 0.0,
+      "geom_type": 0.0,
+      "geom_contype": 0.0,
+      "geom_conaffinity": 0.0,
+      "geom_condim": 0.0,
+      "geom_bodyid": 0.0,
+      "geom_dataid": 0.0,
+      "geom_group": 0.0,
+      "geom_priority": 0.0,
+      "geom_solmix": 0.0,
+      "geom_solref": 4.470348362317633e-10,
+      "geom_solimp": 2.384185793236071e-08,
+      "geom_size": 1.75767069354911e-07,
+      "geom_pos": 1.7573068956727375e-07,
+      "geom_quat": 4.659295478529445e-06,
+      "geom_friction": 1.1175870905794083e-10,
+      "geom_margin": 0.0,
+      "geom_gap": 1.4901161138336505e-09,
+      "geom_fluid": 0.0,
+      "geom_adhesion": 0.0,
+      "geom_surfacevel": 0.0,
+      "mesh_vertadr": 0.0,
+      "mesh_vertnum": 0.0,
+      "mesh_faceadr": 0.0,
+      "mesh_facenum": 0.0,
+      "mesh_vert": 1.7852289602160454e-07,
+      "mesh_face": 0.0,
+      "mesh_pos": 1.7573068956684007e-07,
+      "mesh_quat": 4.9027202419292025e-06,
+      "mesh_scale": 0.0,
+      "pair_dim": 0.0,
+      "pair_geom1": 0.0,
+      "pair_geom2": 0.0,
+      "pair_solref": 0.0,
+      "pair_solreffriction": 0.0,
+      "pair_solimp": 0.0,
+      "pair_margin": 0.0,
+      "pair_gap": 0.0,
+      "pair_friction": 0.0,
+      "exclude_signature": 0.0,
+      "eq_type": 0.0,
+      "eq_obj1id": 0.0,
+      "eq_obj2id": 0.0,
+      "eq_objtype": 0.0,
+      "eq_active0": 0.0,
+      "eq_solref": 4.470348362317633e-10,
+      "eq_solimp": 2.384185793236071e-08,
+      "eq_data": 2.604052351686914e-07,
+      "actuator_trntype": 0.0,
+      "actuator_dyntype": 0.0,
+      "actuator_gaintype": 0.0,
+      "actuator_biastype": 0.0,
+      "actuator_trnid": 0.0,
+      "actuator_actadr": 0.0,
+      "actuator_actnum": 0.0,
+      "actuator_group": 0.0,
+      "actuator_ctrllimited": 0.0,
+      "actuator_forcelimited": 0.0,
+      "actuator_actlimited": 0.0,
+      "actuator_dynprm": 0.0,
+      "actuator_gainprm": 0.1875,
+      "actuator_biasprm": 0.1875,
+      "actuator_ctrlrange": 0.0,
+      "actuator_forcerange": 0.0,
+      "actuator_actrange": 0.0,
+      "actuator_gear": 0.0,
+      "actuator_cranklength": 0.0,
+      "actuator_lengthrange": 0.0,
+      "actuator_acc0": 0.010868203551581246,
+      "actuator_actearly": 0.0,
+      "actuator_damping": 0.0,
+      "actuator_dampingpoly": 0.0,
+      "actuator_armature": 0.0,
+      "actuator_ctrladr": 0.0,
+      "actuator_ctrlnum": 0.0,
+      "actuator_ctrlspec": 0.0,
+      "actuator_delay": 0.0,
+      "actuator_history": 0.0,
+      "actuator_historyadr": 0.0,
+      "actuator_outadr": 0.0,
+      "actuator_outnum": 0.0,
+      "actuator_length0": 0.0,
+      "body_inertia_tensor": 3.621188756610912e-07
+    },
+    "documented_option_changes": [],
+    "actuator_identities": [
+      {
+        "index": 0,
+        "source_name": "",
+        "portable_name": "/G01/joints/idx01_body_joint1/__position_servo"
+      },
+      {
+        "index": 1,
+        "source_name": "",
+        "portable_name": "/G01/joints/idx02_body_joint2/__position_servo"
+      },
+      {
+        "index": 2,
+        "source_name": "",
+        "portable_name": "/G01/joints/idx11_head_joint1/__position_servo"
+      },
+      {
+        "index": 3,
+        "source_name": "",
+        "portable_name": "/G01/joints/idx12_head_joint2/__position_servo"
+      },
+      {
+        "index": 4,
+        "source_name": "",
+        "portable_name": "/G01/joints/idx21_arm_l_joint1/__position_servo"
+      },
+      {
+        "index": 5,
+        "source_name": "",
+        "portable_name": "/G01/joints/idx22_arm_l_joint2/__position_servo"
+      },
+      {
+        "index": 6,
+        "source_name": "",
+        "portable_name": "/G01/joints/idx23_arm_l_joint3/__position_servo"
+      },
+      {
+        "index": 7,
+        "source_name": "",
+        "portable_name": "/G01/joints/idx24_arm_l_joint4/__position_servo"
+      },
+      {
+        "index": 8,
+        "source_name": "",
+        "portable_name": "/G01/joints/idx25_arm_l_joint5/__position_servo"
+      },
+      {
+        "index": 9,
+        "source_name": "",
+        "portable_name": "/G01/joints/idx26_arm_l_joint6/__position_servo"
+      },
+      {
+        "index": 10,
+        "source_name": "",
+        "portable_name": "/G01/joints/idx27_arm_l_joint7/__position_servo"
+      },
+      {
+        "index": 11,
+        "source_name": "",
+        "portable_name": "/G01/joints/idx41_gripper_l_outer_joint1/__position_servo"
+      },
+      {
+        "index": 12,
+        "source_name": "",
+        "portable_name": "/G01/joints/idx61_arm_r_joint1/__position_servo"
+      },
+      {
+        "index": 13,
+        "source_name": "",
+        "portable_name": "/G01/joints/idx62_arm_r_joint2/__position_servo"
+      },
+      {
+        "index": 14,
+        "source_name": "",
+        "portable_name": "/G01/joints/idx63_arm_r_joint3/__position_servo"
+      },
+      {
+        "index": 15,
+        "source_name": "",
+        "portable_name": "/G01/joints/idx64_arm_r_joint4/__position_servo"
+      },
+      {
+        "index": 16,
+        "source_name": "",
+        "portable_name": "/G01/joints/idx65_arm_r_joint5/__position_servo"
+      },
+      {
+        "index": 17,
+        "source_name": "",
+        "portable_name": "/G01/joints/idx66_arm_r_joint6/__position_servo"
+      },
+      {
+        "index": 18,
+        "source_name": "",
+        "portable_name": "/G01/joints/idx67_arm_r_joint7/__position_servo"
+      },
+      {
+        "index": 19,
+        "source_name": "",
+        "portable_name": "/G01/joints/idx81_gripper_r_outer_joint1/__position_servo"
+      }
+    ],
+    "unsupported_counts": {
+      "nsite": 0,
+      "nhfield": 0,
+      "nsensor": 0
+    },
+    "status": "passed",
+    "task_success_evaluated": false
+  },
+  "rss-solref-shorthand-before": {
+    "physics_steps": 0,
+    "native_before": [
+      [
+        0.019999999552965164,
+        1.0
+      ],
+      [
+        0.019999999552965164,
+        1.0
+      ],
+      [
+        0.019999999552965164,
+        1.0
+      ]
+    ],
+    "portable_native": [
+      [
+        0.02,
+        1.0
+      ],
+      [
+        0.02,
+        1.0
+      ],
+      [
+        0.02,
+        1.0
+      ]
+    ],
+    "rss_newton_custom": [
+      [
+        0.019999999552965164,
+        0.0
+      ],
+      [
+        0.019999999552965164,
+        0.0
+      ],
+      [
+        0.019999999552965164,
+        0.0
+      ],
+      [
+        0.0,
+        0.0
+      ]
+    ],
+    "rss_native": [
+      [
+        0.019999999552965164,
+        1.0
+      ],
+      [
+        0.019999999552965164,
+        0.0
+      ],
+      [
+        0.019999999552965164,
+        0.0
+      ],
+      [
+        0.019999999552965164,
+        0.0
+      ]
+    ],
+    "artifact_directory": "/data/tzq/tmp/rss-solref-eu1p9298"
+  },
+  "rss-solref-shorthand-after": {
+    "physics_steps": 0,
+    "native_before": [
+      [
+        0.019999999552965164,
+        1.0
+      ],
+      [
+        0.019999999552965164,
+        1.0
+      ],
+      [
+        0.019999999552965164,
+        1.0
+      ]
+    ],
+    "portable_native": [
+      [
+        0.019999999552965164,
+        1.0
+      ],
+      [
+        0.019999999552965164,
+        1.0
+      ],
+      [
+        0.019999999552965164,
+        1.0
+      ]
+    ],
+    "rss_newton_custom": [
+      [
+        0.019999999552965164,
+        1.0
+      ],
+      [
+        0.019999999552965164,
+        1.0
+      ],
+      [
+        0.019999999552965164,
+        1.0
+      ],
+      [
+        0.0,
+        0.0
+      ]
+    ],
+    "rss_native": [
+      [
+        0.019999999552965164,
+        1.0
+      ],
+      [
+        0.019999999552965164,
+        1.0
+      ],
+      [
+        0.019999999552965164,
+        1.0
+      ],
+      [
+        0.019999999552965164,
+        1.0
+      ]
+    ],
+    "artifact_directory": "/data/tzq/tmp/rss-solref-d6s8b4jm"
+  },
+  "provenance": {
+    "agent/rss_mjcf_export.py": "678ce06521c1db78ab55713b7f5722d68b6512283b574d668c166b27bc5e5219",
+    "tests/test_rss_mjcf_export.py": "51d2e424218ae03f33e8fff8cd8f1fcc5cb53616a0e0a80d77805ccf7af4bd38",
+    ".workbench/previews/geniesim-g1-portable-20261021/rss-preflight/report.json": "f0b8dbaf73e22a7d2548961b90d363130f0a31191e35ea274c8c425917cc69ed",
+    ".workbench/previews/geniesim-g1-portable-20261021/portable.xml": "ebdcbf40531fab730cd8ded6b5418561bb80ad889ef12de465b61dc8355a9d36"
+  }
+}
