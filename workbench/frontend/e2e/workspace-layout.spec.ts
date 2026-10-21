@@ -90,3 +90,34 @@ test("inspection is available on desktop and narrow screens without crowding the
   await expect(inspector).toBeHidden();
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
 });
+
+test("execution selector reaches older records and keeps details tied to the selected run", async ({ page }) => {
+  const jobs = Array.from({ length: 35 }, (_, i) => ({
+    id: `fixture-${i}`, mode: "rigid", config_name: "fixture.yaml",
+    status: i === 0 ? "failed" : "completed", message: `Result ${i}`,
+    output_name: `record-${i}`, created_at: "2026-10-21T08:00:00Z",
+    run_id: null, agent_wait: null,
+  }));
+  await page.route(`**${prefix}/executions`, route => route.fulfill({ json: jobs }));
+  await page.route(`**${prefix}/executions/*/log`, route => {
+    const id = new URL(route.request().url()).pathname.split("/").at(-2);
+    return route.fulfill({ json: { text: `Log for ${id}` } });
+  });
+  await page.goto("/executions");
+  const selector = page.getByLabel("选择执行记录");
+  await expect(selector.locator("option")).toHaveCount(35);
+  await expect(page.getByText("Log for fixture-0", { exact: true })).toBeVisible();
+  await selector.selectOption("fixture-34");
+  await expect(page).toHaveURL(/job=fixture-34/);
+  await expect(page.getByText("Result 34", { exact: true })).toBeVisible();
+  await expect(page.getByText("Log for fixture-0", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Log for fixture-34", { exact: true })).toBeHidden();
+  await page.getByText("运行名称与配置", { exact: true }).click();
+  await expect(page.locator(".execution-identity code")).toHaveText("record-34");
+  await page.getByText("执行日志（最近 64 KiB）", { exact: true }).click();
+  await expect(page.getByText("Log for fixture-34", { exact: true })).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  const bounds = await selector.boundingBox();
+  expect(bounds!.x).toBeGreaterThanOrEqual(0);
+  expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390);
+});

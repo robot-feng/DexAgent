@@ -105,7 +105,7 @@ test("native scene editing keeps textured surroundings, guards navigation and sa
     const save = await response.json();
     expect(save.promoted).toBe(false);
     await expect(
-      page.getByRole("heading", { name: "已保存的候选版本" }),
+      page.locator(".editor-revisions > summary"),
     ).toBeVisible({ timeout: 15_000 });
     const state = await (
       await request.get(`${prefix}/editors/${editor.id}`)
@@ -125,6 +125,7 @@ test("native scene editing keeps textured surroundings, guards navigation and sa
     ).toBe(scene.sha256);
     await page.getByRole("button", { name: "显示全部", exact: true }).click();
     const version = state.revisions[0];
+    await page.locator(".editor-revisions > summary").click();
     const candidateRow = page.locator(".revision-row").filter({ hasText: version.name });
     await expect(candidateRow).toBeVisible({ timeout: 15_000 });
     await expect(candidateRow).toContainText(version.sha256);

@@ -415,8 +415,8 @@ export default function SceneEditor({
         </a>
       )}
       {sceneId && (
-        <div className="editor-revisions">
-          <h3>已保存的候选版本</h3>
+        <details className="editor-revisions" key={sceneId}>
+          <summary><h3>已保存的候选版本</h3> <span className="counter">{history.data?.total ?? "—"}</span></summary>
           <p className="small muted">包含该场景的历史会话；继续编辑会打开新副本，并保留版本来源。</p>
           {history.isLoading && <Loading />}
           {history.data?.total === 0 && <p className="muted">尚未保存候选。在编辑器中保存后，可在这里继续编辑或下载。</p>}
@@ -449,7 +449,7 @@ export default function SceneEditor({
               <button className="button" disabled={revisionOffset + 10 >= history.data.total} onClick={() => setRevisionOffset(revisionOffset + 10)}>下一页候选</button>
             </div>
           )}
-        </div>
+        </details>
       )}
     </section>
   );

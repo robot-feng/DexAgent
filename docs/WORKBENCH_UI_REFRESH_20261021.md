@@ -63,3 +63,21 @@ npx playwright test e2e/simulation-runtime.spec.ts e2e/workspace-layout.spec.ts 
 ![输入缺失时的实际执行页](references/workbench/execution-inputs-20261021/missing-default-desktop.png)
 
 [后端测试](references/workbench/execution-inputs-20261021/backend-tests.log) · [浏览器测试](references/workbench/execution-inputs-20261021/browser-tests.log) · [部署后浏览器检查](references/workbench/execution-inputs-20261021/browser-verification.json)
+
+## 后续：减少执行页与场景页的首屏堆叠
+
+再次查看默认端口的实际截图后，将执行历史改为单一选择器，当前运行的结果、验收和操作直接出现在其下方。选择器保留时间、任务类型、进程状态和原运行名，并去除原先前端只展示最近 30 条的截断。运行名称与配置可展开查看；失败、运行中的日志默认展开，其他状态按需查看。切换记录会重置详情折叠状态，避免沿用上一条记录的界面状态。
+
+场景候选历史默认收起，显示候选总数；展开后原有版本来源、继续编辑、下载及分页功能保留。没有启动新编辑器，也没有改动场景或物理数据。
+
+- 构建成功，已有 ECharts 分包大小提示保留。
+- 9 项浏览器回归通过，覆盖第 35 条记录选择、日志身份隔离、配置输入、Agent 等待、环境状态和检查器。
+- 直接检查 8765 的执行页与场景页，1512px / 390px 均 HTTP 200、无横向溢出、无 JS 页面错误；候选历史展开后可见。截图已实际读取检查。
+- 原生场景编辑的长流程测试增加了展开历史的步骤，本轮未重新启动原生编辑会话执行该测试；本轮验证限于已有候选的读取和显示。
+- 前端静态构建已在原服务生效，无后端重启。
+
+![执行页聚焦当前结果](references/workbench/ui-focus-20261021/after-executions-1512.png)
+
+![场景页候选历史按需展开](references/workbench/ui-focus-20261021/after-scenes-1512.png)
+
+[浏览器回归](references/workbench/ui-focus-20261021/browser-tests.log) · [实际页面检查](references/workbench/ui-focus-20261021/browser-verification.json)

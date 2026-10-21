@@ -525,39 +525,39 @@ export function ExecutionsPage() {
           {!jobs.isLoading && !jobs.data?.length && (
             <p className="cleanup-empty">还没有从工作台启动的任务。</p>
           )}
-          <div className="cleanup-job-list">
-            {jobs.data?.slice(0, 30).map((job) => (
-              <button
-                key={job.id}
-                className={`cleanup-job-row ${selected?.id === job.id ? "selected" : ""}`}
-                onClick={() => setParams({ job: job.id })}
+          {!!jobs.data?.length && (
+            <label className="execution-history-picker">
+              选择运行 <span className="muted small">{jobs.data.length} 条记录</span>
+              <select
+                aria-label="选择执行记录"
+                value={selected?.id ?? ""}
+                onChange={(event) => setParams({ job: event.target.value })}
               >
-                <span
-                  className={`cleanup-job-mark ${job.status === "running" ? "preparing" : job.status === "failed" ? "failed" : ""}`}
-                />
-                <span>
-                  <strong>{modes[job.mode]}</strong>
-                  <small className="muted">
-                    {formatTime(job.created_at)} · {job.config_name}
-                  </small>
-                </span>
-                <span className="small">
-                  {job.agent_wait ? "等待 Agent" : statuses[job.status]}
-                </span>
-              </button>
-            ))}
-          </div>
+                {!selected && <option value="" disabled>请选择一条运行记录</option>}
+                {jobs.data.map((job) => (
+                  <option key={job.id} value={job.id}>
+                    {formatTime(job.created_at)} · {modes[job.mode]} · {job.agent_wait ? "等待 Agent" : statuses[job.status]} · {job.output_name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           {selected && (
             <div className="cleanup-review">
               <div className="cleanup-review-header">
                 <div>
-                  <h3>{selected.output_name}</h3>
+                  <h3>{modes[selected.mode]}</h3>
                   <span className="cleanup-status">
                     {statuses[selected.status]}
                   </span>
                 </div>
               </div>
               <p className="small muted">{selected.message}</p>
+              <details className="execution-identity" key={`identity-${selected.id}`}>
+                <summary>运行名称与配置</summary>
+                <code>{selected.output_name}</code>
+                <p className="small muted">{selected.config_name} · {formatTime(selected.created_at)}</p>
+              </details>
               <ErrorNotice error={nativeRun.error} />
               {nativeRun.data && (
                 <section
@@ -723,7 +723,7 @@ export function ExecutionsPage() {
               <p className="small muted">
                 进程退出与任务通过分别记录；训练发布资格以运行页的验收证据为准。
               </p>
-              <details open>
+              <details key={`logs-${selected.id}`} open={selected.status === "running" || selected.status === "failed"}>
                 <summary>执行日志（最近 64 KiB）</summary>
                 <pre
                   className="text-preview"

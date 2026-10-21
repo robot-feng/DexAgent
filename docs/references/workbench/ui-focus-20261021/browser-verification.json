@@ -1,0 +1,35 @@
+{
+  "checks": [
+    {
+      "path": "/scenes",
+      "width": 1512,
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "sceneVersionsAccessible": true
+    },
+    {
+      "path": "/executions",
+      "width": 1512,
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "path": "/scenes",
+      "width": 390,
+      "status": 200,
+      "overflow": false
+    },
+    {
+      "sceneVersionsAccessible": true
+    },
+    {
+      "path": "/executions",
+      "width": 390,
+      "status": 200,
+      "overflow": false
+    }
+  ],
+  "errors": []
+}
