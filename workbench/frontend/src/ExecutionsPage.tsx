@@ -68,6 +68,9 @@ export function ExecutionsPage() {
     enabled: ["reference", "candidate", "replan"].includes(mode),
   });
   const configId = form.config_id || catalog.data?.configs[0]?.id || "";
+  const selectedConfig = catalog.data?.configs.find((config) => config.id === configId);
+  const defaultVideoMissing = mode === "pipeline" && !form.video?.trim()
+    && selectedConfig?.input_video_exists === false;
   const candidateScene = useQuery({
     queryKey: ["candidate-scene", form.reference_run_id, configId],
     queryFn: () => api.executionScene(form.reference_run_id!, configId),
@@ -138,7 +141,12 @@ export function ExecutionsPage() {
       <ErrorNotice error={catalog.error ?? jobs.error} />
       <div className="cleanup-layout">
         <section className="panel cleanup-form-panel">
-          <h2>新建运行</h2>
+          <div className="section-heading">
+            <h2>新建运行</h2>
+            <button type="button" className="link-button" disabled={catalog.isFetching}
+              onClick={() => void catalog.refetch()}><RotateCcw size={13} />刷新配置</button>
+          </div>
+          {selectedConfig?.error && <div className="notice danger" role="alert">{selectedConfig.error}</div>}
           <form
             className="cleanup-form"
             onSubmit={(event) => {
@@ -207,15 +215,24 @@ export function ExecutionsPage() {
                   <input
                     value={form.video ?? ""}
                     onChange={(e) => patch("video", e.target.value)}
-                    placeholder="留空使用配置中的视频"
+                    placeholder={selectedConfig?.input_video || "填写服务器上的视频路径"}
+                    aria-describedby="execution-video-help"
+                    aria-invalid={defaultVideoMissing}
                   />
                 </label>
+                <p id="execution-video-help" className={`small ${defaultVideoMissing ? "amber" : "muted"}`}>
+                  {defaultVideoMissing
+                    ? "配置中的视频不存在，请填写有效路径后再启动。"
+                    : form.video?.trim()
+                      ? "使用填写的视频；启动时检查路径，原生预检负责解码。"
+                      : "留空使用上方配置路径；文件存在不代表解码或任务验收通过。"}
+                </p>
                 <label>
                   任务描述
                   <textarea
                     value={form.prompt ?? ""}
                     onChange={(e) => patch("prompt", e.target.value)}
-                    placeholder="留空使用配置中的任务描述"
+                    placeholder={selectedConfig?.task || "可选；留空由任务理解阶段从演示中识别"}
                   />
                 </label>
                 <div className="cleanup-form-row">
@@ -471,6 +488,8 @@ export function ExecutionsPage() {
                 active ||
                 !catalog.data?.available ||
                 !configId ||
+                !!selectedConfig?.error ||
+                defaultVideoMissing ||
                 (mode === "candidate" &&
                   (!candidateScene.data ||
                     candidateScene.isFetching ||

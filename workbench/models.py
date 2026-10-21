@@ -399,6 +399,10 @@ class CandidateScene(ReadModel):
 class ExecutionConfig(ReadModel):
     id: str
     name: str
+    input_video: str | None = None
+    input_video_exists: bool | None = None
+    task: str | None = None
+    error: str | None = None
 
 
 class ExecutionCatalog(ReadModel):

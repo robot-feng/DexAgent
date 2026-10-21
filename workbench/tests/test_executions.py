@@ -45,12 +45,15 @@ def workspace(tmp_path):
     for name in ("run_dexagent.py", "run_robosimstudio.py"):
         (repo / name).write_text(PROGRAM)
     config = repo / "dexagent.yaml"
+    video = repo / "fixture.mp4"
+    video.write_bytes(b"process lifecycle fixture, not a decodable video")
     config.write_text(
         yaml.safe_dump(
             {
                 "environments": {"pipeline": sys.executable},
                 "agent": {"api_key": "private-fixture-value"},
                 "fixture": {},
+                "inputs": {"video": str(video)},
             }
         )
     )
@@ -618,3 +621,84 @@ def test_rss_worker_override_preserves_pipeline_and_retry_snapshot(workspace):
     assert finished(manager, retry.id).returncode == 0
     assert manager._read(retry.id)["command"][0] == str(python)
     assert marker.read_text() == "rss\nrss\n"
+
+
+def test_catalog_resolves_defaults_without_disclosing_credentials(workspace):
+    manager, config = workspace
+    data = yaml.safe_load(config.read_text())
+    data['inputs']['task'] = 'fixture task description'
+    config.write_text(yaml.safe_dump(data))
+    catalog = manager.catalog()
+    entry = catalog.configs[0]
+    assert entry.input_video == str(manager.repo / 'fixture.mp4')
+    assert entry.input_video_exists is True
+    assert entry.task == 'fixture task description'
+    assert entry.error is None
+    assert 'private-fixture-value' not in catalog.model_dump_json()
+    (manager.repo / 'fixture.mp4').unlink()
+    assert manager.catalog().configs[0].input_video_exists is False
+    # Invalid configs remain identifiable but never expose parser text/secrets.
+    config.write_text('agent: [private-fixture-value')
+    entry = manager.catalog().configs[0]
+    assert entry.error and entry.input_video is None
+    assert 'private-fixture-value' not in entry.model_dump_json()
+
+
+def test_deleted_default_video_is_rejected_before_worker_or_snapshot(workspace, monkeypatch):
+    manager, _ = workspace
+    assert manager.catalog().configs[0].input_video_exists is True
+    (manager.repo / 'fixture.mp4').unlink()
+    def forbidden(*args, **kwargs):
+        pytest.fail('missing video must not launch a worker')
+    monkeypatch.setattr('workbench.executions.subprocess.Popen', forbidden)
+    with pytest.raises(ValueError, match='输入视频不存在'):
+        manager.start(request(manager))
+    assert not list(manager.root.iterdir())
+    assert not list(manager.index.runs_root.glob('studio_*'))
+
+
+def test_missing_default_can_be_overridden_without_modifying_config(workspace):
+    manager, config = workspace
+    original = config.read_bytes()
+    (manager.repo / 'fixture.mp4').unlink()
+    replacement = manager.repo / 'chosen.mp4'
+    replacement.write_bytes(b'lifecycle input only; native decoder not invoked')
+    job = manager.start(request(manager).model_copy(update={'video': str(replacement)}))
+    assert finished(manager, job.id).status == 'completed'
+    frozen = yaml.safe_load((manager.directory(job.id) / 'config.yaml').read_text())
+    assert frozen['inputs']['video'] == str(replacement)
+    assert config.read_bytes() == original
+
+
+def test_egodex_fallback_and_nonvideo_rss_modes_keep_native_semantics(workspace):
+    manager, config = workspace
+    (manager.repo / 'fixture.mp4').unlink()
+    data = yaml.safe_load(config.read_text())
+    data['inputs']['egodex_hdf5'] = str(manager.repo / 'episode.hdf5')
+    companion = manager.repo / 'episode.mp4'
+    companion.write_bytes(b'lifecycle fixture companion, not task acceptance')
+    config.write_text(yaml.safe_dump(data))
+    assert manager.catalog().configs[0].input_video == str(companion)
+    job = manager.start(request(manager))
+    assert finished(manager, job.id).status == 'completed'
+    companion.unlink()
+    assert manager.catalog().configs[0].input_video_exists is False
+    # Rigid RSS execution does not consume a demonstration video.
+    rss = manager.start(request(manager).model_copy(update={'mode': 'rigid'}))
+    assert finished(manager, rss.id).status == 'completed'
+
+
+def test_api_rechecks_missing_video_without_creating_execution(workspace):
+    manager, _ = workspace
+    app = create_app(repo=manager.repo, runs_root=manager.index.runs_root,
+                     state_dir=manager.root.parent, refresh_interval=0)
+    with TestClient(app) as client:
+        catalog = client.get(PREFIX + '/executions/catalog').json()
+        assert catalog['configs'][0]['input_video_exists'] is True
+        (manager.repo / 'fixture.mp4').unlink()
+        response = client.post(PREFIX + '/executions', json={
+            'config_id': catalog['configs'][0]['id'], 'mode': 'pipeline'})
+        assert response.status_code == 422
+        assert '输入视频不存在' in response.json()['detail']
+        assert client.get(PREFIX + '/executions').json() == []
+        assert not list(manager.root.iterdir())

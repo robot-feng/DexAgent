@@ -45,3 +45,21 @@ npx playwright test e2e/simulation-runtime.spec.ts e2e/workspace-layout.spec.ts 
 [浏览器尺寸与响应检查](references/workbench/ui-refresh-20261021/browser-verification.json) · [测试日志](references/workbench/ui-refresh-20261021/browser-tests.log)
 
 这是界面体验交付。截图中的 Sharpa 运动录像、失败记录和各次运行状态来自已有证据；界面变化不产生新的抓取、三本体任务或训练数据验收结论。
+
+## 后续：启动前明确实际输入
+
+真实失败运行 `studio_pipeline_20261021_151727_ae3dfb` 的原生预检发现默认 `inputs.video` 仍为不存在的 `path/to/human_video.mp4`。原页面只提示“留空使用配置”，用户看不到实际默认输入，点击后才产生一个注定失败的运行。
+
+本次复用 `agent.config.load_config`，在原配置目录 API 中返回解析后的视频路径、文件存在提示和默认任务描述；不返回完整配置或密钥。页面显示默认值并提供“刷新配置”。默认视频缺失且未提供覆盖路径时禁用启动；无效 YAML 单独显示配置错误。用户填写的覆盖路径仍受已有输入根目录限制，实际解码继续由原生预检负责。
+
+后端在应用覆盖路径后、创建执行快照及进程前重新检查视频是否存在，防止过期目录提示或绕过 UI。仅约束需要视频的 pipeline 模式；RSS 刚体等模式不因此要求视频，EgoDex 伴随 `.mp4` 回退保留。未修改原配置、旧失败结果或任务验收标准。
+
+- 后端/配置/执行器回归 **39 通过**，含文件在目录读取后消失、手动覆盖、EgoDex 回退、RSS 无视频、无凭据泄露和 API 拒绝后无 worker/快照。
+- 浏览器回归 **15 通过、1 跳过**（仍为缺少真实 RSS live 会话）。新测试覆盖配置切换、空白输入、手动覆盖的后端错误、坏配置、恢复后刷新和 RSS 模式。
+- 8765 部署前再次确认无活动编辑器、执行 worker、补洞 worker 或服务子进程，随后安全重启。原端口保持不变，其他端口未操作。
+- 实际浏览器确认：默认 pipeline 启动禁用，路径显示正确；切换 rigid 后可启动。未为该检查运行真实 pipeline 或新增仿真。
+- 初次新增 API 测试将错误码预期写为 400；现有全局 `ValueError` 处理明确返回 422，已修正测试预期并重跑通过，未改服务错误语义。
+
+![输入缺失时的实际执行页](references/workbench/execution-inputs-20261021/missing-default-desktop.png)
+
+[后端测试](references/workbench/execution-inputs-20261021/backend-tests.log) · [浏览器测试](references/workbench/execution-inputs-20261021/browser-tests.log) · [部署后浏览器检查](references/workbench/execution-inputs-20261021/browser-verification.json)

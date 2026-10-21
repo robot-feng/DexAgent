@@ -1213,6 +1213,14 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+            /** Input Video */
+            input_video: string | null;
+            /** Input Video Exists */
+            input_video_exists: boolean | null;
+            /** Task */
+            task: string | null;
+            /** Error */
+            error: string | null;
         };
         /** ExecutionCreate */
         ExecutionCreate: {

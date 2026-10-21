@@ -100,7 +100,7 @@ class Executions:
 
     def catalog(self) -> ExecutionCatalog:
         configs = [
-            ExecutionConfig(id=key, name=path.name)
+            self._config_summary(key, path)
             for key, path in self.config_paths().items()
         ]
         modes = []
@@ -129,6 +129,34 @@ class Executions:
             if ready
             else "需要本地运行入口、项目根目录 YAML 配置及 PyYAML。",
         )
+
+    @staticmethod
+    def _config_summary(key: str, path: Path) -> ExecutionConfig:
+        """Expose only input defaults, using the same resolver as native launch.
+
+        Existence is a lightweight form hint, not a video decoding or task gate.
+        Never serialize the whole config (it may include credentials).
+        """
+        if importlib.util.find_spec("yaml") is None:
+            return ExecutionConfig(id=key, name=path.name, error="缺少 PyYAML，无法读取配置")
+        from agent.config import load_config
+        import yaml
+
+        try:
+            cfg = load_config(path)
+            inputs = cfg.get("inputs") or {}
+            video = str(inputs.get("video") or "")
+            return ExecutionConfig(
+                id=key, name=path.name,
+                input_video=video or None,
+                input_video_exists=bool(video and Path(video).is_file()),
+                task=str(inputs.get("task") or ""),
+            )
+        except (OSError, yaml.YAMLError, TypeError, AttributeError, ValueError):
+            return ExecutionConfig(
+                id=key, name=path.name,
+                error="配置无法读取或不是有效的任务配置",
+            )
 
     def directory(self, key: str) -> Path:
         if not re.fullmatch("[a-f0-9]{24}", key):
@@ -294,6 +322,15 @@ class Executions:
                 )
             if request.prompt.strip():
                 cfg.setdefault("inputs", {})["task"] = request.prompt.strip()
+            if request.mode == "pipeline":
+                # Recheck after overrides and EgoDex fallback, before recording or
+                # spawning a worker. Native preflight still decodes and hashes it.
+                video = str((cfg.get("inputs") or {}).get("video") or "")
+                if not video or not Path(video).is_file():
+                    raise ValueError(
+                        "输入视频不存在，请填写有效的视频路径后再启动："
+                        + (video or "配置未提供 inputs.video")
+                    )
             key = uuid.uuid4().hex[:24]
             output_name = f"studio_{request.mode}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{key[:6]}"
             output = self.index.runs_root / output_name
