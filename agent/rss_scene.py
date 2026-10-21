@@ -68,6 +68,31 @@ class CPUContactProbe(ContactQueries):
         self.geoms = np.zeros((0, 2), dtype=int)
         self.impulses = np.zeros((0, 3))
         self.depths = np.zeros(0)
+        self._geometry_model = None
+        self._geometry_data = None
+
+    def penetrations(self, deeper_than=0.0):
+        """Current-state overlap, separate from the last step's solved forces.
+
+        Native mj_step leaves contact geometry at the pre-integration state.
+        Recompute positions/collision in separate data for post-step gates;
+        never replace the force snapshot or the stepping data/warm start.
+        """
+        m, d = self.solver.mj_model, self.solver.mj_data
+        if self._geometry_model is not m:
+            self._geometry_model = m
+            self._geometry_data = mujoco.MjData(m)
+        view = self._geometry_data
+        view.qpos[:] = d.qpos
+        view.mocap_pos[:] = d.mocap_pos
+        view.mocap_quat[:] = d.mocap_quat
+        view.eq_active[:] = d.eq_active
+        mujoco.mj_fwdPosition(m, view)
+        geometry = ContactQueries()
+        geometry.geom_to_shape = self.geom_to_shape
+        geometry.geoms = np.asarray([[c.geom1, c.geom2] for c in view.contact], dtype=int).reshape(-1, 2)
+        geometry.depths = np.asarray([c.dist for c in view.contact])
+        return geometry.penetrations(deeper_than)
 
     def update(self, step=None):
         if step is not None and step == self.step:

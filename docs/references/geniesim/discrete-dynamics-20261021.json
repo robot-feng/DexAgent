@@ -584,7 +584,8 @@
       "/tmp/rss-cpu-backend-final-tests.log": "785106bf4f9f4412053b1768a9cb66d022fba205aa827ce852616ac0f219c2f9",
       "/tmp/rss-cpu-backend-compat-tests.log": "45b65b427743bd581f65f4f5d5b87f60c9997b3adcc8d732bba11d351d5cbbbf",
       "/tmp/rss-cpu-backend-default-final-tests.log": "a118f7cc845c6bd9122a15675a21b8fa0dea425952c94e0a10d3a5ef7aaf796f"
-    }
+    },
+    "source_commit": "725e70ed05a781fd62726f56f717a3bac48323b8"
   },
   "grasp_interface_audit": {
     "scope": "offline_source_geometry_and_RSS_interface_diagnosis",

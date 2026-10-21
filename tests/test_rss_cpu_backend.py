@@ -61,3 +61,52 @@ def test_cpu_backend_preserves_imported_gravity_and_contact_feedback(tmp_path, i
         assert get_backend("mujoco") == standard
     finally:
         sim.close()
+
+
+def test_post_step_geometry_does_not_reuse_stale_contacts_or_replace_forces(tmp_path):
+    """A fast moving sphere crosses the plane between solve and integration."""
+    mujoco = pytest.importorskip("mujoco")
+    wp = pytest.importorskip("warp")
+    wp.set_device("cpu")
+    import numpy as np
+    import newton
+    from agent.rss_runtime import build_cpu_mujoco_solver
+    from agent.rss_scene import CPUContactProbe
+    from newton.solvers import SolverMuJoCo
+    from robosimstudio.core.probes.contact import ContactQueries
+
+    source = tmp_path / "crossing.xml"
+    source.write_text('''<mujoco><option gravity="0 0 0"/><worldbody>
+      <geom name="floor" type="plane" size="1 1 .1"/>
+      <body name="falling" pos="0 0 .021"><freejoint/>
+        <geom type="sphere" size=".02" mass=".1"/>
+      </body>
+    </worldbody></mujoco>''')
+    builder = newton.ModelBuilder(gravity=(0, 0, 0))
+    SolverMuJoCo.register_custom_attributes(builder)
+    builder.add_mjcf(str(source))
+    model = builder.finalize(device="cpu")
+    solver = build_cpu_mujoco_solver(model)
+    state, other = model.state(), model.state()
+    velocity = state.joint_qd.numpy().copy()
+    velocity[2] = -2
+    state.joint_qd.assign(velocity)
+    newton.eval_fk(model, state.joint_q, state.joint_qd, state)
+    solver.step(state, other, model.control(), None, .001)
+    probe = CPUContactProbe(solver, model, .001)
+    probe.update(1)
+    m, d = solver.mj_model, solver.mj_data
+    fields = ("qpos", "qvel", "qacc", "qacc_warmstart", "qfrc_constraint", "efc_force")
+    saved = {key: getattr(d, key).copy() for key in fields}
+    forces, pairs, depths = probe.impulses.copy(), probe.geoms.copy(), probe.depths.copy()
+    assert not len(ContactQueries.penetrations(probe))  # Cached pre-step geometry.
+    overlaps = probe.penetrations()
+    assert len(overlaps) == 1
+    assert overlaps[0, 2] == pytest.approx(.001, abs=1e-6)
+    assert len(probe.penetrations(deeper_than=.002)) == 0
+    assert d.time == pytest.approx(.001)
+    for key, value in saved.items():
+        np.testing.assert_array_equal(getattr(d, key), value)
+    np.testing.assert_array_equal(probe.impulses, forces)
+    np.testing.assert_array_equal(probe.geoms, pairs)
+    np.testing.assert_array_equal(probe.depths, depths)
