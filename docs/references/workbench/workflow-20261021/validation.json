@@ -1,0 +1,22 @@
+{
+  "backend": {
+    "command": ".workbench/venv/bin/python -m pytest workbench/tests/test_workflow_reports.py workbench/tests/test_workbench.py -q",
+    "passed": 41
+  },
+  "frontend_build": "passed",
+  "browser": {
+    "workflow_workspace_inputs_passed": 8,
+    "legacy_selected_checks_passed": 5,
+    "legacy_video_selector_updated_and_rerun": true
+  },
+  "live": {
+    "port": 8765,
+    "health": "ok",
+    "run_count": 104,
+    "page_errors": [],
+    "mobile_page_overflow": false
+  },
+  "physics_steps_added": 0,
+  "training_executors_integrated": false,
+  "three_robot_task_acceptance_added": false
+}

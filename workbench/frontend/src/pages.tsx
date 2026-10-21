@@ -714,6 +714,11 @@ export function LibraryPage({ mode }: { mode: "scenes" | "episodes" }) {
           </p>
         </div>
       </div>
+      {mode === "scenes" && <section className="scene-reconstruction-entry">
+        <div><p className="eyebrow">场景重建</p><h2>背景与操作对象，各自成为可复用资产</h2>
+          <p className="muted">先分离扫描中的机器人、手与可移动对象，再补全背景；对象独立重建后与场景组合。</p></div>
+        <Link className="button" to="/scenes/separation">背景与对象分离 <ArrowRight size={14} /></Link>
+      </section>}
       {mode === "scenes" && editorCapability && (
         <SceneEditor
           available={editorCapability.available}

@@ -8,7 +8,7 @@ test("background cleanup defaults to native SAM3 LiteText tracking and keeps mod
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/background-cleanup");
-  await expect(page.getByRole("heading", { name: "背景清理", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "背景与对象分离", exact: true })).toBeVisible();
   const video = page.getByLabel("输入视频");
   await expect(video).toHaveValue(/.+/);
   await expect(video.locator("option:checked")).toContainText("ThrowAwayTrash.mp4");
@@ -300,7 +300,7 @@ test("real reports, video playback, evidence and refresh preserve the run contex
     .poll(() => video.evaluate((node: HTMLVideoElement) => node.currentTime))
     .toBeGreaterThan(0.1);
   await video.evaluate((node: HTMLVideoElement) => node.pause());
-  await page.getByRole("button", { name: /场景重建/ }).click();
+  await page.getByRole("button", { name: /场景与资产重建/ }).click();
   await page.getByRole("tab", { name: "验收", exact: true }).click();
   await expect(
     page.locator(".report-view .badge.warning").first(),
@@ -315,9 +315,8 @@ test("real reports, video playback, evidence and refresh preserve the run contex
       .first(),
   ).toBeVisible();
   await page.reload();
-  await expect(page).toHaveURL(
-    new RegExp(`/runs/${run.id}\\?stage=stage2&view=validation`),
-  );
+  await expect(page).toHaveURL(url => url.pathname === `/runs/${run.id}`
+    && url.searchParams.get("stage") === "stage2" && url.searchParams.get("view") === "validation");
   await expect(
     page.getByText("stage2_gate_suite", { exact: true }),
   ).toBeVisible();

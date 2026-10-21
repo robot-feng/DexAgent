@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Check, Film, Play, ShieldCheck, Square, WandSparkles } from "lucide-react";
 import { api } from "./api";
@@ -111,11 +112,12 @@ export function BackgroundCleanupPage() {
 
   return (
     <main className="page cleanup-page">
+      <Link className="link-button" to="/scenes">← 场景与资产</Link>
       <div className="page-title">
         <div>
-          <p className="eyebrow">SIMFOUNDRY / BACKGROUND CLEANUP</p>
-          <h1>背景清理</h1>
-          <p className="muted">先检查对象 mask，再运行视频补洞；扫描视频通过复核后才进入 3D 场景构建。</p>
+          <p className="eyebrow">SCENE RECONSTRUCTION / SEPARATION</p>
+          <h1>背景与对象分离</h1>
+          <p className="muted">场景重建的一步：分离机器人、手与可移动对象，补全静态背景。操作对象应另建可交互资产；背景清理完成不代表对象重建完成。</p>
         </div>
         <span className="source-tag"><Film size={14} /> 本机视频</span>
       </div>

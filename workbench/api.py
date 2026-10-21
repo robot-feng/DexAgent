@@ -295,10 +295,29 @@ def create_app(repo: Path | None = None, *, runs_root: Path | None = None,
         return Health(status='ok', run_count=count)
 
     @app.get(f'{PREFIX}/runs/{{run_id}}/artifacts', response_model=ArtifactPage)
-    def run_artifacts(run_id: str, kind: str | None = None, q: str = '',
+    def run_artifacts(run_id: str, kind: str | None = None, q: str = '', folder: str | None = None,
                       offset: int = Query(0, ge=0), limit: int = Query(60, ge=1, le=200)):
+        # folder is run-relative ownership, q remains an unrestricted text search.
+        # An empty folder selects root files only (standalone backend reports).
+        if folder is not None and (folder.startswith('/') or '\\' in folder
+                                   or any(part in {'.', '..'} for part in folder.split('/'))):
+            raise HTTPException(400, 'folder must be a run-relative path without dot segments')
+        root, _ = index.run_path(run_id)
+        prefix = index.label(root).rstrip('/') + '/'
+        scoped = folder.rstrip('/') if folder is not None else None
+
+        def in_scope(artifact):
+            if scoped is None:
+                return True
+            if not artifact.path.startswith(prefix):
+                return False
+            relative = artifact.path[len(prefix):]
+            return ('/' not in relative if not scoped else
+                    relative == scoped or relative.startswith(scoped + '/'))
+
         values = [a for a in index.artifacts(run_id)
-                  if (not kind or a.kind == kind) and (not q or q.casefold() in a.path.casefold())]
+                  if in_scope(a) and (not kind or a.kind == kind)
+                  and (not q or q.casefold() in a.path.casefold())]
         return ArtifactPage(items=values[offset:offset + limit], total=len(values))
 
     @app.get(f'{PREFIX}/artifacts/{{artifact_id}}', response_model=Artifact)

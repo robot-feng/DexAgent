@@ -2698,6 +2698,7 @@ export interface operations {
             query?: {
                 kind?: string | null;
                 q?: string;
+                folder?: string | null;
                 offset?: number;
                 limit?: number;
             };

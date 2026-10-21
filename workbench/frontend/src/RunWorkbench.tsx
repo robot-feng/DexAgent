@@ -33,8 +33,10 @@ import {
 import { ArtifactList, EpisodeList } from "./pages";
 import NativeScene from "./NativeScene";
 import PlanningDiagnostics from "./PlanningDiagnostics";
+import WorkflowView, { workflowStage } from "./WorkflowView";
 
 const tabs = [
+  ["workflow", "完整流程"],
   ["overview", "概览"],
   ["scene", "场景"],
   ["trajectory", "轨迹与回放"],
@@ -326,10 +328,12 @@ export function RunWorkbench() {
     );
   const run = runQuery.data;
   if (!run) return null;
-  const stage =
-    run.stages.find((s) => s.id === params.get("stage")) ??
-    run.stages.find((s) => s.report?.validation === "failed") ??
-    run.stages[0];
+  const view = tabs.some((t) => t[0] === params.get("view"))
+    ? params.get("view")
+    : "workflow";
+  const stage = view === "workflow" ? workflowStage(run, params.get("phase")) : params.has("stage")
+    ? run.stages.find((s) => s.id === params.get("stage"))
+    : run.stages.find((s) => s.report?.validation === "failed") ?? run.stages[0];
   const reports = stage
     ? [
         ...(stage.report ? [stage.report] : []),
@@ -340,9 +344,6 @@ export function RunWorkbench() {
   const report =
     reports.find((r) => r.artifact.id === params.get("report")) ??
     stage?.report;
-  const view = tabs.some((t) => t[0] === params.get("view"))
-    ? params.get("view")
-    : "overview";
   return (
     <main className="run-page">
       <div className="run-header">
@@ -442,9 +443,9 @@ export function RunWorkbench() {
         </span>
       </div>
       <div
-        className={`run-layout ${inspect ? "with-inspector" : "without-inspector"}`}
+        className={`run-layout ${view === "workflow" ? "workflow-layout" : ""} ${inspect ? "with-inspector" : "without-inspector"}`}
       >
-        <aside className="stage-rail">
+        <aside className="stage-rail" hidden={view === "workflow"}>
           <div className="rail-title">
             <Layers3 size={15} />
             阶段与尝试 <span>{run.stages.length}</span>
@@ -572,6 +573,9 @@ export function RunWorkbench() {
                 ))}
               </details>
             )}
+            {view === "workflow" && <WorkflowView run={run} phaseId={params.get("phase")}
+              choose={(id, stageId) => update({ phase: id, stage: stageId, report: "" })} open={setPreview}
+              inspect={(id) => update({ stage: id, report: "", view: "validation" })} />}
             {view === "overview" && (
               <Overview
                 run={run}

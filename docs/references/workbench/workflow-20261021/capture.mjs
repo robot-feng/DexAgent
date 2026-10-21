@@ -1,0 +1,13 @@
+import { chromium } from '/data/tzq/DexAgent/workbench/frontend/node_modules/playwright-core/index.mjs';
+const browser = await chromium.launch({headless:true});
+const page=await browser.newPage({viewport:{width:1512,height:982}});
+const errors=[]; page.on('pageerror',e=>errors.push(e.message));
+await page.goto('http://127.0.0.1:8765/runs/20fa33af189e626f743f7afd?view=workflow&phase=scene');
+await page.getByRole('region',{name:'完整流程工作区'}).waitFor();
+await page.getByRole('img', {name:'frame0_compare.png'}).waitFor();
+await page.waitForFunction(()=>[...document.querySelectorAll('.workflow-preview img')].every(i=>i.complete && i.naturalWidth>0));
+await page.screenshot({path:'.workbench/previews/workflow-20261021/scene-desktop.png',fullPage:true});
+await page.setViewportSize({width:390,height:844});
+await page.screenshot({path:'.workbench/previews/workflow-20261021/scene-mobile.png',fullPage:true});
+console.log(JSON.stringify({errors,title:await page.title(),overflow:await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth)}));
+await browser.close();

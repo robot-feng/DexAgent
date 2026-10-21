@@ -12,7 +12,7 @@ import threading
 import uuid
 
 from .models import Artifact, Episode, EpisodeCatalogItem, Issue, Project, RunDetail, RunSummary, Scope, Stage
-from .reports import STAGE_TITLES, merge_validation, parse_report, read_object
+from .reports import INDEXED_STAGE_DIRS, STAGE_TITLES, merge_validation, parse_report, read_object
 
 IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.webp'}
 VIDEO_EXTENSIONS = {'.mp4', '.webm', '.mov'}
@@ -121,7 +121,7 @@ class Index:
     def _sources(self, directory: Path) -> list[Path]:
         fixed = [directory / n for n in ('run_summary.json', 'stage_report.json', 'pipeline_validation.json')]
         fixed += [directory / 'reports/preflight.json']
-        for stage in ('stage1', 'stage2', 'stage3', 'stage4'):
+        for stage in INDEXED_STAGE_DIRS:
             fixed += [directory / stage / name for name in ('stage_report.json', 'progress.json')]
         fixed += [directory / 'stage1/scene_semantics.json',
                   directory / 'stage3/stage4_task/outputs/run_report.json']
@@ -212,7 +212,7 @@ class Index:
             issues.append(Issue(path=str(directory / 'pipeline_validation.json'), message='invalid completion object'))
         preflight = report(directory / 'reports/preflight.json')
         stages = [Stage(id='preflight', title=STAGE_TITLES['preflight'], report=preflight)] if preflight else []
-        for key in ('stage1', 'stage2', 'stage3', 'stage4'):
+        for key in INDEXED_STAGE_DIRS:
             current = report(directory / key / 'stage_report.json')
             progress = read(directory / key / 'progress.json')
             progress_path = directory / key / 'progress.json'

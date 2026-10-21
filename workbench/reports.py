@@ -15,7 +15,12 @@ KNOWN_REPORT_SCHEMAS = {'dexagent.step_report.v1', 'dexagent.stage4_run_report.v
 STAGE_TITLES = {
     'preflight': '输入与环境检查', 'stage1': '演示理解', 'stage2': '场景重建',
     'stage3': '机器人轨迹', 'stage4': '数据生成', 'backend': '目标后端验收',
+    'reference': '参考轨迹提取', 'execution': '物理执行',
+    'training': '策略训练', 'evaluation': '策略闭环评估',
 }
+
+# Optional adapters emit the same native report contract; absent stages are not required.
+INDEXED_STAGE_DIRS = ("stage1", "stage2", "reference", "stage3", "execution", "stage4", "training", "evaluation")
 
 
 def load_object(path: Path) -> tuple[dict, bytes]:

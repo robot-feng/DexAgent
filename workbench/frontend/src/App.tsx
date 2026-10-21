@@ -14,7 +14,6 @@ import {
   Boxes,
   ChevronRight,
   Database,
-  Film,
   FolderOpen,
   LayoutDashboard,
   Layers3,
@@ -55,7 +54,6 @@ function Shell() {
       : []),
     { path: "/scenes", title: "场景与资产", icon: Boxes },
     { path: "/datasets", title: "数据与回放", icon: Database },
-    { path: "/background-cleanup", title: "背景清理", icon: Film },
     { path: "/tools", title: "工具库", icon: Wrench },
     { path: "/settings/environment", title: "环境与能力", icon: Settings2 },
   ];
@@ -89,7 +87,7 @@ function Shell() {
                 aria-label={title}
                 title={title}
                 className={({ isActive }) =>
-                  `nav-item ${isActive && (title !== "工作台" || location.pathname.startsWith("/runs/")) ? "active" : ""}`
+                  `nav-item ${(isActive || (path === "/scenes" && location.pathname === "/background-cleanup")) && (title !== "工作台" || location.pathname.startsWith("/runs/")) ? "active" : ""}`
                 }
               >
                 <Icon size={18} />
@@ -113,6 +111,8 @@ function Shell() {
             <span>
               {location.pathname.startsWith("/runs/")
                 ? "运行工作台"
+                : location.pathname === "/scenes/separation" || location.pathname === "/background-cleanup"
+                  ? "场景重建 / 背景与对象分离"
                 : (navigation.find((n) => n.path === location.pathname)
                     ?.title ?? "项目")}
             </span>
@@ -164,6 +164,7 @@ export const router = createBrowserRouter(
       <Route path="/runs/:runId" element={<RunWorkbench />} />
       <Route path="/scenes" element={<LibraryPage mode="scenes" />} />
       <Route path="/datasets" element={<LibraryPage mode="episodes" />} />
+      <Route path="/scenes/separation" element={<BackgroundCleanupPage />} />
       <Route path="/background-cleanup" element={<BackgroundCleanupPage />} />
       <Route path="/tools" element={<ToolsPage />} />
       <Route path="/settings/environment" element={<EnvironmentPage />} />
