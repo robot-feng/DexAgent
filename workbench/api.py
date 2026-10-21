@@ -20,6 +20,7 @@ from .previews import PreviewBusy, Previews
 from .reports import read_object
 from .rss_live import RssLiveInspector
 from .background_cleanups import BackgroundCleanups, CleanupBusy, CleanupUnavailable
+from .models import CleanupRunLink
 from .executions import Executions, ExecutionBusy
 from .models import CandidateScene, Execution, ExecutionCatalog, ExecutionCreate, ExecutionLog, TaskVariantInputs
 from .models import PlanningTrials, PlanningTrialDetail
@@ -206,18 +207,31 @@ def create_app(repo: Path | None = None, *, runs_root: Path | None = None,
         return cleanups.catalog()
 
     @app.get(f'{PREFIX}/background-cleanups/jobs', response_model=list[CleanupJob])
-    def background_cleanup_jobs():
+    def background_cleanup_jobs(run_id: str | None = None):
+        if run_id is not None:
+            index.run_path(run_id)
         cleanups.poll()
-        return cleanups.jobs()
+        return cleanups.jobs(run_id=run_id)
 
     @app.post(f'{PREFIX}/background-cleanups', response_model=CleanupJob, status_code=202)
     def create_background_cleanup(body: CleanupCreate):
+        if body.run_id is not None:
+            index.run_path(body.run_id)
         try:
             return cleanups.start(body)
         except CleanupBusy as exc:
             raise HTTPException(409, str(exc))
         except CleanupUnavailable as exc:
             raise HTTPException(503, str(exc))
+
+    @app.post(f'{PREFIX}/background-cleanups/{{job_id}}/run', response_model=CleanupJob)
+    def link_background_cleanup_run(job_id: str, body: CleanupRunLink):
+        if body.run_id is not None:
+            index.run_path(body.run_id)
+        try:
+            return cleanups.link_run(job_id, body.run_id)
+        except CleanupBusy as exc:
+            raise HTTPException(409, str(exc))
 
     @app.get(f'{PREFIX}/background-cleanups/{{job_id}}', response_model=CleanupJob)
     def background_cleanup(job_id: str):

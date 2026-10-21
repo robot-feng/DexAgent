@@ -1,0 +1,85 @@
+{
+ "schema": "dexagent.step_report.v1",
+ "run": "background_separation_review_20261021",
+ "profile": "background_cleanup_smoke_test",
+ "stage": "stage2",
+ "step": null,
+ "status": "blocked",
+ "checks": [
+  {
+   "id": "mask_output_present",
+   "status": "passed",
+   "required": true,
+   "observed": "d86ef45b28e683d8afc5fb5901376c8ec37c16800c5a518236333dd6a52e5f06"
+  },
+  {
+   "id": "shared_frame_clock",
+   "status": "passed",
+   "required": true,
+   "observed": {
+    "frames": 400,
+    "fps": 12,
+    "max_pts_difference_s": 0
+   },
+   "evidence": "/data/tzq/DexAgent/runs/background_separation_review_20261021/review_source.json"
+  },
+  {
+   "id": "human_mask_review",
+   "status": "skipped",
+   "required": true,
+   "evidence": "The source job remains review_mask. Neither mask accuracy nor background completion is accepted."
+  },
+  {
+   "id": "scene_reconstruction",
+   "status": "skipped",
+   "required": false,
+   "evidence": "Operation-demo input qualifies for cleanup smoke testing only; this is not a scene-scan reconstruction."
+  }
+ ],
+ "inputs": {
+  "cleanup_job_id": "a81c66712d98408a94c913c8",
+  "capture_type": "operation_demo",
+  "source": {
+   "path": "/data/tzq/DexAgent/.workbench/background_cleanups/jobs/a81c66712d98408a94c913c8/input/source.mp4",
+   "sha256": "41147746611d0682924d5d15b4a37be84162f64aebce4118e37812f29061735e"
+  }
+ },
+ "config_sha256": null,
+ "model_identity": {
+  "segmentation_model": "SAM3-LiteText-S0-16",
+  "propagation_model": "sam3-native-video-tracker",
+  "device": "cuda:1",
+  "frame_count": 400,
+  "resolution_hw": [
+   384,
+   672
+  ],
+  "prompt_resolutions": {
+   "robot arm": "robot arm",
+   "gripper": "end effector"
+  },
+  "seed_frame_indices": {
+   "robot arm": 0,
+   "gripper": 0
+  },
+  "seed_scores": {
+   "robot arm": 0.8048780560493469,
+   "gripper": 0.7500000596046448
+  }
+ },
+ "artifacts": [
+  "cleanup_source.json",
+  "review_source.json",
+  "stage2-preview.png"
+ ],
+ "metrics": {
+  "scope": "background_separation_smoke_test",
+  "task_success_evaluated": false,
+  "training_eligible": false,
+  "aggregate_demo_complete": false
+ },
+ "elapsed_s": null,
+ "failure": null,
+ "next_action": "Inspect the full mask sequence before explicitly approving inpainting. No object asset or robot task is accepted.",
+ "updated_at": "2026-10-21 17:09:26"
+}

@@ -1,0 +1,20 @@
+{
+ "run_id": "f4d03b51ffa44c467ffca78b",
+ "url": "http://127.0.0.1:8765/runs/f4d03b51ffa44c467ffca78b?view=workflow&phase=scene&cleanup=a81c66712d98408a94c913c8",
+ "job_id": "a81c66712d98408a94c913c8",
+ "validation": "incomplete",
+ "source_hashes_unchanged": {
+  "/data/tzq/DexAgent/.workbench/background_cleanups/jobs/a81c66712d98408a94c913c8/input/source.mp4": "41147746611d0682924d5d15b4a37be84162f64aebce4118e37812f29061735e",
+  "/data/tzq/DexAgent/SimFoundry/Data/workbench_bg_a81c66712d/auto_bg/void/input/quadmask_0.mp4": "d86ef45b28e683d8afc5fb5901376c8ec37c16800c5a518236333dd6a52e5f06",
+  "/data/tzq/DexAgent/.workbench/background_cleanups/jobs/a81c66712d98408a94c913c8/input/review_source.mp4": "37990beb25f3d9df6f48bb12d62a93a224ccb7903ef9c70f076ebdc6f51d86b2"
+ },
+ "review_status": "review_mask",
+ "physics_steps_added": 0,
+ "latest_job_id": "ceaaa66c82ca4a1f8159e982",
+ "latest_url": "http://127.0.0.1:8765/runs/f4d03b51ffa44c467ffca78b?view=workflow&phase=scene&cleanup=ceaaa66c82ca4a1f8159e982",
+ "linked_jobs": [
+  "a81c66712d98408a94c913c8",
+  "ceaaa66c82ca4a1f8159e982"
+ ],
+ "same_input_and_proxy_sha256_verified": true
+}

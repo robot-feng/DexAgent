@@ -1,0 +1,100 @@
+{
+ "schema": "dexagent.step_report.v1",
+ "run": "background_separation_review_20261021",
+ "profile": "background_cleanup_smoke_test",
+ "stage": "stage2",
+ "step": null,
+ "status": "blocked",
+ "checks": [
+  {
+   "id": "source_identity_preserved",
+   "required": true,
+   "status": "passed",
+   "observed": "41147746611d0682924d5d15b4a37be84162f64aebce4118e37812f29061735e"
+  },
+  {
+   "id": "review_frame_clock",
+   "required": true,
+   "status": "passed",
+   "observed": {
+    "frames": 400,
+    "fps": 12,
+    "max_pts_difference_s": 0
+   },
+   "evidence": "/data/tzq/DexAgent/runs/background_separation_review_20261021/stage2/cleanups/ceaaa66c82ca4a1f8159e982/review_source.json"
+  },
+  {
+   "id": "mask_objects_produced",
+   "required": true,
+   "status": "passed",
+   "observed": [
+    "robot arm",
+    "gripper",
+    "blue cup",
+    "trash can"
+   ]
+  },
+  {
+   "id": "human_mask_review",
+   "required": true,
+   "status": "skipped",
+   "evidence": "Waiting for mask inspection; no inpainting or task acceptance."
+  },
+  {
+   "id": "scene_scan_reconstruction",
+   "required": false,
+   "status": "skipped",
+   "evidence": "This source is an operation-demo cleanup smoke input."
+  }
+ ],
+ "inputs": {
+  "cleanup_job_id": "ceaaa66c82ca4a1f8159e982",
+  "capture_type": "operation_demo",
+  "source_sha256": "41147746611d0682924d5d15b4a37be84162f64aebce4118e37812f29061735e"
+ },
+ "config_sha256": null,
+ "model_identity": {
+  "segmentation_model": "SAM3-LiteText-S0-16",
+  "propagation_model": "sam3-native-video-tracker",
+  "device": "cuda:1",
+  "frame_count": 400,
+  "resolution_hw": [
+   384,
+   672
+  ],
+  "prompt_resolutions": {
+   "robot arm": "robot arm",
+   "gripper": "end effector",
+   "blue cup": "blue cup",
+   "trash can": "trash can"
+  },
+  "seed_frame_indices": {
+   "robot arm": 0,
+   "gripper": 0,
+   "blue cup": 0,
+   "trash can": 0
+  },
+  "seed_scores": {
+   "robot arm": 0.8048780560493469,
+   "gripper": 0.7500000596046448,
+   "blue cup": 0.9452055096626282,
+   "trash can": 0.5428571701049805
+  }
+ },
+ "artifacts": [
+  "/data/tzq/DexAgent/runs/background_separation_review_20261021/stage2/cleanups/ceaaa66c82ca4a1f8159e982/job.json",
+  "/data/tzq/DexAgent/runs/background_separation_review_20261021/stage2/cleanups/ceaaa66c82ca4a1f8159e982/review_source.json",
+  "/data/tzq/DexAgent/runs/background_separation_review_20261021/stage2/cleanups/ceaaa66c82ca4a1f8159e982/mask_overlay.png"
+ ],
+ "metrics": {
+  "scope": "background_separation_smoke_test",
+  "task_success_evaluated": false,
+  "training_eligible": false,
+  "aggregate_demo_complete": false
+ },
+ "elapsed_s": null,
+ "failure": null,
+ "next_action": "Inspect the complete mask sequence; reconstruction and object assets remain unaccepted.",
+ "updated_at": "2026-10-21 17:15:15",
+ "attempt_id": "ceaaa66c82ca4a1f8159e982"
+}

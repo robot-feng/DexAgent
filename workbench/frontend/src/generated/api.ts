@@ -263,6 +263,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workbench/v1/background-cleanups/{job_id}/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Link Background Cleanup Run */
+        post: operations["link_background_cleanup_run_api_workbench_v1_background_cleanups__job_id__run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workbench/v1/background-cleanups/{job_id}": {
         parameters: {
             query?: never;
@@ -862,6 +879,8 @@ export interface components {
         CleanupCreate: {
             /** Video Id */
             video_id: string;
+            /** Run Id */
+            run_id?: string | null;
             /**
              * Capture Type
              * @default unknown
@@ -894,6 +913,8 @@ export interface components {
         CleanupJob: {
             /** Id */
             id: string;
+            /** Run Id */
+            run_id: string | null;
             /** Scene Name */
             scene_name: string;
             source_video: components["schemas"]["CleanupVideo"];
@@ -940,6 +961,10 @@ export interface components {
             mask_video_url: string | null;
             /** Source Video Url */
             source_video_url: string;
+            /** Review Video Url */
+            review_video_url: string | null;
+            /** Review Timebase */
+            review_timebase: ("frame_aligned" | "approximate") | null;
             /** Cleaned Video Url */
             cleaned_video_url: string | null;
             /** Scene Path */
@@ -989,6 +1014,11 @@ export interface components {
             available: boolean;
             /** Detail */
             detail: string;
+        };
+        /** CleanupRunLink */
+        CleanupRunLink: {
+            /** Run Id */
+            run_id: string | null;
         };
         /** CleanupVideo */
         CleanupVideo: {
@@ -2283,7 +2313,9 @@ export interface operations {
     };
     background_cleanup_jobs_api_workbench_v1_background_cleanups_jobs_get: {
         parameters: {
-            query?: never;
+            query?: {
+                run_id?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2297,6 +2329,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CleanupJob"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -2316,6 +2357,41 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CleanupJob"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    link_background_cleanup_run_api_workbench_v1_background_cleanups__job_id__run_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CleanupRunLink"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

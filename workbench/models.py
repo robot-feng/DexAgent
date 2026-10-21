@@ -276,6 +276,7 @@ class CleanupCatalog(ReadModel):
 
 class CleanupCreate(BaseModel):
     video_id: str
+    run_id: str | None = None
     capture_type: Literal['scene_scan', 'operation_demo', 'unknown'] = 'unknown'
     floor_category: str = Field(default='desk', min_length=1, max_length=120)
     include_objects: list[str] = Field(default_factory=list, max_length=20)
@@ -297,6 +298,7 @@ class CleanupMaskSummary(ReadModel):
 
 class CleanupJob(ReadModel):
     id: str
+    run_id: str | None = None
     scene_name: str
     source_video: CleanupVideo
     capture_type: Literal['scene_scan', 'operation_demo', 'unknown']
@@ -315,11 +317,17 @@ class CleanupJob(ReadModel):
     mask_preview_url: str | None = None
     mask_video_url: str | None = None
     source_video_url: str
+    review_video_url: str | None = None
+    review_timebase: Literal['frame_aligned', 'approximate'] | None = None
     cleaned_video_url: str | None = None
     scene_path: str | None = None
     can_build_scene: bool = False
     log_url: str
     updated_at: str
+
+
+class CleanupRunLink(BaseModel):
+    run_id: str | None
 
 
 class Tool(ReadModel):

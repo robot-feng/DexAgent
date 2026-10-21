@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Check, Film, Play, ShieldCheck, Square, WandSparkles } from "lucide-react";
 import { api } from "./api";
 import type { CleanupJob } from "./api";
 import { ErrorNotice, Loading, formatBytes } from "./components";
 
-const statusNames: Record<CleanupJob["status"], string> = {
+export const statusNames: Record<CleanupJob["status"], string> = {
   preparing: "准备与分割中",
   review_mask: "待检查 mask",
   inpainting: "视频补洞中",
@@ -28,7 +28,18 @@ function objectNames(value: string) {
 }
 
 export function BackgroundCleanupPage() {
+  const [params, setParams] = useSearchParams();
+  const runId = params.get("run");
+  const selectedJobId = params.get("job") || "";
   const client = useQueryClient();
+  const run = useQuery({
+    queryKey: ["run", runId], queryFn: () => api.run(runId!), enabled: !!runId,
+  });
+  const chooseJob = (id: string) => {
+    const next = new URLSearchParams(params);
+    next.set("job", id);
+    setParams(next);
+  };
   const catalog = useQuery({
     queryKey: ["background-cleanup-catalog"],
     queryFn: api.cleanupCatalog,
@@ -36,7 +47,7 @@ export function BackgroundCleanupPage() {
   });
   const jobs = useQuery({
     queryKey: ["background-cleanup-jobs"],
-    queryFn: api.cleanupJobs,
+    queryFn: () => api.cleanupJobs(),
     refetchInterval: (query) =>
       query.state.data?.some(isActive) ? 2_000 : 15_000,
   });
@@ -47,13 +58,19 @@ export function BackgroundCleanupPage() {
   const [skipText, setSkipText] = useState("");
   const [proposalBackend, setProposalBackend] = useState<"codex_external" | "gemini" | "manual">("codex_external");
   const [propagationModel, setPropagationModel] = useState<"sam3" | "sam2" | "litetext">("litetext");
-  const [selectedJobId, setSelectedJobId] = useState("");
+  const explicitJob = useQuery({
+    queryKey: ["cleanup-job", selectedJobId], queryFn: () => api.cleanupJob(selectedJobId),
+    enabled: !!selectedJobId,
+    refetchInterval: query => query.state.data && isActive(query.state.data) ? 2_000 : 15_000,
+  });
 
   const selectedVideo = useMemo(
     () => catalog.data?.videos.find((video) => video.id === videoId),
     [catalog.data?.videos, videoId],
   );
-  const selectedJob = jobs.data?.find((job) => job.id === selectedJobId) ?? jobs.data?.[0];
+  const selectedJob = selectedJobId ? explicitJob.data : jobs.data?.[0];
+  const choices = selectedJob && !jobs.data?.some(job => job.id === selectedJob.id)
+    ? [selectedJob, ...(jobs.data ?? [])] : jobs.data ?? [];
   const requirement = (id: string) => catalog.data?.requirements.find((item) => item.id === id);
   const voidRequirement = requirement("void_env");
   const propagationReady = propagationModel === "litetext"
@@ -65,6 +82,7 @@ export function BackgroundCleanupPage() {
     propagationReady &&
     (proposalBackend !== "gemini" || requirement("gemini")?.available) &&
     videoId &&
+    (!runId || run.data) &&
     (proposalBackend !== "manual" || objectNames(includeText).length),
   );
 
@@ -81,10 +99,12 @@ export function BackgroundCleanupPage() {
   const refresh = () => {
     void client.invalidateQueries({ queryKey: ["background-cleanup-jobs"] });
     void client.invalidateQueries({ queryKey: ["background-cleanup-catalog"] });
+    void client.invalidateQueries({ queryKey: ["cleanup-job"] });
   };
   const create = useMutation({
     mutationFn: () => api.createCleanup({
       video_id: videoId,
+      run_id: runId,
       capture_type: captureType,
       floor_category: floorCategory,
       include_objects: objectNames(includeText),
@@ -93,21 +113,25 @@ export function BackgroundCleanupPage() {
       proposal_backend: proposalBackend,
     }),
     onSuccess: (job) => {
-      setSelectedJobId(job.id);
+      chooseJob(job.id);
       refresh();
     },
   });
   const approve = useMutation({
     mutationFn: (id: string) => api.approveCleanupMask(id),
-    onSuccess: (job) => { setSelectedJobId(job.id); refresh(); },
+    onSuccess: (job) => { chooseJob(job.id); refresh(); },
   });
   const build = useMutation({
     mutationFn: (id: string) => api.buildCleanupScene(id),
-    onSuccess: (job) => { setSelectedJobId(job.id); refresh(); },
+    onSuccess: (job) => { chooseJob(job.id); refresh(); },
   });
   const stop = useMutation({
     mutationFn: (id: string) => api.stopCleanup(id),
-    onSuccess: (job) => { setSelectedJobId(job.id); refresh(); },
+    onSuccess: (job) => { chooseJob(job.id); refresh(); },
+  });
+  const link = useMutation({
+    mutationFn: (id: string) => api.linkCleanupRun(id, runId),
+    onSuccess: (job) => { chooseJob(job.id); refresh(); },
   });
 
   return (
@@ -122,8 +146,12 @@ export function BackgroundCleanupPage() {
         <span className="source-tag"><Film size={14} /> 本机视频</span>
       </div>
 
-      {catalog.isLoading ? <Loading /> : null}
-      <ErrorNotice error={catalog.error ?? jobs.error ?? create.error ?? approve.error ?? build.error ?? stop.error} />
+      {catalog.isLoading && <p className="small muted">正在检查输入素材与可选运行环境…</p>}
+      <ErrorNotice error={run.error ?? explicitJob.error ?? catalog.error ?? jobs.error ?? create.error ?? approve.error ?? build.error ?? stop.error ?? link.error} />
+      {runId && run.data && <div className="notice cleanup-run-context">
+        <div><strong>重建运行：{run.data.name}</strong><p>新建任务将记录此关联。已有任务需明确关联；关联不会证明视频与场景已配准。</p></div>
+        <Link className="button" to={`/runs/${runId}?view=workflow&phase=scene${selectedJob?.run_id === runId ? `&cleanup=${selectedJob.id}` : ""}`}>返回重建结果</Link>
+      </div>}
 
       <section className="cleanup-layout">
         <div className="panel cleanup-form-panel">
@@ -240,19 +268,19 @@ export function BackgroundCleanupPage() {
             <div><h2>任务与检查</h2><p className="muted small">对象 mask 和补洞结果都需要人工检查。</p></div>
             <span className="counter">{jobs.data?.length ?? 0}</span>
           </div>
-          {jobs.isLoading ? <Loading /> : jobs.data?.length ? (
-            <div className="cleanup-job-list">
-              {jobs.data.map((job) => (
-                <button key={job.id} className={`cleanup-job-row ${selectedJob?.id === job.id ? "selected" : ""}`} onClick={() => setSelectedJobId(job.id)}>
-                  <span className={`cleanup-job-mark ${job.status}`} />
-                  <span><strong>{job.source_video.name}</strong><small>{statusNames[job.status]} · {job.scene_name}</small></span>
-                  <small>{job.propagation_model.toUpperCase()}</small>
-                </button>
-              ))}
-            </div>
+          {jobs.isLoading ? <Loading /> : choices.length ? (
+            <select className="cleanup-job-selector" aria-label="选择分离任务" value={selectedJob?.id || ""} onChange={event => chooseJob(event.target.value)}>
+              {!selectedJob && <option value="">选择任务…</option>}
+              {choices.map(job => <option key={job.id} value={job.id}>{job.source_video.name} · {statusNames[job.status]} · {job.id.slice(0, 8)}</option>)}
+            </select>
           ) : <div className="cleanup-empty">尚无清理任务。先从左侧视频开始生成 mask 预览。</div>}
 
-          {selectedJob && <CleanupReview job={selectedJob} onApprove={() => approve.mutate(selectedJob.id)}
+          {selectedJob && <div className="cleanup-association">
+            <span className="small muted">{selectedJob.run_id ? <>已关联运行：<Link to={`/runs/${selectedJob.run_id}?view=workflow&phase=scene&cleanup=${selectedJob.id}`}>{selectedJob.run_id}</Link></> : "此任务尚未关联重建运行"}</span>
+            {runId && run.data && selectedJob.run_id !== runId && <button className="button" disabled={link.isPending || isActive(selectedJob)} onClick={() => link.mutate(selectedJob.id)}>关联到当前重建运行</button>}
+          </div>}
+
+          {selectedJob && <CleanupReview key={selectedJob.id} job={selectedJob} onApprove={() => approve.mutate(selectedJob.id)}
             onBuild={() => build.mutate(selectedJob.id)} onStop={() => stop.mutate(selectedJob.id)}
             busy={approve.isPending || build.isPending || stop.isPending} canBuild={catalog.data?.build_available ?? false}
             canInpaint={voidRequirement?.available === true}
@@ -291,7 +319,8 @@ function CleanupReview({ job, onApprove, onBuild, onStop, busy, canBuild, canInp
         <>
           <div className="notice warning cleanup-warning"><AlertTriangle size={16} /><span>确认彩色区域只覆盖要移除的对象，并检查黑白视频中的运动、遮挡和自动选取的种子帧。播放、暂停或拖动任一侧都会同步另一侧；mask 不正确时请调整对象提示词后重新生成。</span></div>
           {job.detected_objects.length > 0 && <div className="cleanup-object-tags">{job.detected_objects.map((name) => <span key={name}>{name}</span>)}</div>}
-          {job.mask_summary && <section className="cleanup-mask-diagnostics" data-testid="cleanup-mask-diagnostics" aria-label="Mask 分割诊断">
+          {job.mask_summary && <details className="cleanup-mask-diagnostics" data-testid="cleanup-mask-diagnostics" aria-label="Mask 分割诊断">
+            <summary>分割模型与播种诊断</summary>
             <div className="cleanup-mask-models">
               <strong>本次分割诊断</strong>
               <span>{job.mask_summary.segmentation_model ?? "SAM 模型未知"}</span>
@@ -312,22 +341,16 @@ function CleanupReview({ job, onApprove, onBuild, onStop, busy, canBuild, canInp
               })}
             </div>
             <small className="muted">分数只反映关键帧播种结果；整段视频仍需检查运动、遮挡和漏检。</small>
-          </section>}
+          </details>}
           {job.mask_preview_url && (
-            <div className="cleanup-preview-grid mask-review-keyframe">
+            <details className="cleanup-keyframe-details"><summary>查看关键帧分割 overlay</summary><div className="cleanup-preview-grid mask-review-keyframe">
               <figure><img src={job.mask_preview_url} alt="SAM 关键帧对象分割 overlay" /><figcaption>关键帧分割 overlay</figcaption></figure>
-            </div>
+            </div></details>
           )}
           {job.mask_video_url && (
-            <SynchronizedVideoPair
-              leftUrl={job.source_video_url}
-              leftLabel="原始视频"
-              leftTestId="mask-review-source"
-              rightUrl={job.mask_video_url}
-              rightLabel="对象 mask（黑色为待移除区域）"
-              rightTestId="mask-review-output"
-              testId="cleanup-synchronized-review"
-            />
+            <CleanupVideoComparison job={job} outputUrl={job.mask_video_url}
+              outputLabel="对象 mask（黑色为待移除区域）" leftTestId="mask-review-source"
+              rightTestId="mask-review-output" testId="cleanup-synchronized-review" />
           )}
           {!canInpaint && <div className="notice warning cleanup-warning">补洞环境未就绪，暂时无法确认并启动 VOID：{inpaintUnavailableReason}</div>}
           <div className="cleanup-actions">
@@ -341,13 +364,8 @@ function CleanupReview({ job, onApprove, onBuild, onStop, busy, canBuild, canInp
         <>
           <div className="notice warning cleanup-warning"><AlertTriangle size={16} /><span>同步对照输入与清理结果，检查机器人和对象是否移除、背景是否自然、是否出现漂浮/闪烁伪影。补洞结果需要人工确认。</span></div>
           {job.cleaned_video_url && (
-            <SynchronizedVideoPair
-              leftUrl={job.source_video_url}
-              leftLabel="输入视频"
-              rightUrl={job.cleaned_video_url}
-              rightLabel="VOID Pass 2 清理结果"
-              testId="cleanup-synchronized-result"
-            />
+            <CleanupVideoComparison job={job} outputUrl={job.cleaned_video_url}
+              outputLabel="VOID Pass 2 清理结果" testId="cleanup-synchronized-result" />
           )}
           {job.can_build_scene ? (
             <div className="cleanup-actions">
@@ -363,6 +381,28 @@ function CleanupReview({ job, onApprove, onBuild, onStop, busy, canBuild, canInp
       {job.status === "stopped" && <div className="notice cleanup-note">任务已停止，已保留日志和中间产物。</div>}
     </div>
   );
+}
+
+export function CleanupVideoComparison({ job, outputUrl, outputLabel, testId, leftTestId, rightTestId }: {
+  job: CleanupJob; outputUrl: string; outputLabel: string; testId: string;
+  leftTestId?: string; rightTestId?: string;
+}) {
+  return <>
+    {job.review_video_url ? <SynchronizedVideoPair key={`${job.id}:${outputUrl}`} leftUrl={job.review_video_url}
+      leftLabel="同源抽帧视频" rightUrl={outputUrl} rightLabel={outputLabel} testId={testId}
+      leftTestId={leftTestId} rightTestId={rightTestId} /> : <>
+      <p className="notice warning">缺少同源处理视频，以下原视频与结果分别播放，未建立同步时间映射。</p>
+      <div className="cleanup-preview-grid">
+        {job.source_video_url && <figure><video controls src={job.source_video_url} aria-label="原始视频（独立播放）" /><figcaption>原始视频（独立播放）</figcaption></figure>}
+        <figure><video controls src={outputUrl} aria-label={outputLabel} /><figcaption>{outputLabel}</figcaption></figure>
+      </div>
+    </>}
+    <p className="small muted">{job.review_video_url && (job.review_timebase === "frame_aligned" && outputUrl === job.mask_video_url
+      ? "审核代理与 mask 的帧数、分辨率及逐帧时间戳已核对，处理后时间与原始采集时间不同。"
+      : "同源处理视频仅作近似同步对照，尚未核对逐帧时间戳。")}
+      {job.source_video_url && <> <a className="link-button" href={job.source_video_url} target="_blank" rel="noreferrer">查看原始视频</a></>}
+    </p>
+  </>;
 }
 
 function SynchronizedVideoPair({
@@ -385,15 +425,15 @@ function SynchronizedVideoPair({
   const leftRef = useRef<HTMLVideoElement>(null);
   const rightRef = useRef<HTMLVideoElement>(null);
 
-  const syncTime = (from: React.RefObject<HTMLVideoElement | null>, to: React.RefObject<HTMLVideoElement | null>) => {
+  const syncTime = (from: React.RefObject<HTMLVideoElement | null>, to: React.RefObject<HTMLVideoElement | null>, force = false) => {
     const source = from.current;
     const target = to.current;
     if (!source || !target || target.readyState < HTMLMediaElement.HAVE_METADATA) return;
     const desired = Math.min(source.currentTime, Number.isFinite(target.duration) ? target.duration : source.currentTime);
-    if (Math.abs(target.currentTime - desired) > 0.12) target.currentTime = desired;
+    if (Math.abs(target.currentTime - desired) > (force ? 0.001 : 0.12)) target.currentTime = desired;
   };
   const playTogether = (from: React.RefObject<HTMLVideoElement | null>, to: React.RefObject<HTMLVideoElement | null>) => {
-    syncTime(from, to);
+    syncTime(from, to, true);
     if (to.current?.paused) void to.current.play().catch(() => undefined);
   };
   const pauseTogether = (to: React.RefObject<HTMLVideoElement | null>) => {
@@ -411,8 +451,8 @@ function SynchronizedVideoPair({
           preload="metadata"
           src={leftUrl}
           onPlay={() => playTogether(leftRef, rightRef)}
-          onPause={() => pauseTogether(rightRef)}
-          onSeeking={() => syncTime(leftRef, rightRef)}
+          onPause={() => { syncTime(leftRef, rightRef, true); pauseTogether(rightRef); }}
+          onSeeking={() => syncTime(leftRef, rightRef, true)}
           onTimeUpdate={() => syncTime(leftRef, rightRef)}
           onLoadedMetadata={() => syncTime(leftRef, rightRef)}
           onRateChange={() => { if (leftRef.current && rightRef.current) rightRef.current.playbackRate = leftRef.current.playbackRate; }}
@@ -428,8 +468,8 @@ function SynchronizedVideoPair({
           preload="metadata"
           src={rightUrl}
           onPlay={() => playTogether(rightRef, leftRef)}
-          onPause={() => pauseTogether(leftRef)}
-          onSeeking={() => syncTime(rightRef, leftRef)}
+          onPause={() => { syncTime(rightRef, leftRef, true); pauseTogether(leftRef); }}
+          onSeeking={() => syncTime(rightRef, leftRef, true)}
           onLoadedMetadata={() => syncTime(rightRef, leftRef)}
           onRateChange={() => { if (rightRef.current && leftRef.current) leftRef.current.playbackRate = rightRef.current.playbackRate; }}
         />

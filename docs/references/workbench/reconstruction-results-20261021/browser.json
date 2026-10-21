@@ -1,0 +1,20 @@
+{
+  "errors": [],
+  "metadata": [
+    {
+      "src": "http://127.0.0.1:8765/api/workbench/v1/background-cleanups/ceaaa66c82ca4a1f8159e982/media/review-source",
+      "duration": 33.333333,
+      "readyState": 4,
+      "time": 6.616109
+    },
+    {
+      "src": "http://127.0.0.1:8765/api/workbench/v1/background-cleanups/ceaaa66c82ca4a1f8159e982/media/quadmask",
+      "duration": 33.333333,
+      "readyState": 4,
+      "time": 6.616109
+    }
+  ],
+  "mobileOverflow": false,
+  "run": "f4d03b51ffa44c467ffca78b",
+  "job": "ceaaa66c82ca4a1f8159e982"
+}

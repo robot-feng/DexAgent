@@ -1,0 +1,64 @@
+{
+  "id": "a81c66712d98408a94c913c8",
+  "run_id": "f4d03b51ffa44c467ffca78b",
+  "scene_name": "workbench_bg_a81c66712d",
+  "source_video": {
+    "id": "e8f5fda7305deba4afd086bf",
+    "name": "ThrowAwayTrash.mp4",
+    "path": "SimFoundry/docs/assets/example_videos/ThrowAwayTrash.mp4",
+    "size": 5745214,
+    "duration_s": 17.884533,
+    "width": 1920,
+    "height": 1080,
+    "capture_type": "operation_demo"
+  },
+  "capture_type": "operation_demo",
+  "status": "review_mask",
+  "current_step": "检查 LITETEXT mask 与跨帧传播结果",
+  "message": "已生成 2 个对象的全视频 mask。检查 overlay 和黑白 mask 视频后再确认补洞。",
+  "include_objects": [
+    "robot arm",
+    "gripper"
+  ],
+  "skip_objects": [],
+  "propagation_model": "litetext",
+  "proposal_backend": "manual",
+  "proposal_transport_dir": null,
+  "proposed_objects": [],
+  "detected_objects": [
+    "robot arm",
+    "gripper"
+  ],
+  "mask_summary": {
+    "segmentation_model": "SAM3-LiteText-S0-16",
+    "propagation_model": "sam3-native-video-tracker",
+    "device": "cuda:1",
+    "frame_count": 400,
+    "resolution_hw": [
+      384,
+      672
+    ],
+    "prompt_resolutions": {
+      "robot arm": "robot arm",
+      "gripper": "end effector"
+    },
+    "seed_frame_indices": {
+      "robot arm": 0,
+      "gripper": 0
+    },
+    "seed_scores": {
+      "robot arm": 0.8048780560493469,
+      "gripper": 0.7500000596046448
+    }
+  },
+  "mask_preview_url": "/api/workbench/v1/background-cleanups/a81c66712d98408a94c913c8/media/mask",
+  "mask_video_url": "/api/workbench/v1/background-cleanups/a81c66712d98408a94c913c8/media/quadmask",
+  "source_video_url": "/api/workbench/v1/background-cleanups/a81c66712d98408a94c913c8/media/source",
+  "review_video_url": "/api/workbench/v1/background-cleanups/a81c66712d98408a94c913c8/media/review-source",
+  "review_timebase": "frame_aligned",
+  "cleaned_video_url": null,
+  "scene_path": null,
+  "can_build_scene": false,
+  "log_url": "/api/workbench/v1/background-cleanups/a81c66712d98408a94c913c8/log",
+  "updated_at": "2026-10-21T09:09:27Z"
+}

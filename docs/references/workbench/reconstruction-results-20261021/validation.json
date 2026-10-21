@@ -1,0 +1,17 @@
+{
+  "backend": {
+    "passed": 66,
+    "skipped": 0
+  },
+  "frontend": {
+    "browser_checks_passed": 12,
+    "production_build": "passed"
+  },
+  "live_run": "f4d03b51ffa44c467ffca78b",
+  "source_job": "ceaaa66c82ca4a1f8159e982",
+  "mask_accepted": false,
+  "inpainting_started": false,
+  "physics_steps_added": 0,
+  "frame_count": 400,
+  "max_mask_proxy_pts_difference_s": 0
+}

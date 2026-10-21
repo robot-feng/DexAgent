@@ -116,6 +116,55 @@ def _agent_object_proposal(job_dir: Path, keyframe: Path, job: dict) -> list[str
     return names
 
 
+
+def _review_proxy(repo: Path, job_dir: Path) -> dict:
+    """Encode the exact sampled frame order at the mask clock; no model inference."""
+    from fractions import Fraction
+    from agent.run_reports import atomic_json, sha256_file
+
+    job = _load(job_dir)
+    data = repo / 'SimFoundry/Data' / job['scene_name']
+    frames = sorted((data / 's1_video/frames_subsampled_400').glob('*.png'))
+    mask = data / 'auto_bg/void/input/quadmask_0.mp4'
+    meta = json.loads((mask.parent / 'quadmask_meta.json').read_text())
+
+    def probe(path):
+        result = subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'v:0',
+                                 '-show_entries', 'stream=nb_frames,r_frame_rate,width,height:frame=best_effort_timestamp_time',
+                                 '-show_frames', '-of', 'json', str(path)], check=True, capture_output=True, text=True)
+        return json.loads(result.stdout)
+
+    reference = probe(mask)
+    stream = reference['streams'][0]
+    count = int(stream['nb_frames'])
+    fps = Fraction(stream['r_frame_rate'])
+    if not frames or len(frames) != count or meta.get('num_frames') != count or fps <= 0:
+        raise RuntimeError('审核代理的抽帧序列、mask 帧数或时间基准不一致。')
+    output = job_dir / 'input/review_source.mp4'
+    output.parent.mkdir(parents=True, exist_ok=True)
+    temporary = output.with_name('review_source.tmp.mp4')
+    _run(job_dir, ['ffmpeg', '-y', '-v', 'error', '-framerate', str(fps), '-pattern_type', 'glob',
+                   '-i', str(frames[0].parent / '*.png'), '-frames:v', str(count), '-c:v', 'libx264',
+                   '-threads', '2', '-crf', '18', '-pix_fmt', 'yuv420p', str(temporary)], cwd=repo, env=dict(os.environ))
+    actual = probe(temporary)
+    actual_stream = actual['streams'][0]
+    source_pts = [float(f['best_effort_timestamp_time']) for f in reference['frames']]
+    proxy_pts = [float(f['best_effort_timestamp_time']) for f in actual['frames']]
+    if (any(actual_stream.get(key) != stream.get(key) for key in ('nb_frames', 'width', 'height'))
+            or len(source_pts) != count or len(proxy_pts) != count
+            or max(abs(a - b) for a, b in zip(source_pts, proxy_pts)) > 1e-6):
+        temporary.unlink(missing_ok=True)
+        raise RuntimeError('审核代理与 mask 的帧数、分辨率或逐帧时间戳不匹配。')
+    temporary.replace(output)
+    manifest = {'schema': 'embodiforge.cleanup_review_proxy.v1', 'frame_count': count,
+                'fps': str(fps), 'width': stream['width'], 'height': stream['height'],
+                'max_pts_difference_s': max(abs(a - b) for a, b in zip(source_pts, proxy_pts)),
+                'proxy_sha256': sha256_file(output), 'mask_sha256': sha256_file(mask),
+                'frames': [{'name': frame.name, 'sha256': sha256_file(frame)} for frame in frames]}
+    atomic_json(job_dir / 'input/review_source.json', manifest)
+    return manifest
+
+
 def _mask_phase(repo: Path, manager: Path, job_dir: Path, env: dict[str, str], job: dict) -> None:
     sim = repo / 'SimFoundry'
     data_root = sim / 'Data'
@@ -200,6 +249,8 @@ def _mask_phase(repo: Path, manager: Path, job_dir: Path, env: dict[str, str], j
     meta = json.loads(metadata.read_text())
     if not meta.get('objects'):
         raise RuntimeError('SAM3 没有为任何对象生成 mask；请调整对象名称后重试。')
+    _set_phase(job_dir, 'preparing', '生成同帧审核视频', '编码与 mask 帧序列和时间戳一致的审核代理。')
+    _review_proxy(repo, job_dir)
     job = _load(job_dir)
     job.update(status='review_mask', current_step=f'检查 {job["propagation_model"].upper()} mask 与跨帧传播结果',
                message=f'已生成 {len(meta["objects"])} 个对象的全视频 mask。检查 overlay 和黑白 mask 视频后再确认补洞。',

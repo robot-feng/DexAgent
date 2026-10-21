@@ -6,6 +6,7 @@ import { api } from "./api";
 import type { Artifact, RunDetail, Stage } from "./api";
 import { Badge, Empty, ErrorNotice, GateReport, Loading, Media } from "./components";
 import { EpisodeList } from "./pages";
+import SceneReconstructionResults from "./SceneReconstructionResults";
 
 // A projection of existing evidence, not a second pipeline or execution registry.
 const phases = [
@@ -92,6 +93,18 @@ function PhaseResult({ run, phase, open, inspect }: {
   const visuals = current.filter(a => a.kind === "image" || a.kind === "video");
   const options = phase.id === "input" ? (run.input_video ? [run.input_video] : []) : visuals.filter(a => a.id !== run.input_video?.id);
   const media = options.find(a => a.id === selected) ?? options.find(a => ["frame0_compare.png", "sim_video.mp4", "replay_mechanism.mp4", "contact_sheet.jpg"].includes(a.name)) ?? options.find(a => a.kind === "video") ?? options[0];
+  const result = (<>
+          {phase.id === "task" && run.task && <p className="workflow-task">{run.task}</p>}
+          {media ? <><div className="workflow-preview"><Media artifact={media} key={media.id} /></div>
+            <div className="workflow-preview-footer"><select aria-label="当前环节预览" value={media.id} onChange={e => setSelected(e.target.value)}>
+              {options.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+            </select><button className="link-button" onClick={() => open(media)}>展开 <ArrowUpRight size={14} /></button></div>
+            <p className="small muted workflow-path">{media.path}</p></> : mediaFiles.isLoading ? <Loading /> :
+            <Empty title={files.error || mediaFiles.error ? "结果暂不可读取" : "此环节暂无可预览结果"}
+              detail={phase.id === "reference" ? "演示参考是可选输入；已有轨迹仍可从产物页检查，没有独立报告时不推断已完成提取。" : "查看验收证据和原生文件；没有结果不代表通过，也不代表该任务必须执行此环节。"} />}
+          {mediaFiles.data?.truncated && <p className="small muted">预览列表显示每种媒体的前 200 项，其他结果请在文件分页中查看。</p>}
+          {phase.id === "data" && <EpisodeList runId={run.id} />}
+        </>);
   return <div className="workflow-detail">
     <header className="workflow-detail-head"><div><p className="eyebrow">当前环节</p><h2>{phase.title}</h2></div>
       {stage?.report ? <Badge value={stage.report.validation} /> : <span className="source-tag">尚无独立验收证据</span>}
@@ -106,18 +119,9 @@ function PhaseResult({ run, phase, open, inspect }: {
             <button key={id} aria-pressed={panel === id} onClick={() => setPanel(id)}>{title}</button>)}
         </div>
         <ErrorNotice error={files.error ?? mediaFiles.error} />
-        {panel === "result" && <>
-          {phase.id === "task" && run.task && <p className="workflow-task">{run.task}</p>}
-          {media ? <><div className="workflow-preview"><Media artifact={media} key={media.id} /></div>
-            <div className="workflow-preview-footer"><select aria-label="当前环节预览" value={media.id} onChange={e => setSelected(e.target.value)}>
-              {options.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-            </select><button className="link-button" onClick={() => open(media)}>展开 <ArrowUpRight size={14} /></button></div>
-            <p className="small muted workflow-path">{media.path}</p></> : mediaFiles.isLoading ? <Loading /> :
-            <Empty title={files.error || mediaFiles.error ? "结果暂不可读取" : "此环节暂无可预览结果"}
-              detail={phase.id === "reference" ? "演示参考是可选输入；已有轨迹仍可从产物页检查，没有独立报告时不推断已完成提取。" : "查看验收证据和原生文件；没有结果不代表通过，也不代表该任务必须执行此环节。"} />}
-          {mediaFiles.data?.truncated && <p className="small muted">预览列表显示每种媒体的前 200 项，其他结果请在文件分页中查看。</p>}
-          {phase.id === "data" && <EpisodeList runId={run.id} />}
-        </>}
+        {panel === "result" && (phase.id === "scene"
+          ? <SceneReconstructionResults run={run} open={open}>{result}</SceneReconstructionResults>
+          : result)}
         {panel === "checks" && (stage?.report ? <GateReport report={stage.report} open={open} /> :
           <Empty title="未记录独立验收" detail={phase.check} />)}
         {panel === "files" && <>
@@ -136,11 +140,13 @@ function PhaseResult({ run, phase, open, inspect }: {
       <aside className="workflow-evidence">
         <FileCheck2 size={22} /><h3>验证什么</h3><p>{phase.check}</p>
         {stage?.report && <><div className="workflow-check-count"><b>{stage.report.checks.filter(c => c.status === "failed").length}</b><span>失败检查 / {stage.report.checks.length} 项</span></div>
+          {stage.report.checks.some(check => check.required && !["passed", "warning"].includes(check.status)) &&
+            <p className="small state-bad">未通过的必需检查：{stage.report.checks.filter(check => check.required && !["passed", "warning"].includes(check.status)).length}</p>}
           <p className="small">报告：{stage.title}（{stage.id}）<br />证据范围：{stage.report.evaluation_scope || "源报告未声明"}<br />任务成功已评估：{stage.report.task_success_evaluated === true ? "是" : "未确认"}</p>
           <button className="button full" onClick={() => setPanel("checks")}>查看本环节验收</button>
           <button className="link-button" onClick={() => inspect(stage.id)}>历史尝试与完整报告 <ArrowUpRight size={13} /></button></>}
         <hr /><h3>模块接口</h3><p>{phase.contract}</p>
-        {phase.route && <Link className="button full" to={phase.route}>{phase.action} <ArrowUpRight size={13} /></Link>}
+        {phase.route && <Link className="button full" to={phase.id === "scene" ? `${phase.route}?run=${run.id}` : phase.route}>{phase.action} <ArrowUpRight size={13} /></Link>}
         <p className="small muted">此处展示当前运行已收录的证据；更换模型或后端后，需要重新执行相应检查。</p>
       </aside>
     </div>

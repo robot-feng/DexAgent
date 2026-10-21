@@ -423,6 +423,7 @@ print(json.dumps({"missing": missing}))
             shutil.copy2(source, staged_source)
             job = {
                 'id': job_id, 'scene_name': scene, 'video_id': video.id,
+                'run_id': body.run_id,
                 'source_video': video.model_dump(), 'source_copy': str(staged_source),
                 'capture_type': body.capture_type if body.capture_type != 'unknown' else video.capture_type,
                 'floor_category': body.floor_category.strip(),
@@ -452,6 +453,18 @@ print(json.dumps({"missing": missing}))
                 result.append(name)
                 seen.add(name.casefold())
         return result
+
+    def link_run(self, job_id: str, run_id: str | None) -> CleanupJob:
+        """Record an explicit association without changing the source or phase results."""
+        with self.lock:
+            directory = self.directory(job_id)
+            job = self._read(directory)
+            process = self.processes.get(job_id)
+            if job.get('status') in ACTIVE or (process and process[0].poll() is None):
+                raise CleanupBusy('请在当前清理阶段结束后修改运行关联。')
+            job['run_id'] = run_id
+            self._write(directory, job)
+            return self.job(job_id)
 
     def _ensure_idle(self):
         for path in self.jobs_root.glob('*/job.json'):
@@ -612,11 +625,23 @@ print(json.dumps({"missing": missing}))
         mask_video = data / 'auto_bg/void/input/quadmask_0.mp4'
         mask_summary = self._mask_summary(data / 'auto_bg/void/input/quadmask_meta.json')
         source = Path(job['source_copy'])
+        review_source = data / 's1_video/input_video.mp4'
+        review_timebase = 'approximate' if review_source.is_file() else None
+        proxy = directory / 'input/review_source.mp4'
+        try:
+            from agent.run_reports import sha256_file
+            manifest = json.loads((directory / 'input/review_source.json').read_text())
+            if (isinstance(manifest, dict) and manifest.get('schema') == 'embodiforge.cleanup_review_proxy.v1'
+                    and manifest.get('proxy_sha256') == sha256_file(proxy)
+                    and manifest.get('mask_sha256') == sha256_file(mask_video)):
+                review_timebase = 'frame_aligned'
+        except (OSError, ValueError):
+            pass
         clean = data / 'auto_bg/void/pass2/pass2.mp4'
         final_scene = self.simfoundry / 'assets/scenes' / scene / f'{scene}_scene_state_auto_bg.json'
         status = job.get('status')
         return CleanupJob(
-            id=job_id, scene_name=scene, source_video=CleanupVideo.model_validate(job['source_video']),
+            id=job_id, run_id=job.get('run_id'), scene_name=scene, source_video=CleanupVideo.model_validate(job['source_video']),
             capture_type=job['capture_type'], status=status, current_step=job['current_step'],
             message=job['message'], include_objects=job['include_objects'], skip_objects=job['skip_objects'],
             propagation_model=job['propagation_model'],
@@ -628,17 +653,23 @@ print(json.dumps({"missing": missing}))
             mask_preview_url=f'/api/workbench/v1/background-cleanups/{job_id}/media/mask' if mask.is_file() else None,
             mask_video_url=f'/api/workbench/v1/background-cleanups/{job_id}/media/quadmask' if mask_video.is_file() else None,
             source_video_url=f'/api/workbench/v1/background-cleanups/{job_id}/media/source' if source.is_file() else '',
+            review_video_url=f'/api/workbench/v1/background-cleanups/{job_id}/media/review-source' if review_timebase is not None else None,
+            review_timebase=review_timebase,
             cleaned_video_url=f'/api/workbench/v1/background-cleanups/{job_id}/media/cleaned' if clean.is_file() else None,
             scene_path=str(final_scene) if final_scene.is_file() else None,
             can_build_scene=status == 'review_clean' and job['capture_type'] == 'scene_scan',
             log_url=f'/api/workbench/v1/background-cleanups/{job_id}/log', updated_at=job['updated_at'])
 
-    def jobs(self) -> list[CleanupJob]:
+    def jobs(self, run_id: str | None = None) -> list[CleanupJob]:
         paths = sorted(self.jobs_root.glob('*/job.json'), key=lambda p: p.stat().st_mtime, reverse=True)
         result = []
-        for path in paths[:30]:
+        for path in paths:
             try:
-                result.append(self.job(path.parent.name))
+                job = self.job(path.parent.name)
+                if run_id is None or job.run_id == run_id:
+                    result.append(job)
+                    if len(result) == 30:
+                        break
             except (OSError, ValueError, KeyError):
                 continue
         return result
@@ -650,6 +681,8 @@ print(json.dumps({"missing": missing}))
         data = self.simfoundry / 'Data' / scene / 'auto_bg/void'
         options = {
             'source': Path(job['source_copy']),
+            'review-source': (directory / 'input/review_source.mp4' if self.job(job_id).review_timebase == 'frame_aligned'
+                              else self.simfoundry / 'Data' / scene / 's1_video/input_video.mp4'),
             'mask': data / 'input/keyframe_masks_debug/all_objects_overlay.png',
             'quadmask': data / 'input/quadmask_0.mp4',
             'cleaned': data / 'pass2/pass2.mp4',

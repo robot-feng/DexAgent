@@ -55,17 +55,14 @@ test("background cleanup mask review synchronizes the source and mask timelines"
   }
 
   await page.goto("/background-cleanup");
-  await page.locator(".cleanup-job-row")
-    .filter({ hasText: reviewJob.source_video.name })
-    .filter({ hasText: "待检查 mask" })
-    .first()
-    .click();
+  await page.getByLabel("选择分离任务").selectOption(reviewJob.id);
 
   const source = page.getByTestId("mask-review-source");
   const mask = page.getByTestId("mask-review-output");
   await expect(page.getByTestId("cleanup-synchronized-review")).toBeVisible();
   const diagnostics = page.getByTestId("cleanup-mask-diagnostics");
   await expect(diagnostics).toBeVisible();
+  await diagnostics.locator("summary").click();
   await expect(diagnostics).toContainText(reviewJob.mask_summary.segmentation_model);
   await expect(diagnostics).toContainText(reviewJob.mask_summary.propagation_model);
   for (const [object, prompt] of Object.entries(reviewJob.mask_summary.prompt_resolutions)) {
@@ -85,9 +82,9 @@ test("background cleanup mask review synchronizes the source and mask timelines"
   }
   await expect(page.getByRole("button", { name: "确认 mask，运行 VOID 补洞" })).toBeDisabled();
   await expect(page.getByText(/补洞环境未就绪.*CogVideoX-Fun-V1\.5-5b-InP/)).toBeVisible();
-  await expect(source).toHaveAttribute("src", reviewJob.source_video_url);
+  await expect(source).toHaveAttribute("src", reviewJob.review_video_url);
   await expect(mask).toHaveAttribute("src", reviewJob.mask_video_url);
-  await expect(source).toHaveAttribute("aria-label", "原始视频");
+  await expect(source).toHaveAttribute("aria-label", "同源抽帧视频");
   await expect(mask).toHaveAttribute("aria-label", "对象 mask（黑色为待移除区域）");
 
   await page.waitForFunction(() => {
@@ -95,6 +92,12 @@ test("background cleanup mask review synchronizes the source and mask timelines"
     const maskVideo = document.querySelector('[data-testid="mask-review-output"]') as HTMLVideoElement | null;
     return Boolean(sourceVideo && maskVideo && sourceVideo.readyState >= 1 && maskVideo.readyState >= 1);
   });
+  // A one-frame seek (83 ms at 12 fps) must bypass the playback drift deadband.
+  await source.evaluate((node: HTMLVideoElement) => { node.currentTime = 1; });
+  await expect.poll(() => mask.evaluate((node: HTMLVideoElement) => node.currentTime)).toBeGreaterThan(0.99);
+  await source.evaluate((node: HTMLVideoElement) => { node.currentTime = 1 + 1 / 12; });
+  await expect.poll(() => mask.evaluate((node: HTMLVideoElement) => node.currentTime)).toBeGreaterThan(1.07);
+
   await source.evaluate((node) => {
     const video = node as HTMLVideoElement;
     video.currentTime = Math.min(3, video.duration / 2);

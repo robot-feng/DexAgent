@@ -96,7 +96,11 @@ export const api = {
   capabilities: () => request<Capability[]>("/capabilities"),
   studioLive: () => request<StudioLiveStatus>("/studio/live"),
   cleanupCatalog: () => request<CleanupCatalog>("/background-cleanups/catalog"),
-  cleanupJobs: () => request<CleanupJob[]>("/background-cleanups/jobs"),
+  cleanupJobs: (runId?: string) => request<CleanupJob[]>(
+    `/background-cleanups/jobs${runId ? `?${new URLSearchParams({ run_id: runId })}` : ""}`,
+  ),
+  linkCleanupRun: (id: string, runId: string | null) =>
+    request<CleanupJob>(`/background-cleanups/${id}/run`, { run_id: runId }),
   createCleanup: (body: CleanupCreate) =>
     request<CleanupJob>("/background-cleanups", body),
   cleanupJob: (id: string) => request<CleanupJob>(`/background-cleanups/${id}`),

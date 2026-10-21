@@ -561,3 +561,25 @@ select,
 .scene-reconstruction-entry p.muted { margin-top: 8px; font-size: 12px; line-height: 1.8; }
 .scene-reconstruction-entry > a { flex-shrink: 0; }
 @media (max-width: 700px) { .scene-reconstruction-entry { flex-direction: column; align-items: stretch; } }
+.reconstruction-step-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.reconstruction-step-tabs button { border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--muted); font-size: 12px; padding: 8px 10px; }
+.reconstruction-step-tabs button[aria-pressed=true] { color: var(--blue); border-color: var(--line); background: var(--selected); }
+.reconstruction-job-toolbar, .reconstruction-result-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.reconstruction-job-toolbar select { flex: 1; min-width: 0; }
+.reconstruction-job-toolbar a { flex-shrink: 0; }
+.reconstruction-cleanup-result > p { margin-block: 10px; line-height: 1.8; }
+.reconstruction-mask-image { margin: 16px 0; }
+.reconstruction-mask-image img { display: block; width: 100%; max-height: 260px; object-fit: contain; background: #0d1014; border-radius: 8px; }
+.reconstruction-mask-image figcaption { margin-top: 6px; font-size: 11px; color: var(--muted); }
+.reconstruction-caption { line-height: 1.8; margin-bottom: 14px; }
+.reconstruction-results .workflow-files small { display: block; font-size: 11px; margin-top: 5px; overflow-wrap: anywhere; }
+.reconstruction-scene-path { overflow-wrap: anywhere; }
+.cleanup-job-selector { width: 100%; margin-bottom: 12px; }
+.cleanup-association { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-block: 8px; }
+.cleanup-association > span { overflow-wrap: anywhere; }
+.cleanup-association a { color: var(--blue); }
+.cleanup-run-context { align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.cleanup-run-context p { font-size: 12px; margin-top: 5px; }
+@media (max-width: 600px) { .reconstruction-job-toolbar, .cleanup-run-context { flex-direction: column; align-items: stretch; } .reconstruction-job-toolbar select { width: 100%; } }
+.cleanup-mask-diagnostics > summary, .cleanup-keyframe-details > summary, .reconstruction-mask-image > summary { cursor: pointer; color: var(--muted); font-size: 12px; padding-block: 8px; }
+.cleanup-keyframe-details { margin-block: 12px; }
